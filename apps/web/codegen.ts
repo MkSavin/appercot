@@ -10,6 +10,7 @@ export default {
         fragmentMasking: false,
       },
       config: {
+        documentMode: 'string',
         useTypeImports: true,
       },
     },

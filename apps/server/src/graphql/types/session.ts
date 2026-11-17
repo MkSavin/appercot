@@ -58,7 +58,8 @@ builder.objectType(ConnectionType, {
     roles: field.exposeStringList('roles'),
     blocked: field.exposeBoolean('blocked'),
     unread: field.exposeInt('unread'),
-    lastMessageAt: field.exposeInt('lastMessageAt', { nullable: true }),
+    lastMessageAt: field.exposeFloat('lastMessageAt', { nullable: true }),
+    createdAt: field.exposeFloat('createdAt'),
   }),
 })
 

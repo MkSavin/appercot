@@ -49,4 +49,17 @@ describe('GraphQL', () => {
       fixture.stop()
     }
   })
+
+  test('exposes non-null session fields and chat creation timestamps', async () => {
+    const { printSchema } = await import('graphql')
+    const { schema } = await import('../src/graphql')
+    const printedSchema = printSchema(schema)
+
+    expect(printedSchema).toContain('createdAt: Float!')
+    expect(printedSchema).toContain('lastMessageAt: Float')
+    expect(printedSchema).toContain('editedAt: Float')
+    expect(printedSchema).toContain('user: User!')
+    expect(printedSchema).toContain('chats: [Connection!]!')
+    expect(printedSchema).toContain('session: Session!')
+  })
 })

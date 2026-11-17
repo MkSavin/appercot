@@ -12,9 +12,10 @@ export const JsonScalar = new GraphQLScalarType<unknown, unknown>({
 
 export const builder = new SchemaBuilder<{
   Context: GraphQLContext
+  Defaults: 'v3'
   Scalars: {
     JSON: { Input: unknown; Output: unknown }
   }
-}>({})
+}>({ defaults: 'v3' })
 
 builder.addScalarType('JSON', JsonScalar, {})

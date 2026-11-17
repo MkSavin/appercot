@@ -10,4 +10,13 @@ export default defineConfig({
       '@': path.resolve(import.meta.dirname, './src'),
     },
   },
+  server: {
+    proxy: {
+      '/graphql': 'http://localhost:3000',
+      '/api': {
+        target: 'http://localhost:3000',
+        ws: true,
+      },
+    },
+  },
 })

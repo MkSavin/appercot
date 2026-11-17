@@ -1,4 +1,5 @@
 import { createRoot } from 'react-dom/client'
+import { AppProviders } from './composition/AppProviders'
 import { AppRouter } from './routing'
 import './styles/index.css'
 
@@ -8,4 +9,8 @@ if (!rootElement) {
   throw new Error('Root element is missing')
 }
 
-createRoot(rootElement).render(<AppRouter />)
+createRoot(rootElement).render(
+  <AppProviders>
+    <AppRouter />
+  </AppProviders>,
+)

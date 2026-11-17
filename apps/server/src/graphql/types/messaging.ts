@@ -26,8 +26,8 @@ builder.objectType(MessageType, {
     content: field.field({ type: 'JSON', resolve: (message) => message.content }),
     status: field.exposeString('status'),
     replyTo: field.exposeID('replyTo', { nullable: true }),
-    createdAt: field.exposeInt('createdAt'),
-    editedAt: field.exposeInt('editedAt', { nullable: true }),
+    createdAt: field.exposeFloat('createdAt'),
+    editedAt: field.exposeFloat('editedAt', { nullable: true }),
   }),
 })
 
