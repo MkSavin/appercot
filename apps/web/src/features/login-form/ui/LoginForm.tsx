@@ -2,6 +2,7 @@ import { Eye, EyeOff, LoaderCircle } from 'lucide-react'
 import { useState } from 'react'
 import { useChatStore } from '@/entities/chat'
 import { loginRequest } from '@/entities/session'
+import { showRequestError } from '@/shared/api'
 import { strings } from '@/shared/config'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
@@ -22,7 +23,7 @@ export const LoginForm = ({ onSuccess }: { onSuccess: () => void }) => {
       setSession(await loginRequest({ username, password }))
       onSuccess()
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : strings.auth.failed)
+      setError(showRequestError(cause))
     } finally {
       setSubmitting(false)
     }

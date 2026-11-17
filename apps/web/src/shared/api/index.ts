@@ -1,3 +1,5 @@
+export * from './errors'
+export * from './graphql/chat.graphql'
 export * from './graphql/client'
 export * from './graphql/messages.graphql'
 export * from './graphql/session.graphql'

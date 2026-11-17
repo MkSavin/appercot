@@ -7,6 +7,11 @@ type Bot {
   username: String!
 }
 
+type BotCommand {
+  description: String!
+  name: String!
+}
+
 type ButtonResult {
   toast: String
 }
@@ -14,6 +19,7 @@ type ButtonResult {
 type Connection {
   blocked: Boolean!
   bot: Bot!
+  commands: [BotCommand!]!
   createdAt: Float!
   id: ID!
   lastMessageAt: Float

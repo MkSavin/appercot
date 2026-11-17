@@ -1,4 +1,5 @@
 import type { UserDto } from '../../auth/session'
+import type { VisibleCommand } from '../../domain/commands'
 import { builder } from '../builder'
 
 export interface BotDto {
@@ -18,6 +19,7 @@ export interface ConnectionDto {
   unread: number
   lastMessageAt: number | null
   createdAt: number
+  commands: VisibleCommand[]
 }
 
 export interface SessionDto {
@@ -28,6 +30,7 @@ export interface SessionDto {
 
 export const UserType = builder.objectRef<UserDto>('User')
 export const BotType = builder.objectRef<BotDto>('Bot')
+export const BotCommandType = builder.objectRef<VisibleCommand>('BotCommand')
 export const ConnectionType = builder.objectRef<ConnectionDto>('Connection')
 export const SessionType = builder.objectRef<SessionDto>('Session')
 
@@ -51,6 +54,13 @@ builder.objectType(BotType, {
   }),
 })
 
+builder.objectType(BotCommandType, {
+  fields: (field) => ({
+    name: field.exposeString('name'),
+    description: field.exposeString('description'),
+  }),
+})
+
 builder.objectType(ConnectionType, {
   fields: (field) => ({
     id: field.exposeID('id'),
@@ -60,6 +70,7 @@ builder.objectType(ConnectionType, {
     unread: field.exposeInt('unread'),
     lastMessageAt: field.exposeFloat('lastMessageAt', { nullable: true }),
     createdAt: field.exposeFloat('createdAt'),
+    commands: field.field({ type: [BotCommandType], resolve: (chat) => chat.commands }),
   }),
 })
 

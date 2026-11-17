@@ -24,6 +24,10 @@ export const SessionDocument = graphql(`
         unread
         lastMessageAt
         createdAt
+        commands {
+          name
+          description
+        }
       }
       vapidPublicKey
     }
@@ -54,6 +58,10 @@ export const LoginDocument = graphql(`
         unread
         lastMessageAt
         createdAt
+        commands {
+          name
+          description
+        }
       }
       vapidPublicKey
     }
@@ -94,6 +102,10 @@ export const RegisterDocument = graphql(`
         unread
         lastMessageAt
         createdAt
+        commands {
+          name
+          description
+        }
       }
       vapidPublicKey
     }

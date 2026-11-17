@@ -1,4 +1,4 @@
-import { ClientChatSchema, UserRefSchema } from '@appercot/protocol'
+import { BotCommandSchema, ClientChatSchema, UserRefSchema } from '@appercot/protocol'
 import {
   graphqlClient,
   LoginDocument,
@@ -13,7 +13,13 @@ const toSessionPayload = (session: SessionQuery['session']): SessionPayload => {
   const { isAdmin, ...user } = session.user
   return {
     user: { ...UserRefSchema.parse(user), isAdmin },
-    chats: session.chats.map((chat) => ClientChatSchema.parse(chat)),
+    chats: session.chats.map((chat) => {
+      const { commands, ...connection } = chat
+      return {
+        ...ClientChatSchema.parse(connection),
+        commands: BotCommandSchema.array().parse(commands),
+      }
+    }),
     vapidPublicKey: session.vapidPublicKey,
   }
 }

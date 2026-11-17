@@ -1,24 +1,35 @@
 import { ArrowLeft, Circle } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'wouter'
-import { useChatStore } from '@/entities/chat'
+import { markChatReadRequest, useChatStore } from '@/entities/chat'
 import { fetchMessages, sendMessageRequest } from '@/entities/message'
+import { BlockedChatNotice } from '@/features/block-bot'
+import { CommandMenu } from '@/features/command-menu'
 import { Composer, retryChatMessage } from '@/features/send-message'
+import { showRequestError } from '@/shared/api'
 import { strings } from '@/shared/config'
 import { cn } from '@/shared/lib/cn'
 import type { ChatMessage } from '@/shared/model'
 import { Button } from '@/shared/ui/button'
+import { ChatManagementMenu } from './ChatManagementMenu'
+import { ConnectionBanner } from './ConnectionBanner'
 import { MessageList } from './MessageList'
+import { TypingIndicator } from './TypingIndicator'
 
 const emptyMessages: ChatMessage[] = []
 
 export const ChatView = ({ chatId }: { chatId: string }) => {
   const chat = useChatStore((state) => state.chats.find((current) => current.id === chatId))
   const messages = useChatStore((state) => state.messagesByChat[chatId] ?? emptyMessages)
+  const connection = useChatStore((state) => state.connection)
+  const typingUntil = useChatStore((state) => state.typingByChat[chatId])
   const [loading, setLoading] = useState(false)
   const [hasMore, setHasMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const markedSeq = useRef<string | null>(null)
   const chatAvailable = Boolean(chat)
+  const latestSeq = messages.at(-1)?.seq
+  const unread = chat?.unread ?? 0
 
   useEffect(() => {
     if (!chatAvailable) return
@@ -32,7 +43,7 @@ export const ChatView = ({ chatId }: { chatId: string }) => {
         setHasMore(history.length === 50)
       })
       .catch((cause) => {
-        if (active) setError(cause instanceof Error ? cause.message : strings.auth.failed)
+        if (active) setError(showRequestError(cause))
       })
       .finally(() => {
         if (active) setLoading(false)
@@ -51,7 +62,7 @@ export const ChatView = ({ chatId }: { chatId: string }) => {
       useChatStore.getState().prependMessages(chatId, history)
       setHasMore(history.length === 50)
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : strings.auth.failed)
+      showRequestError(cause)
     } finally {
       setLoading(false)
     }
@@ -61,9 +72,32 @@ export const ChatView = ({ chatId }: { chatId: string }) => {
     try {
       await retryChatMessage(useChatStore, chatId, clientId, sendMessageRequest)
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : strings.auth.failed)
+      showRequestError(cause)
     }
   }
+
+  const markVisibleChatRead = useCallback(async () => {
+    if (!chatAvailable || !latestSeq || unread === 0 || document.visibilityState !== 'visible') {
+      return
+    }
+    const marker = `${chatId}:${latestSeq}`
+    if (markedSeq.current === marker) return
+    markedSeq.current = marker
+    try {
+      await markChatReadRequest({ chatId, seq: latestSeq })
+      const current = useChatStore.getState().chats.find((item) => item.id === chatId)
+      if (current) useChatStore.getState().upsertChat({ ...current, unread: 0 })
+    } catch (cause) {
+      markedSeq.current = null
+      showRequestError(cause)
+    }
+  }, [chatAvailable, chatId, latestSeq, unread])
+
+  useEffect(() => {
+    void markVisibleChatRead()
+    document.addEventListener('visibilitychange', markVisibleChatRead)
+    return () => document.removeEventListener('visibilitychange', markVisibleChatRead)
+  }, [markVisibleChatRead])
 
   if (!chat) {
     return (
@@ -75,7 +109,7 @@ export const ChatView = ({ chatId }: { chatId: string }) => {
 
   return (
     <section className="flex h-dvh min-h-0 flex-col bg-background" aria-labelledby="chat-title">
-      <header className="flex min-h-16 items-center gap-3 border-b px-3 md:px-6">
+      <header className="flex min-h-16 items-center gap-3 border-b px-3 pt-[env(safe-area-inset-top)] md:px-6">
         <Button asChild variant="ghost" size="icon" className="md:hidden">
           <Link href="/" aria-label={strings.chat.back}>
             <ArrowLeft aria-hidden="true" />
@@ -96,7 +130,9 @@ export const ChatView = ({ chatId }: { chatId: string }) => {
             {chat.bot.online ? strings.chat.online : strings.chat.offlineStatus}
           </p>
         </div>
+        <ChatManagementMenu chatId={chatId} />
       </header>
+      <ConnectionBanner connection={connection} botOnline={chat.bot.online} />
       {error ? (
         <p
           role="alert"
@@ -113,7 +149,17 @@ export const ChatView = ({ chatId }: { chatId: string }) => {
         onLoadEarlier={loadEarlier}
         onRetry={retry}
       />
-      <Composer chatId={chatId} />
+      <TypingIndicator until={typingUntil} />
+      {chat.blocked ? (
+        <BlockedChatNotice chatId={chatId} />
+      ) : (
+        <Composer
+          chatId={chatId}
+          renderCommandMenu={(query, onSelect) => (
+            <CommandMenu query={query} commands={chat.commands ?? []} onSelect={onSelect} />
+          )}
+        />
+      )}
     </section>
   )
 }

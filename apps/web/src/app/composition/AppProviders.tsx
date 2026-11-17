@@ -4,6 +4,7 @@ import { synchronizeChatState, useChatStore } from '@/entities/chat'
 import { fetchMessages, fetchSynchronization } from '@/entities/message'
 import { fetchSession } from '@/entities/session'
 import { type ClientWebSocketTransport, createClientWebSocketTransport } from '@/shared/api'
+import { AppToaster } from './AppToaster'
 
 const activeChatFromLocation = (location: string) => /^\/c\/([^/]+)$/.exec(location)?.[1]
 
@@ -39,6 +40,26 @@ const useClientSynchronization = () => {
     let active = true
     let synchronizing = false
     let syncRequested = false
+    const typingTimers = new Map<string, ReturnType<typeof setTimeout>>()
+
+    const scheduleTypingExpiration = (chatId: string, until: number) => {
+      const previousTimer = typingTimers.get(chatId)
+      if (previousTimer) clearTimeout(previousTimer)
+      const timer = setTimeout(
+        () => {
+          if (active) useChatStore.getState().expireTyping(chatId, until)
+          typingTimers.delete(chatId)
+        },
+        Math.max(0, until - Date.now()),
+      )
+      typingTimers.set(chatId, timer)
+    }
+
+    const scheduleActiveTyping = () => {
+      for (const [chatId, until] of Object.entries(useChatStore.getState().typingByChat)) {
+        scheduleTypingExpiration(chatId, until)
+      }
+    }
 
     const synchronize = async () => {
       if (!active) return
@@ -57,6 +78,7 @@ const useClientSynchronization = () => {
             loadActiveChat: fetchMessages,
           })
         } while (syncRequested && active)
+        scheduleActiveTyping()
       } catch {
         if (active) useChatStore.getState().setConnection('offline')
       } finally {
@@ -70,7 +92,11 @@ const useClientSynchronization = () => {
           void synchronize()
           return
         }
-        useChatStore.getState().applyUpdate(frame.seq, frame.update)
+        const applied = useChatStore.getState().applyUpdate(frame.seq, frame.update)
+        if (applied && frame.update.type === 'bot.typing') {
+          const until = useChatStore.getState().typingByChat[frame.update.chatId]
+          if (until) scheduleTypingExpiration(frame.update.chatId, until)
+        }
       },
       onReady: () => void synchronize(),
       onConnection: (status) => {
@@ -88,6 +114,8 @@ const useClientSynchronization = () => {
 
     return () => {
       active = false
+      for (const timer of typingTimers.values()) clearTimeout(timer)
+      typingTimers.clear()
       document.removeEventListener('visibilitychange', handleVisibility)
       transport.stop()
       transportRef.current = null
@@ -102,5 +130,10 @@ const useClientSynchronization = () => {
 export const AppProviders = ({ children }: { children: ReactNode }) => {
   useSessionBootstrap()
   useClientSynchronization()
-  return children
+  return (
+    <>
+      {children}
+      <AppToaster />
+    </>
+  )
 }

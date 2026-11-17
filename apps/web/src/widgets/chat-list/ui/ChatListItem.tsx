@@ -1,6 +1,7 @@
 import type { ClientChat } from '@appercot/protocol'
 import { Link } from 'wouter'
 import { BotAvatar } from '@/entities/bot'
+import { UnreadBadge } from '@/entities/chat'
 import { cn } from '@/shared/lib/cn'
 
 interface ChatListItemProps {
@@ -34,8 +35,11 @@ export const ChatListItem = ({ chat, active, preview }: ChatListItemProps) => (
             </time>
           ) : null}
         </span>
-        <span className="mt-0.5 block truncate text-xs text-muted-foreground">
-          {preview || chat.bot.description || `@${chat.bot.username}`}
+        <span className="mt-0.5 flex items-center justify-between gap-2">
+          <span className="truncate text-xs text-muted-foreground">
+            {preview || chat.bot.description || `@${chat.bot.username}`}
+          </span>
+          <UnreadBadge count={chat.unread} />
         </span>
       </span>
     </Link>

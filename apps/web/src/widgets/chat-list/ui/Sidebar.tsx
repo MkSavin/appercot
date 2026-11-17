@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Link, useLocation } from 'wouter'
 import { useChatStore } from '@/entities/chat'
 import { logoutRequest } from '@/entities/session'
+import { showRequestError } from '@/shared/api'
 import { strings } from '@/shared/config'
 import { cn } from '@/shared/lib/cn'
 import { Button } from '@/shared/ui/button'
@@ -25,9 +26,13 @@ export const Sidebar = ({ activeChatId }: { activeChatId?: string }) => {
   )
 
   const logout = async () => {
-    await logoutRequest()
-    clearSession()
-    navigate('/login')
+    try {
+      await logoutRequest()
+      clearSession()
+      navigate('/login')
+    } catch (error) {
+      showRequestError(error)
+    }
   }
 
   return (

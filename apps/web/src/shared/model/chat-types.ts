@@ -1,9 +1,10 @@
-import type { ClientChat, Message, UserRef } from '@appercot/protocol'
+import type { BotCommand, ClientChat, Message, UserRef } from '@appercot/protocol'
 
+export type ChatConnection = ClientChat & { commands?: BotCommand[] }
 export type SessionUser = Readonly<UserRef & { isAdmin: boolean }>
 export type SessionPayload = Readonly<{
   user: SessionUser
-  chats: ClientChat[]
+  chats: ChatConnection[]
   vapidPublicKey: string | null
 }>
 export type MessageDeliveryStatus = Message['status'] | 'pending' | 'failed'

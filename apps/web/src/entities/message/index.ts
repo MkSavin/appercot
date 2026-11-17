@@ -1,4 +1,6 @@
 export * from './api/message-api'
 export * from './ui/BotMessage'
+export * from './ui/MessageKeyboard'
 export * from './ui/StatusTicks'
+export * from './ui/SystemMessage'
 export * from './ui/UserMessage'

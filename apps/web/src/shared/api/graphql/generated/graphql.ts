@@ -10,6 +10,38 @@ export type SendMessageInput = {
   content: unknown;
 };
 
+export type PressButtonMutationVariables = Exact<{
+  chatId: string | number;
+  messageId: string | number;
+  data: string;
+}>;
+
+
+export type PressButtonMutation = { pressButton: { toast: string | null } };
+
+export type MarkReadMutationVariables = Exact<{
+  chatId: string | number;
+  seq: number;
+}>;
+
+
+export type MarkReadMutation = { markRead: boolean };
+
+export type ClearChatMutationVariables = Exact<{
+  chatId: string | number;
+}>;
+
+
+export type ClearChatMutation = { clearChat: boolean };
+
+export type BlockBotMutationVariables = Exact<{
+  chatId: string | number;
+  blocked: boolean;
+}>;
+
+
+export type BlockBotMutation = { blockBot: boolean };
+
 export type MessagesQueryVariables = Exact<{
   chatId: string | number;
   before?: number | null | undefined;
@@ -36,7 +68,7 @@ export type SyncQuery = { sync: { resetRequired: boolean, updates: Array<{ seq: 
 export type SessionQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type SessionQuery = { session: { vapidPublicKey: string | null, user: { id: string, username: string, displayName: string, isAdmin: boolean }, chats: Array<{ id: string, roles: Array<string>, blocked: boolean, unread: number, lastMessageAt: number | null, createdAt: number, bot: { id: string, username: string, name: string, description: string, online: boolean, listed: boolean } }> } };
+export type SessionQuery = { session: { vapidPublicKey: string | null, user: { id: string, username: string, displayName: string, isAdmin: boolean }, chats: Array<{ id: string, roles: Array<string>, blocked: boolean, unread: number, lastMessageAt: number | null, createdAt: number, bot: { id: string, username: string, name: string, description: string, online: boolean, listed: boolean }, commands: Array<{ name: string, description: string }> }> } };
 
 export type LoginMutationVariables = Exact<{
   username: string;
@@ -44,7 +76,7 @@ export type LoginMutationVariables = Exact<{
 }>;
 
 
-export type LoginMutation = { login: { vapidPublicKey: string | null, user: { id: string, username: string, displayName: string, isAdmin: boolean }, chats: Array<{ id: string, roles: Array<string>, blocked: boolean, unread: number, lastMessageAt: number | null, createdAt: number, bot: { id: string, username: string, name: string, description: string, online: boolean, listed: boolean } }> } };
+export type LoginMutation = { login: { vapidPublicKey: string | null, user: { id: string, username: string, displayName: string, isAdmin: boolean }, chats: Array<{ id: string, roles: Array<string>, blocked: boolean, unread: number, lastMessageAt: number | null, createdAt: number, bot: { id: string, username: string, name: string, description: string, online: boolean, listed: boolean }, commands: Array<{ name: string, description: string }> }> } };
 
 export type RegisterMutationVariables = Exact<{
   username: string;
@@ -54,7 +86,7 @@ export type RegisterMutationVariables = Exact<{
 }>;
 
 
-export type RegisterMutation = { register: { vapidPublicKey: string | null, user: { id: string, username: string, displayName: string, isAdmin: boolean }, chats: Array<{ id: string, roles: Array<string>, blocked: boolean, unread: number, lastMessageAt: number | null, createdAt: number, bot: { id: string, username: string, name: string, description: string, online: boolean, listed: boolean } }> } };
+export type RegisterMutation = { register: { vapidPublicKey: string | null, user: { id: string, username: string, displayName: string, isAdmin: boolean }, chats: Array<{ id: string, roles: Array<string>, blocked: boolean, unread: number, lastMessageAt: number | null, createdAt: number, bot: { id: string, username: string, name: string, description: string, online: boolean, listed: boolean }, commands: Array<{ name: string, description: string }> }> } };
 
 export type LogoutMutationVariables = Exact<{ [key: string]: never; }>;
 
@@ -80,6 +112,28 @@ export class TypedDocumentString<TResult, TVariables>
   }
 }
 
+export const PressButtonDocument = new TypedDocumentString(`
+    mutation PressButton($chatId: ID!, $messageId: ID!, $data: String!) {
+  pressButton(chatId: $chatId, messageId: $messageId, data: $data) {
+    toast
+  }
+}
+    `) as unknown as TypedDocumentString<PressButtonMutation, PressButtonMutationVariables>;
+export const MarkReadDocument = new TypedDocumentString(`
+    mutation MarkRead($chatId: ID!, $seq: Int!) {
+  markRead(chatId: $chatId, seq: $seq)
+}
+    `) as unknown as TypedDocumentString<MarkReadMutation, MarkReadMutationVariables>;
+export const ClearChatDocument = new TypedDocumentString(`
+    mutation ClearChat($chatId: ID!) {
+  clearChat(chatId: $chatId)
+}
+    `) as unknown as TypedDocumentString<ClearChatMutation, ClearChatMutationVariables>;
+export const BlockBotDocument = new TypedDocumentString(`
+    mutation BlockBot($chatId: ID!, $blocked: Boolean!) {
+  blockBot(chatId: $chatId, blocked: $blocked)
+}
+    `) as unknown as TypedDocumentString<BlockBotMutation, BlockBotMutationVariables>;
 export const MessagesDocument = new TypedDocumentString(`
     query Messages($chatId: ID!, $before: Int, $limit: Int = 50) {
   messages(chatId: $chatId, before: $before, limit: $limit) {
@@ -145,6 +199,10 @@ export const SessionDocument = new TypedDocumentString(`
       unread
       lastMessageAt
       createdAt
+      commands {
+        name
+        description
+      }
     }
     vapidPublicKey
   }
@@ -174,6 +232,10 @@ export const LoginDocument = new TypedDocumentString(`
       unread
       lastMessageAt
       createdAt
+      commands {
+        name
+        description
+      }
     }
     vapidPublicKey
   }
@@ -208,6 +270,10 @@ export const RegisterDocument = new TypedDocumentString(`
       unread
       lastMessageAt
       createdAt
+      commands {
+        name
+        description
+      }
     }
     vapidPublicKey
   }

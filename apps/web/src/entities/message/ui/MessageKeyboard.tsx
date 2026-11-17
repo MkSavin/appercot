@@ -1,0 +1,42 @@
+import type { Button } from '@appercot/protocol'
+import { LoaderCircle } from 'lucide-react'
+import { Button as UiButton } from '@/shared/ui/button'
+
+interface MessageKeyboardProps {
+  rows: Button[][]
+  onAction: (button: Button, key: string) => void
+  pendingKey?: string | null
+  messageId?: string
+}
+
+export const MessageKeyboard = ({
+  rows,
+  onAction,
+  pendingKey,
+  messageId = '',
+}: MessageKeyboardProps) => (
+  <div className="mt-3 grid max-w-xl gap-2">
+    {rows.map((row, rowIndex) => (
+      <div className="flex flex-wrap gap-2" key={row.map((button) => button.text).join(':')}>
+        {row.map((button, columnIndex) => {
+          const key = `${messageId}:${rowIndex}:${columnIndex}`
+          const pending = pendingKey === key
+          return (
+            <UiButton
+              type="button"
+              variant="outline"
+              size="sm"
+              className="min-w-24 flex-1 bg-background text-primary shadow-none"
+              key={key}
+              disabled={pendingKey !== null && pendingKey !== undefined}
+              onClick={() => onAction(button, key)}
+            >
+              {pending ? <LoaderCircle aria-hidden="true" className="animate-spin" /> : null}
+              {button.text}
+            </UiButton>
+          )
+        })}
+      </div>
+    ))}
+  </div>
+)

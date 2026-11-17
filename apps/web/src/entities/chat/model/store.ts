@@ -6,7 +6,13 @@ import type {
   UserContent,
 } from '@appercot/protocol'
 import { create } from 'zustand'
-import type { ChatMessage, ConnectionStatus, SessionPayload, SessionUser } from '@/shared/model'
+import type {
+  ChatConnection,
+  ChatMessage,
+  ConnectionStatus,
+  SessionPayload,
+  SessionUser,
+} from '@/shared/model'
 
 export type {
   ChatMessage,
@@ -26,7 +32,7 @@ interface ChatStoreOptions {
 interface ChatState {
   user: SessionUser | null
   vapidPublicKey: string | null
-  chats: ClientChat[]
+  chats: ChatConnection[]
   messagesByChat: Record<string, ChatMessage[]>
   pendingByChat: Record<string, string[]>
   typingByChat: Record<string, number>
@@ -53,6 +59,9 @@ interface ChatActions {
   completeOutgoingMessage: (chatId: string, clientId: string, message: Message) => void
   failOutgoingMessage: (chatId: string, clientId: string) => void
   retryOutgoingMessage: (chatId: string, clientId: string) => void
+  upsertChat: (chat: ClientChat) => void
+  clearChatMessages: (chatId: string) => void
+  expireTyping: (chatId: string, until: number) => void
 }
 
 export type ChatStore = ChatState & ChatActions
@@ -101,11 +110,17 @@ const mergeMessages = (current: ChatMessage[], incoming: ChatMessage[]) => {
 const withMessage = (messages: ChatMessage[], message: ChatMessage) =>
   mergeMessages(messages, [message])
 
-const withChat = (chats: ClientChat[], chat: ClientChat) =>
-  [...chats.filter((current) => current.id !== chat.id), chat].sort(
+const withChat = (chats: ChatConnection[], chat: ChatConnection) => {
+  const previous = chats.find((current) => current.id === chat.id)
+  const merged = { ...chat, commands: chat.commands ?? previous?.commands }
+  return [...chats.filter((current) => current.id !== chat.id), merged].sort(
     (left, right) =>
       (right.lastMessageAt ?? 0) - (left.lastMessageAt ?? 0) || right.createdAt - left.createdAt,
   )
+}
+
+export const isTypingActive = (until: number | undefined, now: number) =>
+  until !== undefined && until > now
 
 const sameContent = (left: MessageContent, right: MessageContent) =>
   JSON.stringify(left) === JSON.stringify(right)
@@ -338,6 +353,23 @@ export const createChatStore = (options: ChatStoreOptions = {}) => {
           ),
         },
       })),
+    upsertChat: (chat) => set((state) => ({ chats: withChat(state.chats, chat) })),
+    clearChatMessages: (chatId) =>
+      set((state) => ({
+        messagesByChat: { ...state.messagesByChat, [chatId]: [] },
+        pendingByChat: { ...state.pendingByChat, [chatId]: [] },
+      })),
+    expireTyping: (chatId, until) =>
+      set((state) => {
+        if (state.typingByChat[chatId] !== until) return state
+        return {
+          typingByChat: Object.fromEntries(
+            Object.entries(state.typingByChat).filter(
+              ([currentChatId]) => currentChatId !== chatId,
+            ),
+          ),
+        }
+      }),
   }))
 }
 

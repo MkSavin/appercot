@@ -9,7 +9,7 @@ import { and, desc, eq, lt, sql } from 'drizzle-orm'
 import type { AppDatabase } from '../db/client'
 import { botCommands, chats, messages } from '../db/schema'
 import type { Hub } from '../ws/hub'
-import { getChatForBot, getChatForUser, toChatRef, toUserRef } from './chats'
+import { getChatForBot, getChatForUser, toChatRef, toClientChatDto, toUserRef } from './chats'
 import { DomainError } from './errors'
 import { enqueueBotEvent } from './events'
 import { RateLimiter } from './rate-limit'
@@ -74,7 +74,14 @@ export const createMessage = (db: AppDatabase, hub: Hub, input: InsertMessageInp
   if (!inserted) throw new DomainError('INTERNAL', 'Message was not persisted')
   const message = toMessageDto(inserted)
   const chat = db.select().from(chats).where(eq(chats.id, input.chatId)).get()
-  if (chat) pushUserUpdate(db, hub, chat.userId, { type: 'message.new', message })
+  if (chat) {
+    pushUserUpdate(db, hub, chat.userId, { type: 'message.new', message })
+    const updated = getChatForUser(db, input.chatId, chat.userId)
+    pushUserUpdate(db, hub, chat.userId, {
+      type: 'chat.updated',
+      chat: toClientChatDto(updated.chat, updated.bot, hub),
+    })
+  }
   return message
 }
 

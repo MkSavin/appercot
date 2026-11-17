@@ -1,25 +1,27 @@
 import { ArrowUp, LoaderCircle } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { type ReactNode, useRef, useState } from 'react'
 import { useChatStore } from '@/entities/chat'
 import { sendMessageRequest } from '@/entities/message'
+import { showRequestError } from '@/shared/api'
 import { strings } from '@/shared/config'
 import { Button } from '@/shared/ui/button'
 import { Textarea } from '@/shared/ui/textarea'
 import { shouldSubmitOnEnter } from '../model/keyboard'
 import { sendChatMessage } from '../model/send-message'
 
-export const Composer = ({ chatId }: { chatId: string }) => {
+interface ComposerProps {
+  chatId: string
+  renderCommandMenu?: (query: string, onSelect: (command: string) => void) => ReactNode
+}
+
+export const Composer = ({ chatId, renderCommandMenu }: ComposerProps) => {
   const [text, setText] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const formRef = useRef<HTMLFormElement>(null)
 
-  const submit = async (event?: React.FormEvent<HTMLFormElement>) => {
-    event?.preventDefault()
-    const content = text.trim()
+  const sendText = async (content: string) => {
     if (!content || submitting) return
     setText('')
-    setError(null)
     setSubmitting(true)
     try {
       await sendChatMessage(
@@ -27,11 +29,16 @@ export const Composer = ({ chatId }: { chatId: string }) => {
         { chatId, content: { text: content } },
         sendMessageRequest,
       )
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : strings.auth.failed)
+    } catch (error) {
+      showRequestError(error)
     } finally {
       setSubmitting(false)
     }
+  }
+
+  const submit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    void sendText(text.trim())
   }
 
   return (
@@ -40,9 +47,10 @@ export const Composer = ({ chatId }: { chatId: string }) => {
         ref={formRef}
         action={`/c/${chatId}`}
         method="post"
-        className="mx-auto flex max-w-3xl items-end gap-2"
+        className="relative mx-auto flex max-w-3xl items-end gap-2"
         onSubmit={submit}
       >
+        {renderCommandMenu?.(text, (command) => void sendText(command))}
         <label htmlFor={`message-${chatId}`} className="sr-only">
           {strings.chat.message}
         </label>
@@ -50,10 +58,7 @@ export const Composer = ({ chatId }: { chatId: string }) => {
           id={`message-${chatId}`}
           name="message"
           value={text}
-          onChange={(event) => {
-            setText(event.target.value)
-            setError(null)
-          }}
+          onChange={(event) => setText(event.target.value)}
           onKeyDown={(event) => {
             if (event.key !== 'Enter' || event.shiftKey) return
             const isMobile = window.matchMedia('(max-width: 767px)').matches
@@ -81,11 +86,6 @@ export const Composer = ({ chatId }: { chatId: string }) => {
           )}
         </Button>
       </form>
-      {error ? (
-        <p role="alert" className="mx-auto mt-2 max-w-3xl text-xs text-destructive">
-          {error}
-        </p>
-      ) : null}
     </div>
   )
 }

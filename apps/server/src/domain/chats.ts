@@ -1,8 +1,9 @@
-import { and, desc, eq } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray } from 'drizzle-orm'
 import type { AppDatabase } from '../db/client'
-import { botEvents, bots, chats, messages, users } from '../db/schema'
+import { botCommands, botEvents, bots, chats, messages, users } from '../db/schema'
 import type { Hub } from '../ws/hub'
 import { toBotDto } from './bots'
+import { filterCommandsByRoles, listVisibleCommands, type VisibleCommand } from './commands'
 import { DomainError } from './errors'
 import { enqueueBotEvent } from './events'
 import { createSystemMessage } from './system-messages'
@@ -52,6 +53,7 @@ export const toConnectionDto = (
   chat: typeof chats.$inferSelect,
   bot: typeof bots.$inferSelect,
   hub: Hub,
+  commands: VisibleCommand[] = [],
 ) => ({
   id: chat.id,
   bot: toBotDto(bot, hub),
@@ -60,7 +62,13 @@ export const toConnectionDto = (
   unread: Math.max(0, chat.nextSeq - 1 - chat.lastReadSeq),
   lastMessageAt: chat.lastMessageAt,
   createdAt: chat.createdAt,
+  commands,
 })
+
+export const toClientChatDto = (...args: Parameters<typeof toConnectionDto>) => {
+  const { id, bot, roles, blocked, unread, lastMessageAt, createdAt } = toConnectionDto(...args)
+  return { id, bot, roles, blocked, unread, lastMessageAt, createdAt }
+}
 
 export const listUserChats = (db: AppDatabase, hub: Hub, userId: string) => {
   const rows = db
@@ -70,7 +78,26 @@ export const listUserChats = (db: AppDatabase, hub: Hub, userId: string) => {
     .where(eq(chats.userId, userId))
     .orderBy(desc(chats.lastMessageAt), desc(chats.createdAt))
     .all()
-  return rows.map((row) => toConnectionDto(row.chat, row.bot, hub))
+  const botIds = [...new Set(rows.map((row) => row.bot.id))]
+  const commands = botIds.length
+    ? db
+        .select()
+        .from(botCommands)
+        .where(inArray(botCommands.botId, botIds))
+        .orderBy(asc(botCommands.sort), asc(botCommands.name))
+        .all()
+    : []
+  return rows.map((row) =>
+    toConnectionDto(
+      row.chat,
+      row.bot,
+      hub,
+      filterCommandsByRoles(
+        commands.filter((command) => command.botId === row.bot.id),
+        row.chat.roles,
+      ),
+    ),
+  )
 }
 
 export const addBot = (db: AppDatabase, hub: Hub, userId: string, username: string) => {
@@ -83,7 +110,9 @@ export const addBot = (db: AppDatabase, hub: Hub, userId: string, username: stri
     .from(chats)
     .where(and(eq(chats.userId, userId), eq(chats.botId, bot.id)))
     .get()
-  if (existing) return toConnectionDto(existing, bot, hub)
+  if (existing) {
+    return toConnectionDto(existing, bot, hub, listVisibleCommands(db, bot.id, existing.roles))
+  }
 
   const now = Date.now()
   const chatId = Bun.randomUUIDv7()
@@ -99,6 +128,7 @@ export const addBot = (db: AppDatabase, hub: Hub, userId: string, username: stri
     })
     .run()
   const created = getChatForUser(db, chatId, userId)
+  const commands = listVisibleCommands(db, bot.id, created.chat.roles)
   enqueueBotEvent(
     db,
     {
@@ -110,9 +140,9 @@ export const addBot = (db: AppDatabase, hub: Hub, userId: string, username: stri
   )
   pushUserUpdate(db, hub, userId, {
     type: 'chat.updated',
-    chat: toConnectionDto(created.chat, bot, hub),
+    chat: toClientChatDto(created.chat, bot, hub),
   })
-  return toConnectionDto(created.chat, bot, hub)
+  return toConnectionDto(created.chat, bot, hub, commands)
 }
 
 export const markChatRead = (
@@ -128,7 +158,7 @@ export const markChatRead = (
   const updated = getChatForUser(db, chatId, userId)
   pushUserUpdate(db, hub, userId, {
     type: 'chat.updated',
-    chat: toConnectionDto(updated.chat, bot, hub),
+    chat: toClientChatDto(updated.chat, bot, hub),
   })
   return true
 }
@@ -160,7 +190,7 @@ export const setChatBlocked = (
   )
   pushUserUpdate(db, hub, userId, {
     type: 'chat.updated',
-    chat: toConnectionDto(updated.chat, updated.bot, hub),
+    chat: toClientChatDto(updated.chat, updated.bot, hub),
   })
   if (blocked) createSystemMessage(db, hub, chatId, 'Бот заблокирован')
   return true

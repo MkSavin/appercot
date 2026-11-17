@@ -129,6 +129,16 @@ describe('messaging integration', () => {
           { name: 'admin', description: 'Admin', roles: ['admin'] },
         ],
       })
+      const visibleCommands = await graphqlRequest(
+        fixture.baseUrl,
+        'query { session { chats { commands { name description } } } }',
+        {},
+        cookie,
+      )
+      expect(visibleCommands.body.errors).toBeUndefined()
+      expect(visibleCommands.body.data.session).toMatchObject({
+        chats: [{ commands: [{ name: 'start', description: 'Start' }] }],
+      })
       const user = new UserTestClient(fixture.baseUrl, cookie)
       await user.open()
 
@@ -139,15 +149,21 @@ describe('messaging integration', () => {
       await bot.call('reply', 'sendMessage', { chatId, content: { text: 'Reply' } })
 
       const updateTypes: string[] = []
+      let unread: number | undefined
       while (
         !updateTypes.includes('message.status') ||
+        unread !== 2 ||
         updateTypes.filter((type) => type === 'message.new').length < 2
       ) {
         const update = await user.next()
         if (update.update) updateTypes.push(update.update.type)
+        if (update.update?.type === 'chat.updated') {
+          unread = (update.update as unknown as { chat: { unread: number } }).chat.unread
+        }
       }
       expect(updateTypes).toContain('message.status')
       expect(updateTypes.filter((type) => type === 'message.new')).toHaveLength(2)
+      expect(unread).toBe(2)
 
       const history = await graphqlRequest(
         fixture.baseUrl,
