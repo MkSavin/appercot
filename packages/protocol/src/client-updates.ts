@@ -4,7 +4,7 @@ import { BotRefSchema, ChatRefSchema, MessageSchema } from './entities'
 const idSchema = z.string().min(1)
 
 export const ClientChatSchema = ChatRefSchema.extend({
-  bot: BotRefSchema,
+  bot: BotRefSchema.extend({ listed: z.boolean() }),
   unread: z.int().nonnegative(),
   lastMessageAt: z.int().nonnegative().nullable(),
 })

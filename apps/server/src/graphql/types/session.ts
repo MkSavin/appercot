@@ -15,6 +15,9 @@ export interface ConnectionDto {
   bot: BotDto
   roles: string[]
   blocked: boolean
+  unread: number
+  lastMessageAt: number | null
+  createdAt: number
 }
 
 export interface SessionDto {
@@ -54,6 +57,8 @@ builder.objectType(ConnectionType, {
     bot: field.field({ type: BotType, resolve: (chat) => chat.bot }),
     roles: field.exposeStringList('roles'),
     blocked: field.exposeBoolean('blocked'),
+    unread: field.exposeInt('unread'),
+    lastMessageAt: field.exposeInt('lastMessageAt', { nullable: true }),
   }),
 })
 

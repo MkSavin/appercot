@@ -7,29 +7,72 @@ type Bot {
   username: String
 }
 
+type ButtonResult {
+  toast: String
+}
+
 type Connection {
   blocked: Boolean
   bot: Bot
   id: ID
+  lastMessageAt: Int
   roles: [String!]
+  unread: Int
 }
 
 scalar JSON
 
+type Message {
+  chatId: ID
+  content: JSON
+  createdAt: Int
+  editedAt: Int
+  id: ID
+  replyTo: ID
+  sender: String
+  seq: Int
+  status: String
+}
+
 type Mutation {
+  addBot(username: String!): Connection
+  blockBot(blocked: Boolean!, chatId: ID!): Boolean
+  clearChat(chatId: ID!): Boolean
   login(password: String!, username: String!): Session
   logout: Boolean
+  markRead(chatId: ID!, seq: Int!): Boolean
+  pressButton(chatId: ID!, data: String!, messageId: ID!): ButtonResult
   register(displayName: String!, invite: String!, password: String!, username: String!): Session
+  sendMessage(input: SendMessageInput!): Message
 }
 
 type Query {
+  browseBots(query: String): [Bot!]
+  messages(before: Int, chatId: ID!, limit: Int = 50): [Message!]
   session: Session
+  sync(since: Int!): SyncPayload
+}
+
+input SendMessageInput {
+  chatId: ID!
+  clientId: String!
+  content: JSON!
 }
 
 type Session {
   chats: [Connection!]
   user: User
   vapidPublicKey: String
+}
+
+type SyncPayload {
+  resetRequired: Boolean
+  updates: [Update!]
+}
+
+type Update {
+  payload: JSON
+  seq: Int
 }
 
 type User {

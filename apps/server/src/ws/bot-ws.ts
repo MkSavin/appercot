@@ -4,18 +4,21 @@ import { asc, eq } from 'drizzle-orm'
 import { authenticateBotToken } from '../auth/bot-token'
 import type { DatabaseContext } from '../db/client'
 import { botCommands } from '../db/schema'
+import type { CallbackRegistry } from '../domain/callbacks'
+import { getChatForBot } from '../domain/chats'
 import { setBotCommands } from '../domain/commands'
 import { DomainError } from '../domain/errors'
 import { acknowledgeBotEvent, flushBotEvents } from '../domain/events'
 import { kvClear, kvGet, kvSet } from '../domain/kv'
+import { deleteBotMessage, editBotMessage, sendBotMessage } from '../domain/messages'
+import { RateLimiter } from '../domain/rate-limit'
 import { getBotRef, setBotRoles, setChatRoles } from '../domain/roles'
-import { publishBotPresence } from '../domain/updates'
+import { publishBotPresence, pushUserUpdate } from '../domain/updates'
 import { getFrameRequestId, parseBotFrame } from './frames'
 import type { Hub } from './hub'
+import type { AppWebSocketData } from './types'
 
-export interface BotWebSocketData {
-  botId: string | null
-}
+export type BotWebSocketData = AppWebSocketData
 
 const getToken = (request: Request) => {
   const authorization = request.headers.get('authorization')
@@ -25,19 +28,23 @@ const getToken = (request: Request) => {
 
 export const upgradeBotWebSocket = (
   request: Request,
-  server: Server<BotWebSocketData>,
+  server: Server<AppWebSocketData>,
   database: DatabaseContext,
 ) => {
   const token = getToken(request)
   const bot = token ? authenticateBotToken(database.db, token) : null
-  const upgraded = server.upgrade(request, { data: { botId: bot?.id ?? null } })
+  const upgraded = server.upgrade(request, {
+    data: { kind: 'bot', botId: bot?.id ?? null },
+  })
   return upgraded ? undefined : new Response('WebSocket upgrade failed', { status: 400 })
 }
 
 export const createBotWebSocketHandlers = (
   database: DatabaseContext,
   hub: Hub,
-): WebSocketHandler<BotWebSocketData> => {
+  callbacks: CallbackRegistry,
+): WebSocketHandler<AppWebSocketData> => {
+  const rateLimiter = new RateLimiter(30, 1000)
   const dispatch = async (botId: string, request: BotRequestFrame) => {
     switch (request.method) {
       case 'getMe':
@@ -46,6 +53,22 @@ export const createBotWebSocketHandlers = (
         return setBotCommands(database.db, botId, request.params)
       case 'setRoles':
         return setBotRoles(database.db, botId, request.params)
+      case 'sendMessage':
+        return sendBotMessage(database.db, hub, botId, request.params)
+      case 'editMessage':
+        return editBotMessage(database.db, hub, botId, request.params)
+      case 'deleteMessage':
+        return deleteBotMessage(database.db, hub, botId, request.params)
+      case 'answerCallback':
+        return callbacks.answer(request.params.callbackId, botId, request.params.toast)
+      case 'sendTyping': {
+        const { chat } = getChatForBot(database.db, request.params.chatId, botId)
+        pushUserUpdate(database.db, hub, chat.userId, {
+          type: 'bot.typing',
+          chatId: request.params.chatId,
+        })
+        return { ok: true } as const
+      }
       case 'setChatRoles':
         return setChatRoles(database.db, hub, botId, request.params)
       case 'kvGet':
@@ -54,15 +77,14 @@ export const createBotWebSocketHandlers = (
         return kvSet(database.db, botId, request.params)
       case 'kvClear':
         return kvClear(database.db, botId, request.params)
-      default:
-        throw new DomainError('BAD_REQUEST', `Method ${request.method} is not available yet`)
     }
   }
 
   const handleMessage = async (
-    socket: Parameters<NonNullable<WebSocketHandler<BotWebSocketData>['message']>>[0],
+    socket: Parameters<NonNullable<WebSocketHandler<AppWebSocketData>['message']>>[0],
     frame: string,
   ) => {
+    if (socket.data.kind !== 'bot') return
     const botId = socket.data.botId
     if (!botId) return
     const parsed = parseBotFrame(frame)
@@ -85,6 +107,7 @@ export const createBotWebSocketHandlers = (
       return
     }
     try {
+      if (!rateLimiter.allow(botId)) throw new DomainError('RATE_LIMIT', 'Too many requests')
       const result = await dispatch(botId, parsed.data)
       socket.send(JSON.stringify({ t: 'res', id: parsed.data.id, ok: true, result }))
     } catch (error) {
@@ -103,6 +126,7 @@ export const createBotWebSocketHandlers = (
 
   return {
     open: (socket) => {
+      if (socket.data.kind !== 'bot') return
       const botId = socket.data.botId
       if (!botId) {
         socket.close(4401, 'unauthorized')
@@ -134,6 +158,7 @@ export const createBotWebSocketHandlers = (
       void handleMessage(socket, String(frame))
     },
     close: (socket) => {
+      if (socket.data.kind !== 'bot') return
       const botId = socket.data.botId
       if (botId && hub.disconnectBot(botId, socket)) {
         publishBotPresence(database.db, hub, botId, false)

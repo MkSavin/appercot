@@ -7,16 +7,27 @@ import {
   logoutUser,
   registerUser,
 } from '../auth/session'
+import { addBot, clearChat, listUserChats, markChatRead, setChatBlocked } from '../domain/chats'
+import { sendUserMessage } from '../domain/messages'
 import { builder } from './builder'
 import type { GraphQLContext } from './context'
 import { toGraphQLError } from './errors'
-import { type SessionDto, SessionType } from './types/session'
+import { ButtonResultType, MessageType, SendMessageInput } from './types/messaging'
+import { ConnectionType, type SessionDto, SessionType } from './types/session'
 
 const createSessionPayload = (user: UserDto, context: GraphQLContext): SessionDto => ({
   user,
-  chats: [],
+  chats: listUserChats(context.db, context.hub, user.id),
   vapidPublicKey: context.env.VAPID_PUBLIC_KEY ?? null,
 })
+
+const execute = async <Result>(operation: () => Result | Promise<Result>) => {
+  try {
+    return await operation()
+  } catch (error) {
+    throw toGraphQLError(error)
+  }
+}
 
 builder.mutationType({
   fields: (field) => ({
@@ -26,15 +37,12 @@ builder.mutationType({
         username: field.arg.string({ required: true }),
         password: field.arg.string({ required: true }),
       },
-      resolve: async (_parent, args, context) => {
-        try {
+      resolve: async (_parent, args, context) =>
+        execute(async () => {
           const session = await loginUser(context.db, args)
           context.setCookie(createSessionCookie(session.token, context.env))
           return createSessionPayload(session.user, context)
-        } catch (error) {
-          throw toGraphQLError(error)
-        }
-      },
+        }),
     }),
     register: field.field({
       type: SessionType,
@@ -44,15 +52,12 @@ builder.mutationType({
         displayName: field.arg.string({ required: true }),
         invite: field.arg.string({ required: true }),
       },
-      resolve: async (_parent, args, context) => {
-        try {
+      resolve: async (_parent, args, context) =>
+        execute(async () => {
           const session = await registerUser(context.db, context.env, args)
           context.setCookie(createSessionCookie(session.token, context.env))
           return createSessionPayload(session.user, context)
-        } catch (error) {
-          throw toGraphQLError(error)
-        }
-      },
+        }),
     }),
     logout: field.boolean({
       resolve: (_parent, _args, context) => {
@@ -61,6 +66,78 @@ builder.mutationType({
         context.setCookie(createLogoutCookie(context.env))
         return true
       },
+    }),
+    addBot: field.field({
+      type: ConnectionType,
+      args: { username: field.arg.string({ required: true }) },
+      resolve: (_parent, args, context) =>
+        execute(() => {
+          const user = requireUser(context)
+          return addBot(context.db, context.hub, user.id, args.username)
+        }),
+    }),
+    sendMessage: field.field({
+      type: MessageType,
+      args: { input: field.arg({ type: SendMessageInput, required: true }) },
+      resolve: (_parent, args, context) =>
+        execute(() => {
+          const user = requireUser(context)
+          return sendUserMessage(context.db, context.hub, user.id, {
+            chatId: String(args.input.chatId),
+            clientId: args.input.clientId,
+            content: args.input.content,
+          })
+        }),
+    }),
+    pressButton: field.field({
+      type: ButtonResultType,
+      args: {
+        chatId: field.arg.id({ required: true }),
+        messageId: field.arg.id({ required: true }),
+        data: field.arg.string({ required: true }),
+      },
+      resolve: (_parent, args, context) =>
+        execute(() => {
+          const user = requireUser(context)
+          return context.callbacks.press(
+            context.db,
+            context.hub,
+            user.id,
+            String(args.chatId),
+            String(args.messageId),
+            args.data,
+          )
+        }),
+    }),
+    markRead: field.boolean({
+      args: {
+        chatId: field.arg.id({ required: true }),
+        seq: field.arg.int({ required: true }),
+      },
+      resolve: (_parent, args, context) =>
+        execute(() => {
+          const user = requireUser(context)
+          return markChatRead(context.db, context.hub, user.id, String(args.chatId), args.seq)
+        }),
+    }),
+    clearChat: field.boolean({
+      args: { chatId: field.arg.id({ required: true }) },
+      resolve: (_parent, args, context) =>
+        execute(() => {
+          const user = requireUser(context)
+          return clearChat(context.db, context.hub, user.id, String(args.chatId))
+        }),
+    }),
+    blockBot: field.boolean({
+      args: {
+        chatId: field.arg.id({ required: true }),
+        blocked: field.arg.boolean({ required: true }),
+      },
+      resolve: (_parent, args, context) =>
+        execute(() => {
+          const user = requireUser(context)
+          return setChatBlocked(context.db, context.hub, user.id, String(args.chatId), args.blocked)
+        }),
     }),
   }),
 })

@@ -18,3 +18,8 @@ export const toBotRef = (bot: typeof bots.$inferSelect, hub: Hub): BotRef => ({
   description: bot.description,
   online: hub.isBotOnline(bot.id),
 })
+
+export const toBotDto = (bot: typeof bots.$inferSelect, hub: Hub) => ({
+  ...toBotRef(bot, hub),
+  listed: bot.listed,
+})

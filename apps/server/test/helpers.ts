@@ -41,7 +41,7 @@ export const graphqlRequest = async (
     body: JSON.stringify({ query, variables }),
   })
   const body = (await response.json()) as {
-    data?: Record<string, unknown>
+    data: Record<string, unknown>
     errors?: Array<{ message: string; extensions?: { code?: string } }>
   }
   return { response, body }
