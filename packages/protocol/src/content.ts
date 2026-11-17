@@ -70,6 +70,9 @@ export const UserContentSchema = z
   })
   .refine(hasContent)
 
+export const JsonValueSchema = z.json()
+
+export type JsonValue = z.infer<typeof JsonValueSchema>
 export type Button = z.infer<typeof ButtonSchema>
 export type Media = z.infer<typeof MediaSchema>
 export type MessageContent = z.infer<typeof MessageContentSchema>

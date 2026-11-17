@@ -1,1 +1,5 @@
-export {}
+export { BotApi } from './api'
+export { Bot, createBot } from './bot'
+export { BotApiError, BotConnection } from './connection'
+export { Context } from './context'
+export { BotStorage } from './storage'
