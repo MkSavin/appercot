@@ -2,6 +2,9 @@ import type { BotCommand, BotEvent, BotEventType, Params } from '@appercot/proto
 import { BotApi } from './api'
 import { BotConnection } from './connection'
 import { Context } from './context'
+import { FlowBuilder } from './flow/builder'
+
+type CallbackEvent = Extract<BotEvent, { type: 'callback' }>
 
 interface CreateBotOptions {
   url: string
@@ -21,6 +24,13 @@ interface CommandOptions {
   roles?: string[]
 }
 
+interface RegisteredFlow {
+  validate: () => void
+  clear: (context: Context) => Promise<void>
+  handleMessage: (context: Context, text: string) => Promise<boolean>
+  handleCallback: (context: Context, event: CallbackEvent) => Promise<void>
+}
+
 export type ContextListener = (context: Context) => unknown
 
 export class Bot {
@@ -28,6 +38,7 @@ export class Bot {
   private readonly connection: BotConnection
   private readonly listeners = new Map<BotEventType, Set<ContextListener>>()
   private readonly commands = new Map<string, ContextListener>()
+  private readonly flows = new Map<string, RegisteredFlow>()
   private readonly chatChains = new Map<string, Promise<void>>()
 
   constructor(options: CreateBotOptions) {
@@ -60,7 +71,15 @@ export class Bot {
     return this
   }
 
+  flow<State = Record<string, unknown>>(id: string) {
+    if (this.flows.has(id)) throw new Error(`Flow ${id} already exists`)
+    const flow = new FlowBuilder<State>(id)
+    this.flows.set(id, flow)
+    return flow
+  }
+
   async start(options: StartOptions = {}) {
+    for (const flow of this.flows.values()) flow.validate()
     await this.connection.start()
     if (options.roles) {
       const roles: Params<'setRoles'> = { roles: options.roles }
@@ -91,6 +110,21 @@ export class Bot {
 
   private async dispatch(event: BotEvent) {
     const context = new Context(event, this.api)
+    if (event.type === 'command' || event.type === 'chat_cleared') {
+      for (const flow of this.flows.values()) await flow.clear(context)
+    }
+    if (event.type === 'callback' && event.data.startsWith('f:')) {
+      const flow = this.flows.get(event.data.split(':')[1] ?? '')
+      if (flow) {
+        await flow.handleCallback(context, event)
+        return
+      }
+    }
+    if (event.type === 'message') {
+      for (const flow of this.flows.values()) {
+        if (await flow.handleMessage(context, event.message.content.text ?? '')) return
+      }
+    }
     if (event.type === 'command') {
       const command = this.commands.get(event.name)
       if (command) {

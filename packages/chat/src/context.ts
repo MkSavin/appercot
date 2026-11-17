@@ -12,7 +12,7 @@ export class Context {
 
   constructor(
     private readonly event: BotEvent,
-    private readonly api: BotApi,
+    readonly api: BotApi,
   ) {
     this.user = event.user
     this.chat = event.chat
