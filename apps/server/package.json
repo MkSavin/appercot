@@ -1,0 +1,25 @@
+{
+  "name": "@appercot/server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "build": "bun build src/index.ts --outdir dist --target bun",
+    "typecheck": "tsc --noEmit",
+    "schema:print": "bun src/graphql/print-schema.ts > schema.graphql",
+    "drizzle:generate": "drizzle-kit generate --config=drizzle.config.ts"
+  },
+  "dependencies": {
+    "@appercot/protocol": "workspace:*",
+    "@pothos/core": "4",
+    "drizzle-orm": "^0.45.4",
+    "graphql": "17",
+    "graphql-yoga": "6",
+    "web-push": "^4.0.0",
+    "zod": "4"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.31.11"
+  }
+}

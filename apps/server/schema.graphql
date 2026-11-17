@@ -1,0 +1,40 @@
+type Bot {
+  description: String
+  id: ID
+  listed: Boolean
+  name: String
+  online: Boolean
+  username: String
+}
+
+type Connection {
+  blocked: Boolean
+  bot: Bot
+  id: ID
+  roles: [String!]
+}
+
+scalar JSON
+
+type Mutation {
+  login(password: String!, username: String!): Session
+  logout: Boolean
+  register(displayName: String!, invite: String!, password: String!, username: String!): Session
+}
+
+type Query {
+  session: Session
+}
+
+type Session {
+  chats: [Connection!]
+  user: User
+  vapidPublicKey: String
+}
+
+type User {
+  displayName: String
+  id: ID
+  isAdmin: Boolean
+  username: String
+}

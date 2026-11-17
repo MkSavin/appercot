@@ -1,0 +1,8 @@
+{
+  "name": "@appercot/echo-bot",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@appercot/chat": "workspace:*"
+  }
+}
