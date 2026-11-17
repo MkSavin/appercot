@@ -10,6 +10,77 @@ export type SendMessageInput = {
   content: unknown;
 };
 
+export type AdminUsersQueryVariables = Exact<{
+  query?: string | null | undefined;
+}>;
+
+
+export type AdminUsersQuery = { adminUsers: Array<{ id: string, username: string, displayName: string, isAdmin: boolean }> };
+
+export type AdminInvitesQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type AdminInvitesQuery = { adminInvites: Array<{ code: string, uses: number, maxUses: number | null, url: string }> };
+
+export type CreateInviteMutationVariables = Exact<{
+  maxUses?: number | null | undefined;
+  expiresInDays?: number | null | undefined;
+}>;
+
+
+export type CreateInviteMutation = { createInvite: { code: string, uses: number, maxUses: number | null, url: string } };
+
+export type AdminBotsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type AdminBotsQuery = { adminBots: Array<{ id: string, username: string, name: string, description: string, online: boolean, listed: boolean }> };
+
+export type CreateBotMutationVariables = Exact<{
+  username: string;
+  name: string;
+  description: string;
+}>;
+
+
+export type CreateBotMutation = { createBot: { token: string, bot: { id: string, username: string, name: string, description: string, online: boolean, listed: boolean } } };
+
+export type ResetBotTokenMutationVariables = Exact<{
+  botId: string | number;
+}>;
+
+
+export type ResetBotTokenMutation = { resetBotToken: { token: string, bot: { id: string, username: string, name: string, description: string, online: boolean, listed: boolean } } };
+
+export type SetBotOwnerMutationVariables = Exact<{
+  botId: string | number;
+  username?: string | null | undefined;
+}>;
+
+
+export type SetBotOwnerMutation = { setBotOwner: boolean };
+
+export type SetBotListedMutationVariables = Exact<{
+  botId: string | number;
+  listed: boolean;
+}>;
+
+
+export type SetBotListedMutation = { setBotListed: boolean };
+
+export type BrowseBotsQueryVariables = Exact<{
+  query?: string | null | undefined;
+}>;
+
+
+export type BrowseBotsQuery = { browseBots: Array<{ id: string, username: string, name: string, description: string, online: boolean, listed: boolean }> };
+
+export type AddBotMutationVariables = Exact<{
+  username: string;
+}>;
+
+
+export type AddBotMutation = { addBot: { id: string, roles: Array<string>, blocked: boolean, unread: number, lastMessageAt: number | null, createdAt: number, bot: { id: string, username: string, name: string, description: string, online: boolean, listed: boolean }, commands: Array<{ name: string, description: string }> } };
+
 export type PressButtonMutationVariables = Exact<{
   chatId: string | number;
   messageId: string | number;
@@ -112,6 +183,124 @@ export class TypedDocumentString<TResult, TVariables>
   }
 }
 
+export const AdminUsersDocument = new TypedDocumentString(`
+    query AdminUsers($query: String) {
+  adminUsers(query: $query) {
+    id
+    username
+    displayName
+    isAdmin
+  }
+}
+    `) as unknown as TypedDocumentString<AdminUsersQuery, AdminUsersQueryVariables>;
+export const AdminInvitesDocument = new TypedDocumentString(`
+    query AdminInvites {
+  adminInvites {
+    code
+    uses
+    maxUses
+    url
+  }
+}
+    `) as unknown as TypedDocumentString<AdminInvitesQuery, AdminInvitesQueryVariables>;
+export const CreateInviteDocument = new TypedDocumentString(`
+    mutation CreateInvite($maxUses: Int, $expiresInDays: Int) {
+  createInvite(maxUses: $maxUses, expiresInDays: $expiresInDays) {
+    code
+    uses
+    maxUses
+    url
+  }
+}
+    `) as unknown as TypedDocumentString<CreateInviteMutation, CreateInviteMutationVariables>;
+export const AdminBotsDocument = new TypedDocumentString(`
+    query AdminBots {
+  adminBots {
+    id
+    username
+    name
+    description
+    online
+    listed
+  }
+}
+    `) as unknown as TypedDocumentString<AdminBotsQuery, AdminBotsQueryVariables>;
+export const CreateBotDocument = new TypedDocumentString(`
+    mutation CreateBot($username: String!, $name: String!, $description: String!) {
+  createBot(username: $username, name: $name, description: $description) {
+    bot {
+      id
+      username
+      name
+      description
+      online
+      listed
+    }
+    token
+  }
+}
+    `) as unknown as TypedDocumentString<CreateBotMutation, CreateBotMutationVariables>;
+export const ResetBotTokenDocument = new TypedDocumentString(`
+    mutation ResetBotToken($botId: ID!) {
+  resetBotToken(botId: $botId) {
+    bot {
+      id
+      username
+      name
+      description
+      online
+      listed
+    }
+    token
+  }
+}
+    `) as unknown as TypedDocumentString<ResetBotTokenMutation, ResetBotTokenMutationVariables>;
+export const SetBotOwnerDocument = new TypedDocumentString(`
+    mutation SetBotOwner($botId: ID!, $username: String) {
+  setBotOwner(botId: $botId, username: $username)
+}
+    `) as unknown as TypedDocumentString<SetBotOwnerMutation, SetBotOwnerMutationVariables>;
+export const SetBotListedDocument = new TypedDocumentString(`
+    mutation SetBotListed($botId: ID!, $listed: Boolean!) {
+  setBotListed(botId: $botId, listed: $listed)
+}
+    `) as unknown as TypedDocumentString<SetBotListedMutation, SetBotListedMutationVariables>;
+export const BrowseBotsDocument = new TypedDocumentString(`
+    query BrowseBots($query: String) {
+  browseBots(query: $query) {
+    id
+    username
+    name
+    description
+    online
+    listed
+  }
+}
+    `) as unknown as TypedDocumentString<BrowseBotsQuery, BrowseBotsQueryVariables>;
+export const AddBotDocument = new TypedDocumentString(`
+    mutation AddBot($username: String!) {
+  addBot(username: $username) {
+    id
+    bot {
+      id
+      username
+      name
+      description
+      online
+      listed
+    }
+    roles
+    blocked
+    unread
+    lastMessageAt
+    createdAt
+    commands {
+      name
+      description
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<AddBotMutation, AddBotMutationVariables>;
 export const PressButtonDocument = new TypedDocumentString(`
     mutation PressButton($chatId: ID!, $messageId: ID!, $data: String!) {
   pressButton(chatId: $chatId, messageId: $messageId, data: $data) {

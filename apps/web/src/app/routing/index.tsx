@@ -2,6 +2,7 @@ import { LoaderCircle } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Redirect, Route, Switch } from 'wouter'
 import { useChatStore } from '@/entities/chat'
+import { AdminPage } from '@/pages/admin'
 import { BrowsePage } from '@/pages/browse'
 import { ChatPage } from '@/pages/chat'
 import { LoginPage } from '@/pages/login'
@@ -18,6 +19,14 @@ const Protected = ({ children }: { children: ReactNode }) => {
   const authentication = useChatStore((state) => state.authentication)
   if (authentication === 'loading') return <LoadingScreen />
   if (authentication === 'anonymous') return <Redirect to="/login" />
+  return children
+}
+
+export const canAccessAdmin = (user: { isAdmin: boolean } | undefined) => user?.isAdmin === true
+
+export const AdminOnly = ({ children }: { children: ReactNode }) => {
+  const user = useChatStore((state) => state.user)
+  if (!canAccessAdmin(user ?? undefined)) return <Redirect to="/" />
   return children
 }
 
@@ -43,6 +52,13 @@ export const AppRouter = () => (
     <Route path="/browse">
       <Protected>
         <BrowsePage />
+      </Protected>
+    </Route>
+    <Route path="/admin">
+      <Protected>
+        <AdminOnly>
+          <AdminPage />
+        </AdminOnly>
       </Protected>
     </Route>
     <Route path="/c/:chatId">

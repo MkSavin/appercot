@@ -12,6 +12,11 @@ type BotCommand {
   name: String!
 }
 
+type BotToken {
+  bot: Bot!
+  token: String!
+}
+
 type ButtonResult {
   toast: String
 }
@@ -25,6 +30,13 @@ type Connection {
   lastMessageAt: Float
   roles: [String!]!
   unread: Int!
+}
+
+type Invite {
+  code: String!
+  maxUses: Int
+  url: String!
+  uses: Int!
 }
 
 scalar JSON
@@ -45,15 +57,23 @@ type Mutation {
   addBot(username: String!): Connection!
   blockBot(blocked: Boolean!, chatId: ID!): Boolean!
   clearChat(chatId: ID!): Boolean!
+  createBot(description: String!, name: String!, username: String!): BotToken!
+  createInvite(expiresInDays: Int, maxUses: Int): Invite!
   login(password: String!, username: String!): Session!
   logout: Boolean!
   markRead(chatId: ID!, seq: Int!): Boolean!
   pressButton(chatId: ID!, data: String!, messageId: ID!): ButtonResult!
   register(displayName: String!, invite: String!, password: String!, username: String!): Session!
+  resetBotToken(botId: ID!): BotToken!
   sendMessage(input: SendMessageInput!): Message!
+  setBotListed(botId: ID!, listed: Boolean!): Boolean!
+  setBotOwner(botId: ID!, username: String): Boolean!
 }
 
 type Query {
+  adminBots: [Bot!]!
+  adminInvites: [Invite!]!
+  adminUsers(query: String): [User!]!
   browseBots(query: String): [Bot!]!
   messages(before: Int, chatId: ID!, limit: Int = 50): [Message!]!
   session: Session!

@@ -15,6 +15,16 @@ import * as types from './graphql';
  * Learn more about it here: https://the-guild.dev/graphql/codegen/plugins/presets/preset-client#reducing-bundle-size
  */
 type Documents = {
+    "\n  query AdminUsers($query: String) {\n    adminUsers(query: $query) {\n      id\n      username\n      displayName\n      isAdmin\n    }\n  }\n": typeof types.AdminUsersDocument,
+    "\n  query AdminInvites {\n    adminInvites {\n      code\n      uses\n      maxUses\n      url\n    }\n  }\n": typeof types.AdminInvitesDocument,
+    "\n  mutation CreateInvite($maxUses: Int, $expiresInDays: Int) {\n    createInvite(maxUses: $maxUses, expiresInDays: $expiresInDays) {\n      code\n      uses\n      maxUses\n      url\n    }\n  }\n": typeof types.CreateInviteDocument,
+    "\n  query AdminBots {\n    adminBots {\n      id\n      username\n      name\n      description\n      online\n      listed\n    }\n  }\n": typeof types.AdminBotsDocument,
+    "\n  mutation CreateBot($username: String!, $name: String!, $description: String!) {\n    createBot(username: $username, name: $name, description: $description) {\n      bot {\n        id\n        username\n        name\n        description\n        online\n        listed\n      }\n      token\n    }\n  }\n": typeof types.CreateBotDocument,
+    "\n  mutation ResetBotToken($botId: ID!) {\n    resetBotToken(botId: $botId) {\n      bot {\n        id\n        username\n        name\n        description\n        online\n        listed\n      }\n      token\n    }\n  }\n": typeof types.ResetBotTokenDocument,
+    "\n  mutation SetBotOwner($botId: ID!, $username: String) {\n    setBotOwner(botId: $botId, username: $username)\n  }\n": typeof types.SetBotOwnerDocument,
+    "\n  mutation SetBotListed($botId: ID!, $listed: Boolean!) {\n    setBotListed(botId: $botId, listed: $listed)\n  }\n": typeof types.SetBotListedDocument,
+    "\n  query BrowseBots($query: String) {\n    browseBots(query: $query) {\n      id\n      username\n      name\n      description\n      online\n      listed\n    }\n  }\n": typeof types.BrowseBotsDocument,
+    "\n  mutation AddBot($username: String!) {\n    addBot(username: $username) {\n      id\n      bot {\n        id\n        username\n        name\n        description\n        online\n        listed\n      }\n      roles\n      blocked\n      unread\n      lastMessageAt\n      createdAt\n      commands {\n        name\n        description\n      }\n    }\n  }\n": typeof types.AddBotDocument,
     "\n  mutation PressButton($chatId: ID!, $messageId: ID!, $data: String!) {\n    pressButton(chatId: $chatId, messageId: $messageId, data: $data) {\n      toast\n    }\n  }\n": typeof types.PressButtonDocument,
     "\n  mutation MarkRead($chatId: ID!, $seq: Int!) {\n    markRead(chatId: $chatId, seq: $seq)\n  }\n": typeof types.MarkReadDocument,
     "\n  mutation ClearChat($chatId: ID!) {\n    clearChat(chatId: $chatId)\n  }\n": typeof types.ClearChatDocument,
@@ -28,6 +38,16 @@ type Documents = {
     "\n  mutation Logout {\n    logout\n  }\n": typeof types.LogoutDocument,
 };
 const documents: Documents = {
+    "\n  query AdminUsers($query: String) {\n    adminUsers(query: $query) {\n      id\n      username\n      displayName\n      isAdmin\n    }\n  }\n": types.AdminUsersDocument,
+    "\n  query AdminInvites {\n    adminInvites {\n      code\n      uses\n      maxUses\n      url\n    }\n  }\n": types.AdminInvitesDocument,
+    "\n  mutation CreateInvite($maxUses: Int, $expiresInDays: Int) {\n    createInvite(maxUses: $maxUses, expiresInDays: $expiresInDays) {\n      code\n      uses\n      maxUses\n      url\n    }\n  }\n": types.CreateInviteDocument,
+    "\n  query AdminBots {\n    adminBots {\n      id\n      username\n      name\n      description\n      online\n      listed\n    }\n  }\n": types.AdminBotsDocument,
+    "\n  mutation CreateBot($username: String!, $name: String!, $description: String!) {\n    createBot(username: $username, name: $name, description: $description) {\n      bot {\n        id\n        username\n        name\n        description\n        online\n        listed\n      }\n      token\n    }\n  }\n": types.CreateBotDocument,
+    "\n  mutation ResetBotToken($botId: ID!) {\n    resetBotToken(botId: $botId) {\n      bot {\n        id\n        username\n        name\n        description\n        online\n        listed\n      }\n      token\n    }\n  }\n": types.ResetBotTokenDocument,
+    "\n  mutation SetBotOwner($botId: ID!, $username: String) {\n    setBotOwner(botId: $botId, username: $username)\n  }\n": types.SetBotOwnerDocument,
+    "\n  mutation SetBotListed($botId: ID!, $listed: Boolean!) {\n    setBotListed(botId: $botId, listed: $listed)\n  }\n": types.SetBotListedDocument,
+    "\n  query BrowseBots($query: String) {\n    browseBots(query: $query) {\n      id\n      username\n      name\n      description\n      online\n      listed\n    }\n  }\n": types.BrowseBotsDocument,
+    "\n  mutation AddBot($username: String!) {\n    addBot(username: $username) {\n      id\n      bot {\n        id\n        username\n        name\n        description\n        online\n        listed\n      }\n      roles\n      blocked\n      unread\n      lastMessageAt\n      createdAt\n      commands {\n        name\n        description\n      }\n    }\n  }\n": types.AddBotDocument,
     "\n  mutation PressButton($chatId: ID!, $messageId: ID!, $data: String!) {\n    pressButton(chatId: $chatId, messageId: $messageId, data: $data) {\n      toast\n    }\n  }\n": types.PressButtonDocument,
     "\n  mutation MarkRead($chatId: ID!, $seq: Int!) {\n    markRead(chatId: $chatId, seq: $seq)\n  }\n": types.MarkReadDocument,
     "\n  mutation ClearChat($chatId: ID!) {\n    clearChat(chatId: $chatId)\n  }\n": types.ClearChatDocument,
@@ -41,6 +61,46 @@ const documents: Documents = {
     "\n  mutation Logout {\n    logout\n  }\n": types.LogoutDocument,
 };
 
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query AdminUsers($query: String) {\n    adminUsers(query: $query) {\n      id\n      username\n      displayName\n      isAdmin\n    }\n  }\n"): typeof import('./graphql').AdminUsersDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query AdminInvites {\n    adminInvites {\n      code\n      uses\n      maxUses\n      url\n    }\n  }\n"): typeof import('./graphql').AdminInvitesDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation CreateInvite($maxUses: Int, $expiresInDays: Int) {\n    createInvite(maxUses: $maxUses, expiresInDays: $expiresInDays) {\n      code\n      uses\n      maxUses\n      url\n    }\n  }\n"): typeof import('./graphql').CreateInviteDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query AdminBots {\n    adminBots {\n      id\n      username\n      name\n      description\n      online\n      listed\n    }\n  }\n"): typeof import('./graphql').AdminBotsDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation CreateBot($username: String!, $name: String!, $description: String!) {\n    createBot(username: $username, name: $name, description: $description) {\n      bot {\n        id\n        username\n        name\n        description\n        online\n        listed\n      }\n      token\n    }\n  }\n"): typeof import('./graphql').CreateBotDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation ResetBotToken($botId: ID!) {\n    resetBotToken(botId: $botId) {\n      bot {\n        id\n        username\n        name\n        description\n        online\n        listed\n      }\n      token\n    }\n  }\n"): typeof import('./graphql').ResetBotTokenDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation SetBotOwner($botId: ID!, $username: String) {\n    setBotOwner(botId: $botId, username: $username)\n  }\n"): typeof import('./graphql').SetBotOwnerDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation SetBotListed($botId: ID!, $listed: Boolean!) {\n    setBotListed(botId: $botId, listed: $listed)\n  }\n"): typeof import('./graphql').SetBotListedDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query BrowseBots($query: String) {\n    browseBots(query: $query) {\n      id\n      username\n      name\n      description\n      online\n      listed\n    }\n  }\n"): typeof import('./graphql').BrowseBotsDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation AddBot($username: String!) {\n    addBot(username: $username) {\n      id\n      bot {\n        id\n        username\n        name\n        description\n        online\n        listed\n      }\n      roles\n      blocked\n      unread\n      lastMessageAt\n      createdAt\n      commands {\n        name\n        description\n      }\n    }\n  }\n"): typeof import('./graphql').AddBotDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

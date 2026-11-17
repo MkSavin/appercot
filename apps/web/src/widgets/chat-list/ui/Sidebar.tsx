@@ -1,4 +1,4 @@
-import { Bot, LogOut, Search, SquarePen } from 'lucide-react'
+import { Bot, LogOut, Search, ShieldCheck, SquarePen } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useLocation } from 'wouter'
 import { useChatStore } from '@/entities/chat'
@@ -110,6 +110,13 @@ export const Sidebar = ({ activeChatId }: { activeChatId?: string }) => {
           <span className="block truncate text-sm font-medium">{user?.displayName}</span>
           <span className="block truncate text-xs text-muted-foreground">@{user?.username}</span>
         </span>
+        {user?.isAdmin ? (
+          <Button asChild variant="ghost" size="icon" className="text-muted-foreground">
+            <Link href="/admin" aria-label={strings.admin.open} title={strings.admin.open}>
+              <ShieldCheck aria-hidden="true" />
+            </Link>
+          </Button>
+        ) : null}
         <Button
           type="button"
           variant="ghost"

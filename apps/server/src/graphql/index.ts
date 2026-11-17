@@ -7,6 +7,7 @@ import { builder } from './builder'
 import { createGraphQLContext } from './context'
 import './queries'
 import './mutations'
+import './admin'
 
 export const schema = builder.toSchema()
 
