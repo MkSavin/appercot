@@ -85,6 +85,42 @@ export class BotConnection {
     return result as Promise<Result<Method>>
   }
 
+  async uploadFile(chatId: string, file: File) {
+    const url = new URL(this.options.url)
+    url.protocol = url.protocol === 'wss:' ? 'https:' : 'http:'
+    url.pathname = '/api/bot/files'
+    url.search = ''
+    const body = new FormData()
+    body.set('chatId', chatId)
+    body.set('file', file)
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${this.options.token}` },
+      body,
+    })
+    const result: unknown = await response.json().catch(() => null)
+    if (!response.ok) {
+      const code =
+        response.status === 401
+          ? 'UNAUTHORIZED'
+          : response.status === 403
+            ? 'FORBIDDEN'
+            : response.status === 404
+              ? 'NOT_FOUND'
+              : 'BAD_REQUEST'
+      throw new BotApiError(code, 'File upload failed')
+    }
+    if (
+      typeof result !== 'object' ||
+      result === null ||
+      !('fileId' in result) ||
+      typeof result.fileId !== 'string'
+    ) {
+      throw new Error('Invalid file upload response')
+    }
+    return result.fileId
+  }
+
   private connect() {
     const url = new URL(this.options.url)
     url.searchParams.set('token', this.options.token)

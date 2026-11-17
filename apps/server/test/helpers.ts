@@ -3,9 +3,10 @@ import { createDatabase } from '../src/db/client'
 import { loadEnv } from '../src/env'
 import { startServer } from '../src/index'
 
-export const createServerFixture = () => {
+export const createServerFixture = (dataDir?: string) => {
   const database = createDatabase(':memory:')
   const env = loadEnv({
+    DATA_DIR: dataDir,
     PUBLIC_URL: 'http://localhost',
     ADMIN_USERNAME: 'admin',
     ADMIN_PASSWORD: 'password123',

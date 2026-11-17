@@ -1,5 +1,7 @@
 export * from './api/message-api'
+export * from './api/upload-api'
 export * from './ui/BotMessage'
+export * from './ui/MediaGallery'
 export * from './ui/MessageKeyboard'
 export * from './ui/StatusTicks'
 export * from './ui/SystemMessage'

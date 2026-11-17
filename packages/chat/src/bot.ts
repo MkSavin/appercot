@@ -72,6 +72,10 @@ export class Bot {
     if (options.commands) await this.api.setCommands({ commands: options.commands })
   }
 
+  uploadFile(chatId: string, file: File) {
+    return this.api.uploadFile(chatId, file)
+  }
+
   stop() {
     this.connection.stop()
   }

@@ -55,4 +55,8 @@ export class BotApi {
   kvClear(params: Params<'kvClear'>) {
     return this.call('kvClear', params)
   }
+
+  uploadFile(chatId: string, file: File) {
+    return this.connection.uploadFile(chatId, file)
+  }
 }

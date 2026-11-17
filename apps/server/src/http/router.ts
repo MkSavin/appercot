@@ -6,6 +6,9 @@ interface RouterOptions {
   graphql: (request: Request) => Promise<Response>
   botWebSocket: (request: Request, server: Server<AppWebSocketData>) => Response | undefined
   clientWebSocket: (request: Request, server: Server<AppWebSocketData>) => Response | undefined
+  uploadUserFile: (request: Request) => Promise<Response>
+  uploadBotFile: (request: Request) => Promise<Response>
+  serveFile: (request: Request, fileId: string) => Response
 }
 
 export const createRouter = (options: RouterOptions) => {
@@ -21,6 +24,15 @@ export const createRouter = (options: RouterOptions) => {
     }
     if (pathname === '/api/ws' && request.method === 'GET') {
       return options.clientWebSocket(request, server)
+    }
+    if (pathname === '/api/files' && request.method === 'POST') {
+      return options.uploadUserFile(request)
+    }
+    if (pathname === '/api/bot/files' && request.method === 'POST') {
+      return options.uploadBotFile(request)
+    }
+    if (pathname.startsWith('/api/files/') && request.method === 'GET') {
+      return options.serveFile(request, pathname.slice('/api/files/'.length))
     }
     return textResponse(404, 'Not found')
   }

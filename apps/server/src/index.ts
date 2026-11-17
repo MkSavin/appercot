@@ -5,6 +5,7 @@ import { startPruneJob } from './domain/prune'
 import type { AppEnv } from './env'
 import { loadEnv } from './env'
 import { createGraphQLHandler } from './graphql'
+import { serveUserFile, uploadBotFile, uploadUserFile } from './http/files'
 import { createRouter } from './http/router'
 import { createBotWebSocketHandlers, upgradeBotWebSocket } from './ws/bot-ws'
 import { createClientWebSocketHandlers, upgradeClientWebSocket } from './ws/client-ws'
@@ -26,6 +27,9 @@ export const startServer = ({ database, env, port = env.PORT }: ServerOptions) =
     graphql: createGraphQLHandler(database.db, env, hub, callbacks),
     botWebSocket: (request, server) => upgradeBotWebSocket(request, server, database),
     clientWebSocket: (request, server) => upgradeClientWebSocket(request, server, database),
+    uploadUserFile: (request) => uploadUserFile(request, database.db, env),
+    uploadBotFile: (request) => uploadBotFile(request, database.db, env),
+    serveFile: (request, fileId) => serveUserFile(request, fileId, database.db, env),
   })
   startPruneJob(database.db)
   return Bun.serve<AppWebSocketData>({

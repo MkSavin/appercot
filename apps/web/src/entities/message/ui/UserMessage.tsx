@@ -2,6 +2,7 @@ import { RotateCcw } from 'lucide-react'
 import { strings } from '@/shared/config'
 import type { ChatMessage } from '@/shared/model'
 import { Button } from '@/shared/ui/button'
+import { MediaGallery } from './MediaGallery'
 import { StatusTicks } from './StatusTicks'
 
 interface UserMessageProps {
@@ -12,9 +13,12 @@ interface UserMessageProps {
 export const UserMessage = ({ message, onRetry }: UserMessageProps) => (
   <article className="flex justify-end py-2">
     <div className="max-w-[80%] min-w-0">
-      <div className="rounded-2xl rounded-br-md bg-primary px-4 py-2.5 text-[15px] leading-6 whitespace-pre-wrap text-primary-foreground shadow-sm">
-        {message.content.text}
-      </div>
+      {message.content.media ? <MediaGallery media={message.content.media} /> : null}
+      {message.content.text ? (
+        <div className="rounded-2xl rounded-br-md bg-primary px-4 py-2.5 text-[15px] leading-6 whitespace-pre-wrap text-primary-foreground shadow-sm">
+          {message.content.text}
+        </div>
+      ) : null}
       <div className="mt-1 flex items-center justify-end gap-2 text-primary/70">
         {message.status === 'failed' && message.clientId && onRetry ? (
           <Button
