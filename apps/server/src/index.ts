@@ -2,6 +2,7 @@ import { bootstrapAuth } from './auth/password'
 import { createDatabase, type DatabaseContext } from './db/client'
 import { CallbackRegistry } from './domain/callbacks'
 import { startPruneJob } from './domain/prune'
+import { PushService } from './domain/push'
 import type { AppEnv } from './env'
 import { loadEnv } from './env'
 import { createGraphQLHandler } from './graphql'
@@ -21,10 +22,12 @@ interface ServerOptions {
 export const startServer = ({ database, env, port = env.PORT }: ServerOptions) => {
   const hub = new Hub()
   const callbacks = new CallbackRegistry()
+  const push = new PushService(database.db, env)
+  hub.onBotMessage((userId, chatId, message) => push.sendMessage(userId, chatId, message))
   const botHandlers = createBotWebSocketHandlers(database, hub, callbacks)
   const clientHandlers = createClientWebSocketHandlers(hub)
   const route = createRouter({
-    graphql: createGraphQLHandler(database.db, env, hub, callbacks),
+    graphql: createGraphQLHandler(database.db, env, hub, callbacks, push),
     botWebSocket: (request, server) => upgradeBotWebSocket(request, server, database),
     clientWebSocket: (request, server) => upgradeClientWebSocket(request, server, database),
     uploadUserFile: (request) => uploadUserFile(request, database.db, env),
@@ -35,7 +38,14 @@ export const startServer = ({ database, env, port = env.PORT }: ServerOptions) =
   return Bun.serve<AppWebSocketData>({
     hostname: '0.0.0.0',
     port,
-    fetch: (request, server) => route(request, server),
+    fetch: async (request, server) => {
+      const response = await route(request, server)
+      response?.headers.set(
+        'content-security-policy',
+        "default-src 'self'; img-src 'self' blob: data:; media-src 'self' blob:; connect-src 'self' ws: wss:; style-src 'self' 'unsafe-inline'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'",
+      )
+      return response
+    },
     websocket: {
       open: (socket) => {
         if (socket.data.kind === 'bot') botHandlers.open?.(socket)

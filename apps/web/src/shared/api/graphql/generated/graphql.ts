@@ -136,6 +136,20 @@ export type SyncQueryVariables = Exact<{
 
 export type SyncQuery = { sync: { resetRequired: boolean, updates: Array<{ seq: number, payload: unknown }> } };
 
+export type SubscribePushMutationVariables = Exact<{
+  subscription: unknown;
+}>;
+
+
+export type SubscribePushMutation = { subscribePush: boolean };
+
+export type UnsubscribePushMutationVariables = Exact<{
+  endpoint: string;
+}>;
+
+
+export type UnsubscribePushMutation = { unsubscribePush: boolean };
+
 export type SessionQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -364,6 +378,16 @@ export const SyncDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<SyncQuery, SyncQueryVariables>;
+export const SubscribePushDocument = new TypedDocumentString(`
+    mutation SubscribePush($subscription: JSON!) {
+  subscribePush(subscription: $subscription)
+}
+    `) as unknown as TypedDocumentString<SubscribePushMutation, SubscribePushMutationVariables>;
+export const UnsubscribePushDocument = new TypedDocumentString(`
+    mutation UnsubscribePush($endpoint: String!) {
+  unsubscribePush(endpoint: $endpoint)
+}
+    `) as unknown as TypedDocumentString<UnsubscribePushMutation, UnsubscribePushMutationVariables>;
 export const SessionDocument = new TypedDocumentString(`
     query Session {
   session {

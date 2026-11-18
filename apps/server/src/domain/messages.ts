@@ -76,6 +76,7 @@ export const createMessage = (db: AppDatabase, hub: Hub, input: InsertMessageInp
   const chat = db.select().from(chats).where(eq(chats.id, input.chatId)).get()
   if (chat) {
     pushUserUpdate(db, hub, chat.userId, { type: 'message.new', message })
+    if (message.sender === 'bot') hub.notifyBotMessage(chat.userId, input.chatId, message)
     const updated = getChatForUser(db, input.chatId, chat.userId)
     pushUserUpdate(db, hub, chat.userId, {
       type: 'chat.updated',

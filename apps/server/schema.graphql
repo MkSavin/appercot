@@ -68,6 +68,8 @@ type Mutation {
   sendMessage(input: SendMessageInput!): Message!
   setBotListed(botId: ID!, listed: Boolean!): Boolean!
   setBotOwner(botId: ID!, username: String): Boolean!
+  subscribePush(subscription: JSON!): Boolean!
+  unsubscribePush(endpoint: String!): Boolean!
 }
 
 type Query {

@@ -1,3 +1,5 @@
+import type { Message } from '@appercot/protocol'
+
 export interface SocketLike {
   send: (data: string) => unknown
   close: (code?: number, reason?: string) => unknown
@@ -12,6 +14,7 @@ export class Hub {
   private readonly botConnections = new Map<string, BotConnection>()
   private readonly userSockets = new Map<string, Set<SocketLike>>()
   private readonly focusedChats = new Map<SocketLike, string | null>()
+  private botMessageHandler?: (userId: string, chatId: string, message: Message) => Promise<void>
 
   connectBot(botId: string, socket: SocketLike) {
     const previous = this.botConnections.get(botId)
@@ -52,6 +55,19 @@ export class Hub {
 
   setFocusedChat(socket: SocketLike, chatId: string | null) {
     this.focusedChats.set(socket, chatId)
+  }
+
+  onBotMessage(handler: (userId: string, chatId: string, message: Message) => Promise<void>) {
+    this.botMessageHandler = handler
+  }
+
+  notifyBotMessage(userId: string, chatId: string, message: Message) {
+    const focused = [...(this.userSockets.get(userId) ?? [])].some(
+      (socket) => this.focusedChats.get(socket) === chatId,
+    )
+    if (!focused && this.botMessageHandler) {
+      void this.botMessageHandler(userId, chatId, message).catch(() => {})
+    }
   }
 
   sendToUser(userId: string, frame: unknown) {

@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Link, useLocation } from 'wouter'
 import { useChatStore } from '@/entities/chat'
 import { logoutRequest } from '@/entities/session'
+import { PushSubscribeButton } from '@/features/push-subscribe'
 import { showRequestError } from '@/shared/api'
 import { strings } from '@/shared/config'
 import { cn } from '@/shared/lib/cn'
@@ -15,6 +16,7 @@ export const Sidebar = ({ activeChatId }: { activeChatId?: string }) => {
   const chats = useChatStore((state) => state.chats)
   const messagesByChat = useChatStore((state) => state.messagesByChat)
   const user = useChatStore((state) => state.user)
+  const vapidPublicKey = useChatStore((state) => state.vapidPublicKey)
   const clearSession = useChatStore((state) => state.clearSession)
   const [query, setQuery] = useState('')
   const normalizedQuery = query.trim().toLowerCase()
@@ -110,6 +112,7 @@ export const Sidebar = ({ activeChatId }: { activeChatId?: string }) => {
           <span className="block truncate text-sm font-medium">{user?.displayName}</span>
           <span className="block truncate text-xs text-muted-foreground">@{user?.username}</span>
         </span>
+        <PushSubscribeButton vapidPublicKey={vapidPublicKey} />
         {user?.isAdmin ? (
           <Button asChild variant="ghost" size="icon" className="text-muted-foreground">
             <Link href="/admin" aria-label={strings.admin.open} title={strings.admin.open}>

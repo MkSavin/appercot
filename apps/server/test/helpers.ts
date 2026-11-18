@@ -3,7 +3,10 @@ import { createDatabase } from '../src/db/client'
 import { loadEnv } from '../src/env'
 import { startServer } from '../src/index'
 
-export const createServerFixture = (dataDir?: string) => {
+export const createServerFixture = (
+  dataDir?: string,
+  environment: Record<string, string | undefined> = {},
+) => {
   const database = createDatabase(':memory:')
   const env = loadEnv({
     DATA_DIR: dataDir,
@@ -11,6 +14,7 @@ export const createServerFixture = (dataDir?: string) => {
     ADMIN_USERNAME: 'admin',
     ADMIN_PASSWORD: 'password123',
     BOOTSTRAP_INVITE: 'bootstrap-invite',
+    ...environment,
   })
   bootstrapAuth(database.db, env)
   const server = startServer({ database, env, port: 0 })

@@ -15,6 +15,9 @@ const EnvSchema = z
   .refine((env) => Boolean(env.ADMIN_USERNAME) === Boolean(env.ADMIN_PASSWORD), {
     message: 'ADMIN_USERNAME and ADMIN_PASSWORD must be provided together',
   })
+  .refine((env) => Boolean(env.VAPID_PUBLIC_KEY) === Boolean(env.VAPID_PRIVATE_KEY), {
+    message: 'VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY must be provided together',
+  })
 
 export type AppEnv = z.infer<typeof EnvSchema>
 

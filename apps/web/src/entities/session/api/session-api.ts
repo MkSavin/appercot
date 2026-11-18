@@ -5,6 +5,8 @@ import {
   LogoutDocument,
   RegisterDocument,
   SessionDocument,
+  SubscribePushDocument,
+  UnsubscribePushDocument,
 } from '@/shared/api'
 import type { SessionQuery } from '@/shared/api/graphql/generated/graphql'
 import type { SessionPayload } from '@/shared/model'
@@ -46,4 +48,12 @@ export const registerRequest = async (variables: {
 
 export const logoutRequest = async () => {
   await graphqlClient.request(LogoutDocument)
+}
+
+export const subscribePushRequest = async (subscription: unknown) => {
+  await graphqlClient.request(SubscribePushDocument, { subscription })
+}
+
+export const unsubscribePushRequest = async (endpoint: string) => {
+  await graphqlClient.request(UnsubscribePushDocument, { endpoint })
 }

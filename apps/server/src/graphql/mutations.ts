@@ -139,5 +139,21 @@ builder.mutationType({
           return setChatBlocked(context.db, context.hub, user.id, String(args.chatId), args.blocked)
         }),
     }),
+    subscribePush: field.boolean({
+      args: { subscription: field.arg({ type: 'JSON', required: true }) },
+      resolve: (_parent, args, context) =>
+        execute(() => {
+          const user = requireUser(context)
+          return context.push.subscribe(user.id, args.subscription)
+        }),
+    }),
+    unsubscribePush: field.boolean({
+      args: { endpoint: field.arg.string({ required: true }) },
+      resolve: (_parent, args, context) =>
+        execute(() => {
+          const user = requireUser(context)
+          return context.push.unsubscribe(user.id, args.endpoint)
+        }),
+    }),
   }),
 })
