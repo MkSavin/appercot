@@ -1,6 +1,13 @@
 {
   "files": {
-    "includes": ["**", "!PLAN.md", "!apps/web/src/shared/api/graphql/generated"]
+    "includes": [
+      "**",
+      "!PLAN.md",
+      "!apps/web/src/shared/api/graphql/generated",
+      "!**/dist",
+      "!**/.data*",
+      "!**/.test-data"
+    ]
   },
   "formatter": {
     "enabled": true,

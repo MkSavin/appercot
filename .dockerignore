@@ -1,0 +1,13 @@
+.git
+.github
+node_modules
+**/node_modules
+dist
+**/dist
+.data*
+.test-data
+**/.test-data
+.env
+.env.*
+README.md
+PLAN.md

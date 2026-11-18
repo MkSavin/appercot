@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "bun --watch src/index.ts",
-    "build": "bun build src/index.ts --outdir dist --target bun",
+    "build": "bun scripts/build.ts",
     "typecheck": "tsc --noEmit",
     "schema:print": "bun src/graphql/print-schema.ts > schema.graphql",
     "drizzle:generate": "drizzle-kit generate --config=drizzle.config.ts"

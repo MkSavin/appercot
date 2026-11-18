@@ -1,15 +1,19 @@
 import { z } from 'zod'
 
+const emptyToUndefined = (value: unknown) => (value === '' ? undefined : value)
+const optionalString = (minimum: number) =>
+  z.preprocess(emptyToUndefined, z.string().min(minimum).optional())
+
 const EnvSchema = z
   .strictObject({
     PORT: z.coerce.number().int().min(0).max(65535).default(3000),
     DATA_DIR: z.string().min(1).default('.data'),
     PUBLIC_URL: z.url().default('http://localhost:3000'),
-    ADMIN_USERNAME: z.string().min(1).optional(),
-    ADMIN_PASSWORD: z.string().min(8).optional(),
-    BOOTSTRAP_INVITE: z.string().min(1).optional(),
-    VAPID_PUBLIC_KEY: z.string().min(1).optional(),
-    VAPID_PRIVATE_KEY: z.string().min(1).optional(),
+    ADMIN_USERNAME: optionalString(1),
+    ADMIN_PASSWORD: optionalString(8),
+    BOOTSTRAP_INVITE: optionalString(1),
+    VAPID_PUBLIC_KEY: optionalString(1),
+    VAPID_PRIVATE_KEY: optionalString(1),
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   })
   .refine((env) => Boolean(env.ADMIN_USERNAME) === Boolean(env.ADMIN_PASSWORD), {

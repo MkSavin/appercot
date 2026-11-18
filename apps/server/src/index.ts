@@ -1,3 +1,4 @@
+import { resolve } from 'node:path'
 import { bootstrapAuth } from './auth/password'
 import { createDatabase, type DatabaseContext } from './db/client'
 import { CallbackRegistry } from './domain/callbacks'
@@ -8,6 +9,7 @@ import { loadEnv } from './env'
 import { createGraphQLHandler } from './graphql'
 import { serveUserFile, uploadBotFile, uploadUserFile } from './http/files'
 import { createRouter } from './http/router'
+import { resolveRuntimeDirectory } from './runtime'
 import { createBotWebSocketHandlers, upgradeBotWebSocket } from './ws/bot-ws'
 import { createClientWebSocketHandlers, upgradeClientWebSocket } from './ws/client-ws'
 import { Hub } from './ws/hub'
@@ -17,9 +19,15 @@ interface ServerOptions {
   database: DatabaseContext
   env: AppEnv
   port?: number
+  publicDir?: string
 }
 
-export const startServer = ({ database, env, port = env.PORT }: ServerOptions) => {
+export const startServer = ({
+  database,
+  env,
+  port = env.PORT,
+  publicDir = resolve(resolveRuntimeDirectory(), 'public'),
+}: ServerOptions) => {
   const hub = new Hub()
   const callbacks = new CallbackRegistry()
   const push = new PushService(database.db, env)
@@ -33,6 +41,7 @@ export const startServer = ({ database, env, port = env.PORT }: ServerOptions) =
     uploadUserFile: (request) => uploadUserFile(request, database.db, env),
     uploadBotFile: (request) => uploadBotFile(request, database.db, env),
     serveFile: (request, fileId) => serveUserFile(request, fileId, database.db, env),
+    publicDir,
   })
   startPruneJob(database.db)
   return Bun.serve<AppWebSocketData>({

@@ -1,8 +1,8 @@
 import { Database } from 'bun:sqlite'
-import { mkdirSync } from 'node:fs'
+import { existsSync, mkdirSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { type BunSQLiteDatabase, drizzle } from 'drizzle-orm/bun-sqlite'
+import { resolveRuntimeDirectory } from '../runtime'
 import { migrateDatabase } from './migrate'
 import * as schema from './schema'
 
@@ -11,6 +11,15 @@ export type AppDatabase = BunSQLiteDatabase<typeof schema>
 export interface DatabaseContext {
   db: AppDatabase
   sqlite: Database
+}
+
+export const resolveMigrationsFolder = (
+  moduleDir = import.meta.dir,
+  executablePath = process.execPath,
+) => {
+  const runtimeDir = resolveRuntimeDirectory(moduleDir, executablePath)
+  const bundled = resolve(runtimeDir, 'drizzle')
+  return existsSync(bundled) ? bundled : resolve(runtimeDir, '../../drizzle')
 }
 
 export const createDatabase = (
@@ -26,7 +35,6 @@ export const createDatabase = (
   sqlite.exec('PRAGMA busy_timeout=5000')
   sqlite.exec('PRAGMA synchronous=NORMAL')
   const db = drizzle(sqlite, { schema })
-  const defaultMigrationsFolder = fileURLToPath(new URL('../../drizzle', import.meta.url))
-  migrateDatabase(db, migrationsFolder ?? defaultMigrationsFolder)
+  migrateDatabase(db, migrationsFolder ?? resolveMigrationsFolder())
   return { db, sqlite }
 }

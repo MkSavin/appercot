@@ -1,6 +1,7 @@
 import type { Server } from 'bun'
 import type { AppWebSocketData } from '../ws/types'
 import { textResponse } from './respond'
+import { serveStatic } from './static'
 
 interface RouterOptions {
   graphql: (request: Request) => Promise<Response>
@@ -9,6 +10,7 @@ interface RouterOptions {
   uploadUserFile: (request: Request) => Promise<Response>
   uploadBotFile: (request: Request) => Promise<Response>
   serveFile: (request: Request, fileId: string) => Response
+  publicDir: string
 }
 
 export const createRouter = (options: RouterOptions) => {
@@ -34,6 +36,7 @@ export const createRouter = (options: RouterOptions) => {
     if (pathname.startsWith('/api/files/') && request.method === 'GET') {
       return options.serveFile(request, pathname.slice('/api/files/'.length))
     }
-    return textResponse(404, 'Not found')
+    if (pathname.startsWith('/api/')) return textResponse(404, 'Not found')
+    return serveStatic(request, options.publicDir)
   }
 }

@@ -6,6 +6,7 @@ import { startServer } from '../src/index'
 export const createServerFixture = (
   dataDir?: string,
   environment: Record<string, string | undefined> = {},
+  publicDir?: string,
 ) => {
   const database = createDatabase(':memory:')
   const env = loadEnv({
@@ -17,7 +18,7 @@ export const createServerFixture = (
     ...environment,
   })
   bootstrapAuth(database.db, env)
-  const server = startServer({ database, env, port: 0 })
+  const server = startServer({ database, env, port: 0, publicDir })
   const baseUrl = `http://127.0.0.1:${server.port}`
 
   return {

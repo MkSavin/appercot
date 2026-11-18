@@ -19,6 +19,17 @@ const createFixture = () => {
 }
 
 describe('authentication', () => {
+  test('treats empty optional deployment variables as absent', () => {
+    const env = loadEnv({
+      BOOTSTRAP_INVITE: '',
+      VAPID_PUBLIC_KEY: '',
+      VAPID_PRIVATE_KEY: '',
+    })
+    expect(env.BOOTSTRAP_INVITE).toBeUndefined()
+    expect(env.VAPID_PUBLIC_KEY).toBeUndefined()
+    expect(env.VAPID_PRIVATE_KEY).toBeUndefined()
+  })
+
   test('bootstraps the administrator only once', async () => {
     const fixture = createFixture()
     try {
