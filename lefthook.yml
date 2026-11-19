@@ -1,14 +1,12 @@
 pre-commit:
   commands:
+    docs:
+      run: bun run docs:check
     biome:
       glob: "*.{ts,tsx,json}"
       run: bunx biome check --write --no-errors-on-unmatched {staged_files}
       stage_fixed: true
 pre-push:
   commands:
-    steiger:
-      run: bun run steiger
-    typecheck:
-      run: bun run typecheck
-    test:
-      run: bun test
+    check:
+      run: bun run check

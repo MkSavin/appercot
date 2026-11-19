@@ -10,4 +10,5 @@ export const shouldSubmitOnEnter = (event: EnterEvent, isMobile: boolean) =>
   !event.shiftKey &&
   !isMobile &&
   !event.isComposing &&
+  // @anchor WORKAROUND:ime-enter The final IME keydown can report isComposing as false.
   event.keyCode !== 229

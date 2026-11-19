@@ -56,15 +56,22 @@ profile
   .button('Отмена')
   .cancel()
 
-bot.command('profile', (context) => profile.start(context))
-bot.command('help', (context) => context.reply('/profile — заполнить профиль'))
-bot.on('chat_started', (context) => context.reply('Используйте /profile для запуска мастера'))
+const profileCommand = bot
+  .command('profile', 'Заполнить профиль', (context) => profile.start(context))
+  .roles('all')
+const helpCommand = bot
+  .command('help', 'Помощь', (context) =>
+    context.hasRole('guest')
+      ? context.reply('Мастер профиля доступен после входа в аккаунт.')
+      : context.replyWithCommand(profileCommand),
+  )
+  .roles('all', 'guest')
+bot.on('chat_started', (context) =>
+  context.replyWithCommand(profileCommand, 'Используйте %s для запуска мастера.'),
+)
 
 await bot.start({
-  commands: [
-    { name: 'profile', description: 'Заполнить профиль' },
-    { name: 'help', description: 'Помощь' },
-  ],
+  commands: [profileCommand, helpCommand],
 })
 
 console.log('Wizard bot connected')

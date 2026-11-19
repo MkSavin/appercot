@@ -12,6 +12,8 @@ export interface GraphQLContext {
   callbacks: CallbackRegistry
   push: PushService
   auth: AuthSession | null
+  request: Request
+  peer: string
   setCookie: (cookie: string) => void
 }
 
@@ -23,6 +25,7 @@ export const createGraphQLContext = (
   callbacks: CallbackRegistry,
   push: PushService,
   responseCookies: string[],
+  peer: string,
 ): GraphQLContext => ({
   db,
   env,
@@ -30,5 +33,7 @@ export const createGraphQLContext = (
   callbacks,
   push,
   auth: getRequestSession(db, request),
+  request,
+  peer,
   setCookie: (cookie) => responseCookies.push(cookie),
 })

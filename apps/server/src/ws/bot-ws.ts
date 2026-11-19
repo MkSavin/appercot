@@ -4,8 +4,9 @@ import { asc, eq } from 'drizzle-orm'
 import { authenticateBotToken } from '../auth/bot-token'
 import type { DatabaseContext } from '../db/client'
 import { botCommands } from '../db/schema'
+import { getBot } from '../domain/bots'
 import type { CallbackRegistry } from '../domain/callbacks'
-import { getChatForBot } from '../domain/chats'
+import { getChatForBot, publishBotChatConfiguration } from '../domain/chats'
 import { setBotCommands } from '../domain/commands'
 import { DomainError } from '../domain/errors'
 import { acknowledgeBotEvent, flushBotEvents } from '../domain/events'
@@ -34,7 +35,11 @@ export const upgradeBotWebSocket = (
   const token = getToken(request)
   const bot = token ? authenticateBotToken(database.db, token) : null
   const upgraded = server.upgrade(request, {
-    data: { kind: 'bot', botId: bot?.id ?? null },
+    data: {
+      kind: 'bot',
+      botId: bot?.id ?? null,
+      awaitConfiguration: new URL(request.url).searchParams.get('configure') === '1',
+    },
   })
   return upgraded ? undefined : new Response('WebSocket upgrade failed', { status: 400 })
 }
@@ -49,10 +54,13 @@ export const createBotWebSocketHandlers = (
     switch (request.method) {
       case 'getMe':
         return getBotRef(database.db, hub, botId)
-      case 'setCommands':
-        return setBotCommands(database.db, botId, request.params)
+      case 'setCommands': {
+        const result = setBotCommands(database.db, botId, request.params)
+        publishBotChatConfiguration(database.db, hub, getBot(database.db, botId))
+        return result
+      }
       case 'setRoles':
-        return setBotRoles(database.db, botId, request.params)
+        return setBotRoles(database.db, hub, botId, request.params)
       case 'sendMessage':
         return sendBotMessage(database.db, hub, botId, request.params)
       case 'editMessage':
@@ -86,7 +94,7 @@ export const createBotWebSocketHandlers = (
   ) => {
     if (socket.data.kind !== 'bot') return
     const botId = socket.data.botId
-    if (!botId) return
+    if (!botId || hub.getBotConnection(botId)?.socket !== socket) return
     const parsed = parseBotFrame(frame)
     if (!parsed.success) {
       const requestId = getFrameRequestId(frame)
@@ -110,6 +118,15 @@ export const createBotWebSocketHandlers = (
       if (!rateLimiter.allow(botId)) throw new DomainError('RATE_LIMIT', 'Too many requests')
       const result = await dispatch(botId, parsed.data)
       socket.send(JSON.stringify({ t: 'res', id: parsed.data.id, ok: true, result }))
+      const connection = hub.getBotConnection(botId)
+      if (
+        connection?.socket === socket &&
+        !connection.readyForEvents &&
+        (parsed.data.method === 'setRoles' || parsed.data.method === 'setCommands')
+      ) {
+        connection.readyForEvents = true
+        flushBotEvents(database.db, hub, botId)
+      }
     } catch (error) {
       const domainError =
         error instanceof DomainError ? error : new DomainError('INTERNAL', 'Internal server error')
@@ -132,7 +149,7 @@ export const createBotWebSocketHandlers = (
         socket.close(4401, 'unauthorized')
         return
       }
-      const { replaced } = hub.connectBot(botId, socket)
+      const { replaced } = hub.connectBot(botId, socket, !socket.data.awaitConfiguration)
       if (!replaced) publishBotPresence(database.db, hub, botId, true)
       const commands = database.db
         .select()
@@ -149,6 +166,7 @@ export const createBotWebSocketHandlers = (
             name: command.name,
             description: command.description,
             roles: command.roles ?? undefined,
+            shortcut: command.shortcut ?? undefined,
           })),
         }),
       )

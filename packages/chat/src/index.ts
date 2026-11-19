@@ -1,6 +1,8 @@
 export { BotApi } from './api'
 export { Bot, createBot } from './bot'
+export { CommandDefinition } from './command'
 export { BotApiError, BotConnection } from './connection'
 export { Context } from './context'
 export * from './flow'
+export type { SendFileOptions, UploadOptions, UploadSource } from './media'
 export { BotStorage } from './storage'

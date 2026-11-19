@@ -40,6 +40,7 @@ describe('GraphQL', () => {
     }
   })
 
+  // @anchor INV:graphql/requires-session
   test('rejects session without a cookie', async () => {
     const fixture = createServerFixture()
     try {

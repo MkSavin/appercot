@@ -1,9 +1,13 @@
+import { MediaSchema } from '@appercot/protocol'
 import {
   BlockBotDocument,
+  ChatProfileDocument,
   ClearChatDocument,
+  DeleteChatDocument,
   graphqlClient,
   MarkReadDocument,
   PressButtonDocument,
+  SetChatNotificationsDocument,
 } from '@/shared/api'
 
 export const pressButtonRequest = async (variables: {
@@ -29,3 +33,21 @@ export const blockBotRequest = async (variables: { chatId: string; blocked: bool
   const result = await graphqlClient.request(BlockBotDocument, variables)
   return result.blockBot
 }
+
+export const fetchChatProfile = async (chatId: string, beforeMediaSeq?: number) => {
+  const { chatProfile } = await graphqlClient.request(ChatProfileDocument, {
+    chatId,
+    beforeMediaSeq,
+  })
+  if (!Array.isArray(chatProfile.media)) throw new Error('Invalid chat profile media')
+  return {
+    ...chatProfile,
+    media: chatProfile.media.map((item: unknown) => MediaSchema.parse(item)),
+  }
+}
+
+export const deleteChatRequest = (chatId: string) =>
+  graphqlClient.request(DeleteChatDocument, { chatId })
+
+export const setChatNotificationsRequest = (chatId: string, mode: 'all' | 'silent' | 'off') =>
+  graphqlClient.request(SetChatNotificationsDocument, { chatId, mode })

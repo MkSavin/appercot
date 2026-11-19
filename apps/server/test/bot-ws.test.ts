@@ -105,6 +105,7 @@ describe('bot WebSocket', () => {
     }
   })
 
+  // @anchor INV:bot-ws/replays-outbox
   test('redelivers outbox events and removes them after ack', async () => {
     const fixture = createServerFixture()
     try {

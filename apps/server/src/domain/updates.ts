@@ -1,5 +1,5 @@
 import { type ClientUpdate, ClientUpdateSchema } from '@appercot/protocol'
-import { eq } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 import type { AppDatabase } from '../db/client'
 import { chats, userUpdates } from '../db/schema'
 import type { Hub } from '../ws/hub'
@@ -20,7 +20,7 @@ export const publishBotPresence = (db: AppDatabase, hub: Hub, botId: string, onl
   const recipients = db
     .select({ userId: chats.userId })
     .from(chats)
-    .where(eq(chats.botId, botId))
+    .where(and(eq(chats.botId, botId), isNull(chats.revokedAt)))
     .all()
   for (const recipient of recipients) {
     pushUserUpdate(db, hub, recipient.userId, { type: 'bot.presence', botId, online })

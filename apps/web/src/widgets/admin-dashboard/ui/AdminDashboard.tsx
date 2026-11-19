@@ -1,34 +1,41 @@
-import { Copy, Search } from 'lucide-react'
+import { ChevronRight, Users } from 'lucide-react'
 import { useState } from 'react'
-import type { BotDetails, IssuedBotToken } from '@/entities/bot'
+import { Link } from 'wouter'
+import { BotAvatar, type IssuedBotToken, type ManagedBot } from '@/entities/bot'
 import type { SessionUser } from '@/entities/chat'
-import type { AdminInvite } from '@/entities/user'
-import { BotManager } from '@/features/bot-token-manage'
+import { useRegistrationPolicy } from '@/entities/session'
+import { type AdminInvite, editPlatformInvite, revokePlatformInvite } from '@/entities/user'
+import { CreateBotDialog } from '@/features/bot-token-manage'
 import { CreateInviteForm } from '@/features/create-invite'
-import { showRequestError } from '@/shared/api'
+
 import { strings } from '@/shared/config'
 import { Badge } from '@/shared/ui/badge'
-import { Button } from '@/shared/ui/button'
-import { Input } from '@/shared/ui/input'
+import { InvitationList } from '@/shared/ui/invitation-list'
+import { PlatformInviteRole } from '@/shared/ui/invite-fields'
+import { SearchInput } from '@/shared/ui/search-input'
 
 interface AdminDashboardProps {
+  section: 'users' | 'invites' | 'bots'
   users: SessionUser[]
   invites: AdminInvite[]
-  bots: BotDetails[]
+  bots: ManagedBot[]
   onInviteCreated: (invite: AdminInvite) => void
-  onBotChanged: (bot: BotDetails) => void
+
   onToken: (token: IssuedBotToken) => void
 }
 
 export const AdminDashboard = ({
+  section,
   users,
   invites,
   bots,
   onInviteCreated,
-  onBotChanged,
+
   onToken,
 }: AdminDashboardProps) => {
+  const policy = useRegistrationPolicy()
   const [query, setQuery] = useState('')
+
   const normalizedQuery = query.trim().toLowerCase()
   const visibleUsers = users.filter(
     (user) =>
@@ -37,110 +44,135 @@ export const AdminDashboard = ({
       user.displayName.toLowerCase().includes(normalizedQuery),
   )
 
-  const copyInvite = async (url: string) => {
-    try {
-      await navigator.clipboard.writeText(url)
-    } catch (error) {
-      showRequestError(error)
-    }
-  }
-
   return (
-    <div className="grid gap-10">
-      <section aria-labelledby="admin-users-title" className="grid gap-4">
-        <div>
-          <h2 id="admin-users-title" className="text-lg font-semibold">
-            {strings.admin.users}
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground">{strings.admin.usersDescription}</p>
-        </div>
-        <search>
-          <form action="/admin" method="get" onSubmit={(event) => event.preventDefault()}>
-            <label htmlFor="admin-user-search" className="sr-only">
-              {strings.admin.searchUsers}
-            </label>
-            <div className="relative max-w-md">
-              <Search
-                aria-hidden="true"
-                className="pointer-events-none absolute left-3 top-3 size-4 text-muted-foreground"
-              />
-              <Input
-                id="admin-user-search"
-                name="query"
-                type="search"
+    <div className="grid gap-5">
+      {section === 'users' ? (
+        <section aria-label={strings.admin.users} className="grid gap-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <search className="min-w-40 flex-1">
+              <SearchInput
                 value={query}
-                onChange={(event) => setQuery(event.target.value)}
+                onChange={(event) => setQuery(event.currentTarget.value)}
+                aria-label={strings.admin.searchUsers}
                 placeholder={strings.admin.searchUsers}
-                autoComplete="off"
-                className="pl-9"
               />
-            </div>
-          </form>
-        </search>
-        <ul className="overflow-hidden rounded-xl border bg-card">
-          {visibleUsers.map((user) => (
-            <li
-              key={user.id}
-              className="flex items-center justify-between gap-4 border-b p-4 last:border-0"
-            >
-              <div className="min-w-0">
-                <p className="truncate font-medium">{user.displayName}</p>
-                <p className="truncate text-sm text-muted-foreground">@{user.username}</p>
-              </div>
-              {user.isAdmin ? <Badge>{strings.admin.administrator}</Badge> : null}
-            </li>
-          ))}
-        </ul>
-      </section>
+            </search>
+            {policy?.invitations ? <CreateInviteForm single onCreated={onInviteCreated} /> : null}
+          </div>
+          {visibleUsers.length ? (
+            <ul className="overflow-hidden rounded-xl border bg-card">
+              {visibleUsers.map((user) => (
+                <li key={user.id} className="border-b last:border-0">
+                  <Link
+                    href={`/settings/users/${user.id}`}
+                    className="flex items-center gap-3 p-4 hover:bg-accent/50 focus-visible:outline-2 focus-visible:-outline-offset-2"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium">{user.displayName}</p>
+                      <p className="truncate text-sm text-muted-foreground">@{user.username}</p>
+                    </div>
+                    <Badge variant="outline">{strings.settings.roles[user.role]}</Badge>
+                    <ChevronRight
+                      aria-hidden="true"
+                      className="size-4 shrink-0 text-muted-foreground"
+                    />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p role="status" className="text-sm text-muted-foreground">
+              {strings.chat.noSearchResults}
+            </p>
+          )}
+        </section>
+      ) : null}
 
-      <section aria-labelledby="admin-invites-title" className="grid gap-4">
-        <div>
-          <h2 id="admin-invites-title" className="text-lg font-semibold">
-            {strings.admin.invites}
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground">{strings.admin.invitesDescription}</p>
-        </div>
-        <CreateInviteForm onCreated={onInviteCreated} />
-        <ul className="grid gap-2">
-          {invites.map((invite) => (
-            <li
-              key={invite.code}
-              className="flex flex-col gap-3 rounded-xl border bg-card p-4 sm:flex-row sm:items-center"
-            >
-              <div className="min-w-0 flex-1">
-                <a
-                  href={invite.url}
-                  className="block truncate text-sm font-medium text-primary hover:underline"
-                >
-                  {invite.url}
-                </a>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {strings.admin.uses}: {invite.uses} / {invite.maxUses ?? '∞'}
-                </p>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => copyInvite(invite.url)}
-              >
-                <Copy aria-hidden="true" />
-                {strings.admin.copyLink}
-              </Button>
-            </li>
-          ))}
-        </ul>
-      </section>
+      {section === 'invites' ? (
+        <section aria-label={strings.admin.invites} className="grid gap-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-muted-foreground">{strings.admin.invitesDescription}</p>
+            {policy?.invitations ? (
+              <CreateInviteForm onCreated={onInviteCreated} />
+            ) : (
+              <p className="text-sm text-muted-foreground">{strings.admin.invitesDisabled}</p>
+            )}
+          </div>
+          <InvitationList
+            rows={invites.map((invite) => ({
+              ...invite,
+              id: invite.code,
+              roles: [strings.settings.roles[invite.role]],
+            }))}
+            editable={policy?.invitations ?? false}
+            roleFields={(row) => <PlatformInviteRole value={row.role} />}
+            onEdit={async (row, data, limits) => {
+              onInviteCreated(
+                await editPlatformInvite(row.code, {
+                  ...limits,
+                  role: data.get('role') === 'admin' ? 'admin' : 'user',
+                }),
+              )
+            }}
+            onRevoke={async (row) => {
+              await revokePlatformInvite(row.code)
+              onInviteCreated({ ...row, revokedAt: Date.now() })
+            }}
+          />
+        </section>
+      ) : null}
 
-      <section aria-labelledby="admin-bots-title" className="grid gap-4">
-        <div>
-          <h2 id="admin-bots-title" className="text-lg font-semibold">
-            {strings.admin.bots}
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground">{strings.admin.botsDescription}</p>
-        </div>
-        <BotManager bots={bots} onChanged={onBotChanged} onToken={onToken} />
-      </section>
+      {section === 'bots' ? (
+        <section aria-label={strings.admin.bots} className="grid gap-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-muted-foreground">{strings.admin.botsDescription}</p>
+            <CreateBotDialog onCreated={onToken} />
+          </div>
+          {bots.length ? (
+            <ul className="grid gap-2">
+              {bots.map((bot) => (
+                <li key={bot.id}>
+                  <Link
+                    href={`/settings/bots/${bot.id}`}
+                    className="grid min-w-0 grid-cols-[minmax(0,220px)_minmax(0,1fr)_auto] items-center gap-2 rounded-xl border bg-card p-3 transition-colors hover:bg-secondary/50 focus-visible:outline-2 focus-visible:outline-ring sm:gap-4 sm:px-4"
+                  >
+                    <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+                      <BotAvatar bot={bot} size="sm" />
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold">{bot.name}</p>
+                        <p className="truncate text-xs text-muted-foreground">@{bot.username}</p>
+                      </div>
+                    </div>
+                    <div className="grid justify-items-start gap-1 text-xs text-muted-foreground">
+                      <Badge variant={bot.online ? 'default' : 'outline'} className="rounded-full">
+                        {bot.online ? strings.settings.botOnline : strings.settings.botOffline}
+                      </Badge>
+                      <span className="inline-flex items-center gap-1">
+                        <Users aria-hidden="true" className="size-3" />
+                        <span className="sr-only">Участников</span>
+                        {bot.memberCount}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1 sm:gap-2">
+                      <Badge variant="secondary" className="rounded-full">
+                        {bot.access === 'by_link'
+                          ? strings.settings.byLink
+                          : strings.settings.public}
+                      </Badge>
+                      <ChevronRight
+                        aria-hidden="true"
+                        className="size-4 shrink-0 text-muted-foreground"
+                      />
+                    </div>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-muted-foreground">{strings.browse.empty}</p>
+          )}
+        </section>
+      ) : null}
     </div>
   )
 }

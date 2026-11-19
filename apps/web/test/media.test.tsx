@@ -5,7 +5,7 @@ import { Composer } from '../src/features/send-message'
 import { uploadChatMedia } from '../src/features/upload-media'
 
 describe('media messages', () => {
-  test('renders protected image, video, audio and file elements', () => {
+  test('renders preview triggers and delays originals until explicitly opened', () => {
     const markup = renderToStaticMarkup(
       <MediaGallery
         media={[
@@ -16,12 +16,13 @@ describe('media messages', () => {
         ]}
       />,
     )
-    expect(markup).toContain('src="/api/files/image%201"')
-    expect(markup).toContain('alt="Preview"')
-    expect(markup).toContain('<video')
+    expect(markup).toContain('aria-label="Preview"')
+    expect(markup).toContain('Воспроизвести видео')
+    expect(markup).not.toContain('src="/api/files/image%201"')
+    expect(markup).not.toContain('<video')
     expect(markup).toContain('controls=""')
     expect(markup).toContain('<audio')
-    expect(markup).toContain('href="/api/files/document-1"')
+    expect(markup).toContain('href="/api/files/document-1?download=1&amp;v=2"')
     expect(markup).toContain('Specification')
     expect(markup).toContain('Скачать файл')
   })
@@ -32,7 +33,7 @@ describe('media messages', () => {
     expect(markup).toContain('Прикрепить файл')
   })
 
-  test('uploads multipart media to the chat endpoint with credentials', async () => {
+  test('uploads the file as a raw body without buffering multipart data', async () => {
     let receivedUrl = ''
     let receivedInit: RequestInit | undefined
     const fileId = await uploadChatMedia(
@@ -45,13 +46,11 @@ describe('media messages', () => {
       },
     )
     expect(fileId).toBe('file-1')
-    expect(receivedUrl).toBe('/api/files')
+    expect(receivedUrl).toBe('/api/files?chatId=chat-1')
     expect(receivedInit?.method).toBe('POST')
     expect(receivedInit?.credentials).toBe('same-origin')
     const body = receivedInit?.body
-    expect(body).toBeInstanceOf(FormData)
-    if (!(body instanceof FormData)) throw new Error('Expected multipart body')
-    expect(body.get('chatId')).toBe('chat-1')
-    expect(body.get('file')).toBeInstanceOf(File)
+    expect(body).toBeInstanceOf(File)
+    expect(new Headers(receivedInit?.headers).get('x-file-name')).toBe('image.png')
   })
 })

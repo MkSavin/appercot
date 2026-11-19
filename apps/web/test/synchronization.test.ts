@@ -4,7 +4,7 @@ import { createChatStore, type SessionPayload } from '../src/entities/chat/model
 import { synchronizeChatState } from '../src/entities/chat/model/synchronize'
 
 const session: SessionPayload = {
-  user: { id: 'user-1', username: 'alice', displayName: 'Alice', isAdmin: false },
+  user: { id: 'user-1', username: 'alice', displayName: 'Alice', role: 'user' },
   chats: [
     {
       id: 'chat-1',
@@ -58,6 +58,7 @@ describe('chat synchronization', () => {
     expect(store.getState().chats[0]?.bot.online).toBe(false)
   })
 
+  // @anchor INV:synchronization/reloads-history
   test('reloads session and open history before restarting a reset synchronization', async () => {
     const store = createChatStore()
     store.getState().setSession(session)
@@ -87,5 +88,25 @@ describe('chat synchronization', () => {
     expect(historyLoads).toBe(1)
     expect(store.getState().messagesByChat['chat-1']).toEqual([message])
     expect(store.getState().lastSeq).toBe(1)
+  })
+
+  // @anchor INV:synchronization/ignores-stale
+  test('discards a reset response when the original session has ended', async () => {
+    const store = createChatStore()
+    store.getState().setSession(session)
+    store.getState().setLastSeq(99)
+
+    await synchronizeChatState(store, {
+      fetchUpdates: async () => ({ resetRequired: true, updates: [] }),
+      refreshSession: async () => {
+        store.getState().clearSession()
+        return session
+      },
+      loadActiveChat: async () => [],
+      isCurrent: () => store.getState().user?.id === session.user.id,
+    })
+
+    expect(store.getState().user).toBeNull()
+    expect(store.getState().lastSeq).toBe(0)
   })
 })

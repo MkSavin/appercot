@@ -3,6 +3,7 @@ import {
   graphqlClient,
   LoginDocument,
   LogoutDocument,
+  PushStatusDocument,
   RegisterDocument,
   SessionDocument,
   SubscribePushDocument,
@@ -12,17 +13,23 @@ import type { SessionQuery } from '@/shared/api/graphql/generated/graphql'
 import type { SessionPayload } from '@/shared/model'
 
 const toSessionPayload = (session: SessionQuery['session']): SessionPayload => {
-  const { isAdmin, ...user } = session.user
+  const { role, bio, twoFactorEnabled, ...user } = session.user
   return {
-    user: { ...UserRefSchema.parse(user), isAdmin },
+    user: { ...UserRefSchema.parse(user), role, bio, twoFactorEnabled },
     chats: session.chats.map((chat) => {
       const { commands, ...connection } = chat
       return {
         ...ClientChatSchema.parse(connection),
-        commands: BotCommandSchema.array().parse(commands),
+        commands: BotCommandSchema.array().parse(
+          commands.map(({ shortcut, ...command }) => ({
+            ...command,
+            shortcut: shortcut ?? undefined,
+          })),
+        ),
       }
     }),
     vapidPublicKey: session.vapidPublicKey,
+    checkpoint: session.checkpoint,
   }
 }
 
@@ -31,7 +38,11 @@ export const fetchSession = async () => {
   return toSessionPayload(result.session)
 }
 
-export const loginRequest = async (variables: { username: string; password: string }) => {
+export const loginRequest = async (variables: {
+  username: string
+  password: string
+  otp?: string
+}) => {
   const result = await graphqlClient.request(LoginDocument, variables)
   return toSessionPayload(result.login)
 }
@@ -46,8 +57,13 @@ export const registerRequest = async (variables: {
   return toSessionPayload(result.register)
 }
 
-export const logoutRequest = async () => {
-  await graphqlClient.request(LogoutDocument)
+export const logoutRequest = async (pushEndpoint?: string) => {
+  await graphqlClient.request(LogoutDocument, { pushEndpoint })
+}
+
+export const fetchPushStatus = async (endpoint: string) => {
+  const result = await graphqlClient.request(PushStatusDocument, { endpoint })
+  return result.pushStatus
 }
 
 export const subscribePushRequest = async (subscription: unknown) => {

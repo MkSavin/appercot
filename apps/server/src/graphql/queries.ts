@@ -4,13 +4,31 @@ import { bots } from '../db/schema'
 import { toBotDto } from '../domain/bots'
 import { listUserChats } from '../domain/chats'
 import { listMessages } from '../domain/messages'
-import { syncUserUpdates } from '../domain/sync'
+import { latestUserSequence, syncUserUpdates } from '../domain/sync'
 import { builder } from './builder'
+import { toGraphQLError } from './errors'
 import { MessageType, SyncPayloadType } from './types/messaging'
 import { BotType, SessionType } from './types/session'
 
+const RegistrationPolicy = builder.objectRef<{ registration: boolean; invitations: boolean }>(
+  'RegistrationPolicy',
+)
+RegistrationPolicy.implement({
+  fields: (f) => ({
+    registration: f.exposeBoolean('registration'),
+    invitations: f.exposeBoolean('invitations'),
+  }),
+})
+
 builder.queryType({
   fields: (field) => ({
+    registrationPolicy: field.field({
+      type: RegistrationPolicy,
+      resolve: (_, __, { env }) => ({
+        registration: env.ALLOW_REGISTRATION,
+        invitations: env.ALLOW_USER_INVITES,
+      }),
+    }),
     session: field.field({
       type: SessionType,
       resolve: (_parent, _args, context) => {
@@ -19,8 +37,14 @@ builder.queryType({
           user,
           chats: listUserChats(context.db, context.hub, user.id),
           vapidPublicKey: context.env.VAPID_PUBLIC_KEY ?? null,
+          checkpoint: latestUserSequence(context.db, user.id),
         }
       },
+    }),
+    pushStatus: field.boolean({
+      args: { endpoint: field.arg.string({ required: true }) },
+      resolve: (_parent, args, context) =>
+        context.push.isSubscribed(requireUser(context).id, args.endpoint),
     }),
     messages: field.field({
       type: [MessageType],
@@ -31,7 +55,17 @@ builder.queryType({
       },
       resolve: (_parent, args, context) => {
         const user = requireUser(context)
-        return listMessages(context.db, user.id, String(args.chatId), args.before, args.limit ?? 50)
+        try {
+          return listMessages(
+            context.db,
+            user.id,
+            String(args.chatId),
+            args.before,
+            args.limit ?? 50,
+          )
+        } catch (error) {
+          throw toGraphQLError(error)
+        }
       },
     }),
     browseBots: field.field({
@@ -43,7 +77,7 @@ builder.queryType({
         return context.db
           .select()
           .from(bots)
-          .where(eq(bots.listed, true))
+          .where(eq(bots.access, 'public'))
           .all()
           .filter(
             (bot) =>

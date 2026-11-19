@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { BotEventSchema } from './bot-events'
 import { MessageContentSchema } from './content'
-import { BotCommandSchema, BotRefSchema, MessageSchema } from './entities'
+import { BotCommandSchema, BotRefSchema, BotRoleSchema, MessageSchema } from './entities'
 import { ErrorCodeSchema } from './errors'
 import { KV_KEY_MAX } from './limits'
 
@@ -17,10 +17,11 @@ export const SetCommandsParamsSchema = z.strictObject({
 })
 
 export const SetRolesParamsSchema = z.strictObject({
-  roles: z.array(z.string().min(1)),
-  defaultRoles: z.array(z.string().min(1)).optional(),
+  roles: z.array(z.union([BotRoleSchema, z.string().min(1).max(100)])).max(100),
+  defaultRoles: z.array(z.string().min(1)).max(1).optional(),
   listed: z.boolean().optional(),
   access: z.enum(['public', 'by_link']).optional(),
+  commands: z.array(BotCommandSchema).optional(),
 })
 
 export const SendMessageParamsSchema = z.strictObject({

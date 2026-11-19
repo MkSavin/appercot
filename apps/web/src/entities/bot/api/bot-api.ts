@@ -6,8 +6,14 @@ export const browseBotsRequest = async (query?: string): Promise<BotDetails[]> =
   return result.browseBots
 }
 
-export const addBotRequest = async (username: string) => {
-  const result = await graphqlClient.request(AddBotDocument, { username })
+export const addBotRequest = async (username: string, invite?: string) => {
+  const result = await graphqlClient.request(AddBotDocument, { username, invite })
   const { commands, ...connection } = result.addBot
-  return { ...connection, commands }
+  return {
+    ...connection,
+    commands: commands.map(({ shortcut, ...command }) => ({
+      ...command,
+      shortcut: shortcut ?? undefined,
+    })),
+  }
 }

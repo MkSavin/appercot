@@ -3,7 +3,11 @@ import { useLocation } from 'wouter'
 import { synchronizeChatState, useChatStore } from '@/entities/chat'
 import { fetchMessages, fetchSynchronization } from '@/entities/message'
 import { fetchSession } from '@/entities/session'
-import { type ClientWebSocketTransport, createClientWebSocketTransport } from '@/shared/api'
+import {
+  type ClientWebSocketTransport,
+  createClientWebSocketTransport,
+  getRequestErrorCode,
+} from '@/shared/api'
 import { AppToaster } from './AppToaster'
 
 const activeChatFromLocation = (location: string) => /^\/c\/([^/]+)$/.exec(location)?.[1]
@@ -72,6 +76,7 @@ const useClientSynchronization = () => {
         do {
           syncRequested = false
           await synchronizeChatState(useChatStore, {
+            isCurrent: () => active && useChatStore.getState().user?.id === userId,
             activeChatId: activeChatFromLocation(locationRef.current),
             fetchUpdates: fetchSynchronization,
             refreshSession: fetchSession,
@@ -79,8 +84,12 @@ const useClientSynchronization = () => {
           })
         } while (syncRequested && active)
         scheduleActiveTyping()
-      } catch {
-        if (active) useChatStore.getState().setConnection('offline')
+      } catch (error) {
+        const state = useChatStore.getState()
+        if (active && state.user?.id === userId) {
+          if (getRequestErrorCode(error) === 'UNAUTHORIZED') state.clearSession()
+          else state.setConnection('offline')
+        }
       } finally {
         synchronizing = false
       }
@@ -88,6 +97,11 @@ const useClientSynchronization = () => {
 
     const transport = createClientWebSocketTransport({
       onUpdate: (frame) => {
+        if (!active || useChatStore.getState().user?.id !== userId) return
+        if (synchronizing) {
+          syncRequested = true
+          return
+        }
         if (frame.seq > useChatStore.getState().lastSeq + 1) {
           void synchronize()
           return
@@ -99,6 +113,10 @@ const useClientSynchronization = () => {
         }
       },
       onReady: () => void synchronize(),
+      onUnauthorized: () => {
+        const state = useChatStore.getState()
+        if (active && state.user?.id === userId) state.clearSession()
+      },
       onConnection: (status) => {
         if (active) useChatStore.getState().setConnection(status)
       },
@@ -124,7 +142,8 @@ const useClientSynchronization = () => {
 
   useEffect(() => {
     transportRef.current?.setFocus(activeChatId ?? null)
-  }, [activeChatId])
+    if (userId) useChatStore.getState().setActiveChat(activeChatId ?? null)
+  }, [activeChatId, userId])
 }
 
 export const AppProviders = ({ children }: { children: ReactNode }) => {

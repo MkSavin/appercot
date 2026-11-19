@@ -1,11 +1,14 @@
 import type { BotEvent, Message, MessageContent } from '@appercot/protocol'
 import type { BotApi } from './api'
+import type { CommandDefinition } from './command'
+import type { SendFileOptions, UploadSource } from './media'
 import { BotStorage } from './storage'
 
 export class Context {
   readonly user: BotEvent['user']
   readonly chat: BotEvent['chat']
   readonly roles: string[]
+  readonly role: string | null
   readonly text: string
   readonly message?: Message
   readonly storage: BotStorage
@@ -17,6 +20,7 @@ export class Context {
     this.user = event.user
     this.chat = event.chat
     this.roles = event.chat.roles
+    this.role = this.roles[0] ?? null
     this.text =
       event.type === 'message' || event.type === 'command' ? (event.message.content.text ?? '') : ''
     this.message = event.type === 'message' || event.type === 'command' ? event.message : undefined
@@ -28,6 +32,28 @@ export class Context {
       chatId: this.chat.id,
       content: typeof content === 'string' ? { text: content } : content,
     })
+  }
+  replyWithFile(file: UploadSource, options?: SendFileOptions) {
+    return this.api.sendFile(this.chat.id, file, options)
+  }
+
+  replyWithCommand(commands: CommandDefinition | readonly CommandDefinition[], template?: string) {
+    const entries = Array.isArray(commands)
+      ? (commands as readonly CommandDefinition[])
+      : [commands as CommandDefinition]
+    if (!entries.length) throw new Error('Provide at least one command')
+    if (template === undefined)
+      return this.reply(
+        entries.map((command) => `/${command.name} — ${command.description}`).join('\n'),
+      )
+    const placeholders = template.match(/%s/g)?.length ?? 0
+    if (placeholders !== entries.length) throw new Error('Provide one %s placeholder per command')
+    const names = entries.map((command) => `/${command.name}`)
+    return this.reply(template.replace(/%s/g, () => names.shift() ?? ''))
+  }
+
+  setRole(role: string | null) {
+    return this.api.setChatRoles({ chatId: this.chat.id, roles: role ? [role] : [] })
   }
 
   edit(messageId: string, content: string | MessageContent) {

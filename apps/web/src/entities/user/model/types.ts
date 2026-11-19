@@ -3,4 +3,7 @@ export interface AdminInvite {
   uses: number
   maxUses: number | null
   url: string
+  expiresAt: number | null
+  revokedAt: number | null
+  role: 'user' | 'admin'
 }

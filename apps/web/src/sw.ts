@@ -52,6 +52,7 @@ self.addEventListener('push', (event) => {
         body: payload.body,
         tag: payload.tag,
         data: { url: payload.url },
+        ...(payload.silent ? { silent: true } : {}),
       })
     })(),
   )

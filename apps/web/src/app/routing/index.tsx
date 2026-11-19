@@ -1,13 +1,23 @@
 import { LoaderCircle } from 'lucide-react'
-import type { ReactNode } from 'react'
-import { Redirect, Route, Switch } from 'wouter'
+import { lazy, type ReactNode, Suspense } from 'react'
+import { Redirect, Route, Switch, useLocation, useSearch } from 'wouter'
 import { useChatStore } from '@/entities/chat'
-import { AdminPage } from '@/pages/admin'
-import { BrowsePage } from '@/pages/browse'
-import { ChatPage } from '@/pages/chat'
 import { LoginPage } from '@/pages/login'
 import { NotFoundPage } from '@/pages/not-found'
 import { RegisterPage } from '@/pages/register'
+import { authHref, readAuthReturn } from '@/shared/lib/auth-return'
+import { Workspace } from './Workspace'
+
+const SettingsPage = lazy(() =>
+  import('@/pages/settings').then(({ SettingsPage }) => ({ default: SettingsPage })),
+)
+const BrowsePage = lazy(() =>
+  import('@/pages/browse').then(({ BrowsePage }) => ({ default: BrowsePage })),
+)
+const ChatPage = lazy(() => import('@/pages/chat').then(({ ChatPage }) => ({ default: ChatPage })))
+const GuestChatPage = lazy(() =>
+  import('@/pages/guest').then(({ GuestChatPage }) => ({ default: GuestChatPage })),
+)
 
 const LoadingScreen = () => (
   <main className="grid min-h-dvh place-items-center" aria-label="Загрузка">
@@ -17,60 +27,55 @@ const LoadingScreen = () => (
 
 const Protected = ({ children }: { children: ReactNode }) => {
   const authentication = useChatStore((state) => state.authentication)
+  const [path] = useLocation()
+  const search = useSearch()
   if (authentication === 'loading') return <LoadingScreen />
-  if (authentication === 'anonymous') return <Redirect to="/login" />
-  return children
-}
-
-export const canAccessAdmin = (user: { isAdmin: boolean } | undefined) => user?.isAdmin === true
-
-export const AdminOnly = ({ children }: { children: ReactNode }) => {
-  const user = useChatStore((state) => state.user)
-  if (!canAccessAdmin(user ?? undefined)) return <Redirect to="/" />
-  return children
+  if (authentication === 'anonymous') {
+    return <Redirect to={authHref('/login', search ? `${path}?${search}` : path)} replace />
+  }
+  return (
+    <Workspace path={path}>
+      <Suspense fallback={<LoadingScreen />}>{children}</Suspense>
+    </Workspace>
+  )
 }
 
 const PublicOnly = ({ children }: { children: ReactNode }) => {
   const authentication = useChatStore((state) => state.authentication)
+  const search = useSearch()
   if (authentication === 'loading') return <LoadingScreen />
-  if (authentication === 'authenticated') return <Redirect to="/" />
+  if (authentication === 'authenticated') return <Redirect to={readAuthReturn(search)} replace />
   return children
 }
 
 export const AppRouter = () => (
-  <Switch>
-    <Route path="/login">
-      <PublicOnly>
-        <LoginPage />
-      </PublicOnly>
-    </Route>
-    <Route path="/register">
-      <PublicOnly>
-        <RegisterPage />
-      </PublicOnly>
-    </Route>
-    <Route path="/browse">
-      <Protected>
-        <BrowsePage />
-      </Protected>
-    </Route>
-    <Route path="/admin">
-      <Protected>
-        <AdminOnly>
-          <AdminPage />
-        </AdminOnly>
-      </Protected>
-    </Route>
-    <Route path="/c/:chatId">
-      <Protected>
-        <ChatPage />
-      </Protected>
-    </Route>
-    <Route path="/">
-      <Protected>
-        <ChatPage />
-      </Protected>
-    </Route>
-    <Route component={NotFoundPage} />
-  </Switch>
+  <Suspense fallback={<LoadingScreen />}>
+    <Switch>
+      <Route path="/login">
+        <PublicOnly>
+          <LoginPage />
+        </PublicOnly>
+      </Route>
+      <Route path="/register">
+        <PublicOnly>
+          <RegisterPage />
+        </PublicOnly>
+      </Route>
+      <Route path="/guest/:username" component={GuestChatPage} />
+      <Route path="/admin">
+        <Redirect to="/settings/bots" replace />
+      </Route>
+      <Route>
+        <Protected>
+          <Switch>
+            <Route path="/browse" component={BrowsePage} />
+            <Route path="/settings/:section?/:botId?" component={SettingsPage} />
+            <Route path="/c/:chatId/:panel?" component={ChatPage} />
+            <Route path="/" component={ChatPage} />
+            <Route component={NotFoundPage} />
+          </Switch>
+        </Protected>
+      </Route>
+    </Switch>
+  </Suspense>
 )

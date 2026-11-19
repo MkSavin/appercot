@@ -1,7 +1,12 @@
 import { describe, expect, test } from 'bun:test'
 import { eq } from 'drizzle-orm'
 import { createBotToken } from '../src/auth/bot-token'
-import { bots, users } from '../src/db/schema'
+import { botEvents, bots, messages, users } from '../src/db/schema'
+import { addBot as installBot } from '../src/domain/chats'
+import { flushBotEvents } from '../src/domain/events'
+import { sendUserMessage } from '../src/domain/messages'
+import { setBotRoles, setChatRoles } from '../src/domain/roles'
+import { Hub } from '../src/ws/hub'
 import { type BotTestClient, connectBot, createServerFixture, graphqlRequest } from './helpers'
 
 const loginAdmin = async (baseUrl: string) => {
@@ -25,7 +30,7 @@ const seedBot = (fixture: ReturnType<typeof createServerFixture>) => {
       name: 'Messaging',
       description: 'Integration bot',
       tokenHash: token.hash,
-      roles: [],
+      roles: ['admin'],
       defaultRoles: [],
       commandsRev: 0,
       createdAt: Date.now(),
@@ -197,6 +202,7 @@ describe('messaging integration', () => {
     }
   })
 
+  // @anchor INV:messaging/idempotent-send
   test('keeps send idempotent and supports block, read and clear', async () => {
     const fixture = createServerFixture()
     try {
@@ -242,6 +248,79 @@ describe('messaging integration', () => {
       const administrator = fixture.db.select().from(users).where(eq(users.username, 'admin')).get()
       expect(administrator).toBeDefined()
       expect(seeded.botId).toBeDefined()
+    } finally {
+      fixture.stop()
+    }
+  })
+
+  // @anchor INV:messaging/keeps-read
+  test('keeps read progress when a second tab sends an older sequence', async () => {
+    const fixture = createServerFixture()
+    try {
+      const cookie = await loginAdmin(fixture.baseUrl)
+      seedBot(fixture)
+      const chatId = await addBot(fixture.baseUrl, cookie)
+      await sendText(fixture.baseUrl, cookie, chatId, 'First', 'first-read')
+      await sendText(fixture.baseUrl, cookie, chatId, 'Second', 'second-read')
+      for (const seq of [2, 1]) {
+        const marked = await graphqlRequest(
+          fixture.baseUrl,
+          'mutation($chatId: ID!, $seq: Int!) { markRead(chatId: $chatId, seq: $seq) }',
+          { chatId, seq },
+          cookie,
+        )
+        expect(marked.body.errors).toBeUndefined()
+      }
+      const session = await graphqlRequest(
+        fixture.baseUrl,
+        'query { session { chats { id unread } } }',
+        {},
+        cookie,
+      )
+      expect(session.body.data).toEqual({ session: { chats: [{ id: chatId, unread: 0 }] } })
+    } finally {
+      fixture.stop()
+    }
+  })
+
+  // @anchor INV:messaging/rechecks-command
+  test('drops a queued command if the membership loses its role before delivery', () => {
+    const fixture = createServerFixture()
+    try {
+      const hub = new Hub()
+      const { botId } = seedBot(fixture)
+      const user = fixture.db.select().from(users).where(eq(users.username, 'admin')).get()
+      if (!user) throw new Error('Missing fixture owner')
+      setBotRoles(fixture.db, hub, botId, {
+        roles: ['operator'],
+        defaultRoles: ['operator'],
+        commands: [{ name: 'operate', description: 'Operate', roles: ['operator'] }],
+      })
+      const { id: chatId } = installBot(fixture.db, hub, user.id, 'messagingbot')
+      const command = sendUserMessage(fixture.db, hub, user.id, {
+        chatId,
+        clientId: 'queued',
+        content: { text: '/operate' },
+      })
+      expect(command.status).toBe('accepted')
+      expect(
+        fixture.db
+          .select()
+          .from(botEvents)
+          .all()
+          .some(({ payload }) => payload.type === 'command'),
+      ).toBe(true)
+
+      setChatRoles(fixture.db, hub, botId, { chatId, roles: [] })
+      const delivered: string[] = []
+      hub.connectBot(botId, { send: (data) => delivered.push(data), close: () => {} })
+      flushBotEvents(fixture.db, hub, botId)
+
+      expect(delivered).toHaveLength(2)
+      expect(delivered.join(' ')).not.toContain('"type":"command"')
+      expect(
+        fixture.db.select().from(messages).where(eq(messages.id, command.id)).get()?.status,
+      ).toBe('processed')
     } finally {
       fixture.stop()
     }

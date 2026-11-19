@@ -1,31 +1,47 @@
 import type { BotRef } from '@appercot/protocol'
 import { cn } from '@/shared/lib/cn'
+import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 
 interface BotAvatarProps {
-  bot: BotRef
-  size?: 'sm' | 'md' | 'lg'
+  bot: BotRef & { avatar?: string | null }
+  size?: 'sm' | 'md' | 'lg' | 'xl'
   showPresence?: boolean
 }
 
+const avatarColors = ['#79513e', '#5a6348', '#52646a', '#785c70', '#695a45']
+
 const colorForBot = (botId: string) => {
-  const hash = [...botId].reduce((value, character) => value * 31 + character.charCodeAt(0), 7)
-  return `hsl(${Math.abs(hash) % 360} 48% 42%)`
+  const hash = [...botId].reduce(
+    (value, character) => Math.imul(value, 31) + character.charCodeAt(0),
+    7,
+  )
+  return avatarColors[Math.abs(hash) % avatarColors.length]
 }
 
 export const BotAvatar = ({ bot, size = 'md', showPresence = false }: BotAvatarProps) => (
   <span className="relative shrink-0">
-    <span
+    <Avatar
       aria-hidden="true"
       className={cn(
-        'grid place-items-center rounded-xl font-semibold text-white shadow-sm',
-        size === 'sm' && 'size-9 rounded-lg text-xs',
-        size === 'md' && 'size-11 text-sm',
-        size === 'lg' && 'size-14 text-lg',
+        size === 'sm' && 'size-9',
+        size === 'md' && 'size-11',
+        size === 'lg' && 'size-14',
+        size === 'xl' && 'size-24',
       )}
       style={{ backgroundColor: colorForBot(bot.id) }}
     >
-      {bot.name.slice(0, 1).toUpperCase()}
-    </span>
+      {bot.avatar ? <AvatarImage src={bot.avatar} alt="" className="object-cover" /> : null}
+      <AvatarFallback
+        className={cn(
+          'bg-transparent font-semibold text-white',
+          size === 'sm' && 'text-xs',
+          size === 'lg' && 'text-lg',
+          size === 'xl' && 'text-3xl',
+        )}
+      >
+        {bot.name.slice(0, 1).toUpperCase()}
+      </AvatarFallback>
+    </Avatar>
     {showPresence ? (
       <span
         className={cn(

@@ -1,8 +1,9 @@
-import { type BotEvent, BotEventSchema } from '@appercot/protocol'
-import { and, asc, eq } from 'drizzle-orm'
+import { allowsBotAction, type BotEvent, BotEventSchema } from '@appercot/protocol'
+import { and, asc, eq, notInArray } from 'drizzle-orm'
 import type { AppDatabase } from '../db/client'
-import { botEvents, chats, messages } from '../db/schema'
+import { botCommands, botEvents, bots, chats, messages, users } from '../db/schema'
 import type { Hub } from '../ws/hub'
+import { toChatRef } from './chats'
 import { pushUserUpdate } from './updates'
 
 interface EnqueueEventInput {
@@ -26,24 +27,73 @@ export const enqueueBotEvent = (db: AppDatabase, input: EnqueueEventInput, hub?:
   return inserted?.seq ?? null
 }
 
+const currentCommand = (
+  db: AppDatabase,
+  botId: string,
+  event: Extract<BotEvent, { type: 'command' }>,
+) => {
+  const membership = db
+    .select({ chat: chats, bot: bots, guestUntil: users.guestUntil })
+    .from(chats)
+    .innerJoin(bots, eq(bots.id, chats.botId))
+    .innerJoin(users, eq(users.id, chats.userId))
+    .where(
+      and(eq(chats.id, event.chat.id), eq(chats.botId, botId), eq(chats.userId, event.user.id)),
+    )
+    .get()
+  const command = db
+    .select()
+    .from(botCommands)
+    .where(and(eq(botCommands.botId, botId), eq(botCommands.name, event.name)))
+    .get()
+  if (
+    !membership ||
+    !command ||
+    (membership.chat.guest &&
+      (!membership.bot.guestAccess ||
+        membership.bot.access !== 'public' ||
+        (membership.guestUntil ?? 0) <= Date.now())) ||
+    membership.chat.blockedAt !== null ||
+    membership.chat.revokedAt !== null
+  )
+    return
+  const roles = toChatRef(membership.chat, membership.bot).roles
+  if (allowsBotAction(command.roles, roles)) return { ...event, chat: { ...event.chat, roles } }
+}
+
 export const flushBotEvents = (db: AppDatabase, hub: Hub, botId: string) => {
   const connection = hub.getBotConnection(botId)
-  if (!connection) return
-  const pending = db
-    .select()
-    .from(botEvents)
-    .where(eq(botEvents.botId, botId))
-    .orderBy(asc(botEvents.seq))
-    .all()
-  for (const event of pending) {
-    if (connection.inFlight.size >= 100) break
-    if (connection.inFlight.has(event.seq)) continue
-    connection.socket.send(JSON.stringify({ t: 'evt', seq: event.seq, event: event.payload }))
-    connection.inFlight.add(event.seq)
+  if (!connection?.readyForEvents) return
+  while (connection.inFlight.size < 100) {
+    const available = 100 - connection.inFlight.size
+    const inFlight = [...connection.inFlight]
+    const pending = db
+      .select()
+      .from(botEvents)
+      .where(
+        and(
+          eq(botEvents.botId, botId),
+          inFlight.length ? notInArray(botEvents.seq, inFlight) : undefined,
+        ),
+      )
+      .orderBy(asc(botEvents.seq))
+      .limit(available)
+      .all()
+    for (const event of pending) {
+      const payload =
+        event.payload.type === 'command' ? currentCommand(db, botId, event.payload) : event.payload
+      if (!payload) {
+        removeBotEvent(db, hub, botId, event.seq)
+        continue
+      }
+      connection.socket.send(JSON.stringify({ t: 'evt', seq: event.seq, event: payload }))
+      connection.inFlight.add(event.seq)
+    }
+    if (pending.length < available) break
   }
 }
 
-export const acknowledgeBotEvent = (db: AppDatabase, hub: Hub, botId: string, seq: number) => {
+const removeBotEvent = (db: AppDatabase, hub: Hub, botId: string, seq: number) => {
   const event = db
     .select()
     .from(botEvents)
@@ -74,5 +124,9 @@ export const acknowledgeBotEvent = (db: AppDatabase, hub: Hub, botId: string, se
     }
   }
   hub.getBotConnection(botId)?.inFlight.delete(seq)
+}
+
+export const acknowledgeBotEvent = (db: AppDatabase, hub: Hub, botId: string, seq: number) => {
+  removeBotEvent(db, hub, botId, seq)
   flushBotEvents(db, hub, botId)
 }

@@ -8,11 +8,13 @@
     "examples/*"
   ],
   "scripts": {
-    "dev": "bun run --filter '*' dev",
+    "dev": "bun run --filter '@appercot/server' --filter '@appercot/web' dev",
     "build": "bun run graphql:schema && bun run --filter '@appercot/web' build && bun run --filter '@appercot/server' build",
     "graphql:schema": "bun run --filter '@appercot/server' schema:print",
     "codegen": "bun run graphql:schema && bun run --filter '@appercot/web' codegen",
-    "check": "biome check . && bun run steiger && bun run codegen:check && bun run typecheck && bun test --pass-with-no-tests",
+    "check": "bun run docs:check && biome check . && bun run steiger && bun run codegen:check && bun run typecheck && bun test",
+    "docs:check": "bun scripts/check-docs.mjs",
+    "docs:index": "bun scripts/check-docs.mjs --write-index",
     "steiger": "bun run --filter '@appercot/web' steiger",
     "codegen:check": "bun run graphql:schema && bun run --filter '@appercot/web' codegen:check",
     "typecheck": "bun run --filter '*' typecheck"

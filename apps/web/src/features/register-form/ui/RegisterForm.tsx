@@ -2,7 +2,7 @@ import { Eye, EyeOff, LoaderCircle } from 'lucide-react'
 import { useState } from 'react'
 import { useChatStore } from '@/entities/chat'
 import { registerRequest } from '@/entities/session'
-import { showRequestError } from '@/shared/api'
+import { getRequestErrorMessage } from '@/shared/api'
 import { strings } from '@/shared/config'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
@@ -30,7 +30,7 @@ export const RegisterForm = ({ initialInvite, onSuccess }: RegisterFormProps) =>
       setSession(await registerRequest({ username, password, displayName, invite }))
       onSuccess()
     } catch (cause) {
-      setError(showRequestError(cause))
+      setError(getRequestErrorMessage(cause, 'authentication'))
     } finally {
       setSubmitting(false)
     }

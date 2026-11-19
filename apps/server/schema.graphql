@@ -1,15 +1,64 @@
+type AuthSession {
+  createdAt: Float!
+  current: Boolean!
+  expiresAt: Float!
+  id: ID!
+  userAgent: String
+}
+
 type Bot {
+  access: BotAccess!
+  avatar: String
   description: String!
+  guestAccess: Boolean!
   id: ID!
   listed: Boolean!
+  memberCount: Int!
   name: String!
   online: Boolean!
   username: String!
+  welcome: String!
+}
+
+enum BotAccess {
+  by_link
+  public
 }
 
 type BotCommand {
   description: String!
   name: String!
+  shortcut: String
+}
+
+type BotInvite {
+  expiresAt: Float
+  id: ID!
+  maxUses: Int
+  revokedAt: Float
+  roles: [String!]!
+  url: String
+  uses: Int!
+}
+
+type BotMember {
+  chatId: ID!
+  displayName: String!
+  revoked: Boolean!
+  roles: [String!]!
+  username: String!
+}
+
+type BotMemberships {
+  members: [BotMember!]!
+  roleDefinitions: [BotRole!]!
+  roles: [String!]!
+}
+
+type BotRole {
+  code: String!
+  name: String!
+  virtual: Boolean!
 }
 
 type BotToken {
@@ -21,6 +70,20 @@ type ButtonResult {
   toast: String
 }
 
+enum ChatNotifications {
+  all
+  off
+  silent
+}
+
+type ChatProfile {
+  blocked: Boolean!
+  bot: Bot!
+  media: JSON!
+  notifications: ChatNotifications!
+  olderMediaBefore: Int
+}
+
 type Connection {
   blocked: Boolean!
   bot: Bot!
@@ -28,15 +91,31 @@ type Connection {
   createdAt: Float!
   id: ID!
   lastMessageAt: Float
+  notifications: ChatNotifications!
   roles: [String!]!
   unread: Int!
 }
 
+type GuestChat {
+  active: Boolean!
+  bot: Bot!
+  commands: [BotCommand!]!
+  messages: [Message!]!
+}
+
 type Invite {
   code: String!
+  expiresAt: Float
   maxUses: Int
+  revokedAt: Float
+  role: InviteRole!
   url: String!
   uses: Int!
+}
+
+enum InviteRole {
+  admin
+  user
 }
 
 scalar JSON
@@ -45,6 +124,7 @@ type Message {
   chatId: ID!
   content: JSON!
   createdAt: Float!
+  deleted: Boolean!
   editedAt: Float
   id: ID!
   replyTo: ID
@@ -54,32 +134,77 @@ type Message {
 }
 
 type Mutation {
-  addBot(username: String!): Connection!
+  addBot(invite: String, username: String!): Connection!
+  beginTotp(password: String!): String!
   blockBot(blocked: Boolean!, chatId: ID!): Boolean!
+  changePassword(newPassword: String!, otp: String, password: String!): Boolean!
   clearChat(chatId: ID!): Boolean!
   createBot(description: String!, name: String!, username: String!): BotToken!
-  createInvite(expiresInDays: Int, maxUses: Int): Invite!
-  login(password: String!, username: String!): Session!
-  logout: Boolean!
+  createInvite(expiresInDays: Int, maxUses: Int, role: InviteRole): Invite!
+  deleteChat(chatId: ID!): Boolean!
+  deleteMyAccount(otp: String, password: String!): Boolean!
+  disableTotp(otp: String, password: String!): Boolean!
+  editBotInvite(botId: ID!, expiresInDays: Int, id: ID!, maxUses: Int, roles: [String!]!): BotInvite!
+  editPlatformInvite(code: String!, expiresInDays: Int, maxUses: Int, role: InviteRole): Invite!
+  enableTotp(code: String!, password: String!): String!
+  inviteBotMember(botId: ID!, roles: [String!]!, username: String!): Boolean!
+  issueBotInvite(botId: ID!, expiresInDays: Int, maxUses: Int, roles: [String!]): BotInvite!
+  login(otp: String, password: String!, username: String!): Session!
+  logout(pushEndpoint: String): Boolean!
   markRead(chatId: ID!, seq: Int!): Boolean!
+  openGuestChat(username: String!): Boolean!
   pressButton(chatId: ID!, data: String!, messageId: ID!): ButtonResult!
   register(displayName: String!, invite: String!, password: String!, username: String!): Session!
   resetBotToken(botId: ID!): BotToken!
+  resetUserPassword(newPassword: String!, userId: ID!): Boolean!
+  revokeBotInvite(botId: ID!, id: ID): Boolean!
+  revokeMySession(id: ID!): Boolean!
+  revokePlatformInvite(code: String!): Boolean!
+  sendGuestCommand(clientId: String!, command: String!, username: String!): Boolean!
   sendMessage(input: SendMessageInput!): Message!
+  setBotAccess(access: BotAccess!, botId: ID!): Bot!
+  setBotGuestAccess(botId: ID!, enabled: Boolean!): Bot!
   setBotListed(botId: ID!, listed: Boolean!): Boolean!
+  setBotMemberRevoked(botId: ID!, chatId: ID!, revoked: Boolean!): Boolean!
+  setBotMemberRoles(botId: ID!, chatId: ID!, roles: [String!]!): Boolean!
   setBotOwner(botId: ID!, username: String): Boolean!
+  setChatNotifications(chatId: ID!, mode: ChatNotifications!): Boolean!
+  setUserRole(role: PlatformRole!, userId: ID!): User!
   subscribePush(subscription: JSON!): Boolean!
   unsubscribePush(endpoint: String!): Boolean!
+  updateAdminUser(bio: String!, displayName: String!, userId: ID!, username: String!): User!
+  updateBotProfile(avatar: String, botId: ID!, description: String!, welcome: String!): Bot!
+  updateProfile(bio: String!, displayName: String!, username: String!): User!
+}
+
+enum PlatformRole {
+  admin
+  owner
+  user
 }
 
 type Query {
+  adminBot(botId: ID!): Bot!
   adminBots: [Bot!]!
   adminInvites: [Invite!]!
+  adminUser(userId: ID!): User!
   adminUsers(query: String): [User!]!
+  botInvitations(botId: ID!): [BotInvite!]!
+  botMemberships(botId: ID!): BotMemberships!
   browseBots(query: String): [Bot!]!
+  chatProfile(beforeMediaSeq: Int, chatId: ID!): ChatProfile!
+  guestChat(username: String!): GuestChat!
   messages(before: Int, chatId: ID!, limit: Int = 50): [Message!]!
+  mySessions: [AuthSession!]!
+  pushStatus(endpoint: String!): Boolean!
+  registrationPolicy: RegistrationPolicy!
   session: Session!
   sync(since: Int!): SyncPayload!
+}
+
+type RegistrationPolicy {
+  invitations: Boolean!
+  registration: Boolean!
 }
 
 input SendMessageInput {
@@ -90,11 +215,14 @@ input SendMessageInput {
 
 type Session {
   chats: [Connection!]!
+  checkpoint: Int!
   user: User!
   vapidPublicKey: String
 }
 
 type SyncPayload {
+  checkpoint: Int!
+  hasMore: Boolean!
   resetRequired: Boolean!
   updates: [Update!]!
 }
@@ -105,8 +233,11 @@ type Update {
 }
 
 type User {
+  bio: String!
   displayName: String!
   id: ID!
   isAdmin: Boolean!
+  role: PlatformRole!
+  twoFactorEnabled: Boolean!
   username: String!
 }

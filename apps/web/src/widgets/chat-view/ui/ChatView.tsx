@@ -1,17 +1,16 @@
 import { ArrowLeft, Circle } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'wouter'
+import { BotAvatar } from '@/entities/bot'
 import { markChatReadRequest, useChatStore } from '@/entities/chat'
 import { fetchMessages, sendMessageRequest } from '@/entities/message'
 import { BlockedChatNotice } from '@/features/block-bot'
-import { CommandMenu } from '@/features/command-menu'
 import { Composer, retryChatMessage } from '@/features/send-message'
 import { showRequestError } from '@/shared/api'
 import { strings } from '@/shared/config'
 import { cn } from '@/shared/lib/cn'
 import type { ChatMessage } from '@/shared/model'
 import { Button } from '@/shared/ui/button'
-import { ChatManagementMenu } from './ChatManagementMenu'
 import { ConnectionBanner } from './ConnectionBanner'
 import { MessageList } from './MessageList'
 import { TypingIndicator } from './TypingIndicator'
@@ -23,27 +22,30 @@ export const ChatView = ({ chatId }: { chatId: string }) => {
   const messages = useChatStore((state) => state.messagesByChat[chatId] ?? emptyMessages)
   const connection = useChatStore((state) => state.connection)
   const typingUntil = useChatStore((state) => state.typingByChat[chatId])
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [historyAttempt, setHistoryAttempt] = useState(0)
   const [hasMore, setHasMore] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [historyError, setHistoryError] = useState(false)
+  const [paletteOpen, setPaletteOpen] = useState(false)
   const markedSeq = useRef<string | null>(null)
   const chatAvailable = Boolean(chat)
-  const latestSeq = messages.at(-1)?.seq
+  const latestSeq = messages.findLast((message) => !message.id.startsWith('pending:'))?.seq
   const unread = chat?.unread ?? 0
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: The attempt counter reloads history on retry.
   useEffect(() => {
     if (!chatAvailable) return
     let active = true
     setLoading(true)
-    setError(null)
+    setHistoryError(false)
     fetchMessages(chatId)
       .then((history) => {
         if (!active) return
-        useChatStore.getState().replaceMessages(chatId, history)
+        useChatStore.getState().replaceMessages(chatId, history, history.length === 50)
         setHasMore(history.length === 50)
       })
-      .catch((cause) => {
-        if (active) setError(showRequestError(cause))
+      .catch(() => {
+        if (active) setHistoryError(true)
       })
       .finally(() => {
         if (active) setLoading(false)
@@ -51,15 +53,22 @@ export const ChatView = ({ chatId }: { chatId: string }) => {
     return () => {
       active = false
     }
-  }, [chatId, chatAvailable])
+  }, [chatId, chatAvailable, historyAttempt])
 
   const loadEarlier = useCallback(async () => {
-    const firstSeq = useChatStore.getState().messagesByChat[chatId]?.[0]?.seq
+    const previous = useChatStore.getState()
+    const firstSeq = previous.messagesByChat[chatId]?.[0]?.seq
     if (!firstSeq) return
     setLoading(true)
     try {
       const history = await fetchMessages(chatId, firstSeq)
-      useChatStore.getState().prependMessages(chatId, history)
+      const current = useChatStore.getState()
+      if (
+        previous.user?.id !== current.user?.id ||
+        !current.chats.some((chat) => chat.id === chatId)
+      )
+        return
+      current.prependMessages(chatId, history)
       setHasMore(history.length === 50)
     } catch (cause) {
       showRequestError(cause)
@@ -85,10 +94,8 @@ export const ChatView = ({ chatId }: { chatId: string }) => {
     markedSeq.current = marker
     try {
       await markChatReadRequest({ chatId, seq: latestSeq })
-      const current = useChatStore.getState().chats.find((item) => item.id === chatId)
-      if (current) useChatStore.getState().upsertChat({ ...current, unread: 0 })
     } catch (cause) {
-      markedSeq.current = null
+      if (markedSeq.current === marker) markedSeq.current = null
       showRequestError(cause)
     }
   }, [chatAvailable, chatId, latestSeq, unread])
@@ -101,64 +108,87 @@ export const ChatView = ({ chatId }: { chatId: string }) => {
 
   if (!chat) {
     return (
-      <section className="grid h-dvh place-items-center text-muted-foreground">
-        {strings.chat.notFound}
+      <section className="workspace-surface grid h-full place-items-center p-5 text-center">
+        <div className="grid gap-4">
+          <h1 className="text-xl font-semibold">{strings.chat.notFound}</h1>
+          <Button asChild variant="outline">
+            <Link href="/">{strings.chat.back}</Link>
+          </Button>
+        </div>
       </section>
     )
   }
 
   return (
-    <section className="flex h-dvh min-h-0 flex-col bg-background" aria-labelledby="chat-title">
-      <header className="flex min-h-16 items-center gap-3 border-b px-3 pt-[env(safe-area-inset-top)] md:px-6">
-        <Button asChild variant="ghost" size="icon" className="md:hidden">
-          <Link href="/" aria-label={strings.chat.back}>
-            <ArrowLeft aria-hidden="true" />
+    <section className="flex h-full min-h-0 flex-col bg-background" aria-labelledby="chat-title">
+      <header className="shrink-0 border-b bg-card pt-[env(safe-area-inset-top)]">
+        <div className="relative flex h-16 items-stretch">
+          <Button
+            asChild
+            variant="ghost"
+            size="icon"
+            className="absolute top-1/2 left-2 z-10 -translate-y-1/2 md:hidden"
+          >
+            <Link href="/" aria-label={strings.chat.back}>
+              <ArrowLeft aria-hidden="true" />
+            </Link>
+          </Button>
+          <Link
+            href={`/c/${chatId}/profile`}
+            className="flex min-w-0 flex-1 items-center gap-3 pr-4 pl-14 hover:bg-accent/60 focus-visible:outline-2 focus-visible:-outline-offset-2 md:px-6"
+            aria-label={`Профиль бота ${chat.bot.name}`}
+          >
+            <BotAvatar bot={chat.bot} />
+            <div className="min-w-0">
+              <h1 id="chat-title" className="truncate text-[15px] font-semibold">
+                {chat.bot.name}
+              </h1>
+              <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Circle
+                  aria-hidden="true"
+                  className={cn(
+                    'size-2 fill-current',
+                    chat.bot.online ? 'text-emerald-500' : 'text-zinc-400',
+                  )}
+                />
+                {chat.bot.online ? strings.chat.online : strings.chat.offlineStatus}
+              </p>
+            </div>
           </Link>
-        </Button>
-        <div className="min-w-0 flex-1">
-          <h1 id="chat-title" className="truncate text-[15px] font-semibold">
-            {chat.bot.name}
-          </h1>
-          <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Circle
-              aria-hidden="true"
-              className={cn(
-                'size-2 fill-current',
-                chat.bot.online ? 'text-emerald-500' : 'text-zinc-400',
-              )}
-            />
-            {chat.bot.online ? strings.chat.online : strings.chat.offlineStatus}
-          </p>
         </div>
-        <ChatManagementMenu chatId={chatId} />
       </header>
       <ConnectionBanner connection={connection} botOnline={chat.bot.online} />
-      {error ? (
-        <p
-          role="alert"
-          className="bg-destructive/10 px-4 py-2 text-center text-xs text-destructive"
-        >
-          {error}
-        </p>
+      {historyError ? (
+        <div className="flex flex-wrap items-center justify-center gap-2 bg-destructive/10 px-4 py-1 text-sm text-destructive">
+          <p role="alert">{strings.chat.historyFailed}</p>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setHistoryAttempt((attempt) => attempt + 1)}
+          >
+            {strings.chat.retry}
+          </Button>
+        </div>
       ) : null}
       <MessageList
         chatId={chatId}
         messages={messages}
         hasMore={hasMore}
         loading={loading}
+        historyError={historyError}
+        welcome={chat.bot.welcome}
         onLoadEarlier={loadEarlier}
         onRetry={retry}
+        commands={chat.commands}
+        paletteOpen={paletteOpen}
+        onPaletteOpen={setPaletteOpen}
+        blocked={chat.blocked}
       />
       <TypingIndicator until={typingUntil} />
       {chat.blocked ? (
         <BlockedChatNotice chatId={chatId} />
       ) : (
-        <Composer
-          chatId={chatId}
-          renderCommandMenu={(query, onSelect) => (
-            <CommandMenu query={query} commands={chat.commands ?? []} onSelect={onSelect} />
-          )}
-        />
+        <Composer chatId={chatId} onOpenCommands={() => setPaletteOpen(true)} />
       )}
     </section>
   )

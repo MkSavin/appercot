@@ -2,7 +2,9 @@
   "files": {
     "includes": [
       "**",
-      "!PLAN.md",
+      "!.agents",
+      "!AGENTS.md",
+      "!apps/server/schema.graphql",
       "!apps/web/src/shared/api/graphql/generated",
       "!**/dist",
       "!**/.data*",

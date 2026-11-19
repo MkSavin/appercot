@@ -12,6 +12,7 @@ export const MessagesDocument = graphql(`
       replyTo
       createdAt
       editedAt
+      deleted
     }
   }
 `)
@@ -28,6 +29,7 @@ export const SendMessageDocument = graphql(`
       replyTo
       createdAt
       editedAt
+      deleted
     }
   }
 `)
@@ -40,6 +42,8 @@ export const SyncDocument = graphql(`
         payload
       }
       resetRequired
+      checkpoint
+      hasMore
     }
   }
 `)

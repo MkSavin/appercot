@@ -20,6 +20,7 @@ const upload = async (
 }
 
 describe('file uploads and media delivery', () => {
+  // @anchor INV:files/protects-access
   test('uploads user and bot media, protects access and supports byte ranges', async () => {
     const dataDir = `.test-data/files-${Bun.randomUUIDv7()}`
     const fixture = createServerFixture(dataDir)
@@ -68,7 +69,7 @@ describe('file uploads and media delivery', () => {
       })
       expect(image.status).toBe(200)
       expect(image.headers.get('content-type')).toBe('image/png')
-      expect(image.headers.get('cache-control')).toContain('immutable')
+      expect(image.headers.get('cache-control')).toBe('private, no-store')
       expect(await image.arrayBuffer()).toEqual(new Uint8Array([1, 2, 3, 4, 5, 6]).buffer)
 
       const forbidden = await fetch(`${fixture.baseUrl}/api/files/${imageBody.fileId}`, {

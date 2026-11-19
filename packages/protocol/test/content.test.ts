@@ -29,6 +29,7 @@ describe('message content', () => {
     expect(UserContentSchema.safeParse({}).success).toBe(false)
   })
 
+  // @anchor INV:content/rejects-keyboards
   test('rejects buttons in user content', () => {
     const result = UserContentSchema.safeParse({
       buttons: [[{ text: 'Not allowed', callback: 'action' }]],
@@ -72,6 +73,7 @@ describe('message content', () => {
     ).toBe(false)
   })
 
+  // @anchor INV:content/counts-bytes
   test('measures callback data in UTF-8 bytes', () => {
     const validCallback = 'a'.repeat(BUTTON_CALLBACK_MAX_BYTES)
     const oversizedCallback = '🙂'.repeat(BUTTON_CALLBACK_MAX_BYTES / 4 + 1)

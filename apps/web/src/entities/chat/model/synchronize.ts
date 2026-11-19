@@ -6,10 +6,13 @@ type Store = ReturnType<typeof createChatStore>
 
 interface SynchronizationResult {
   resetRequired: boolean
+  checkpoint?: number
+  hasMore?: boolean
   updates: Array<{ seq: number; update: ClientUpdate }>
 }
 
 interface SynchronizationDependencies {
+  isCurrent?: () => boolean
   activeChatId?: string
   fetchUpdates: (since: number) => Promise<SynchronizationResult>
   refreshSession: () => Promise<SessionPayload>
@@ -21,17 +24,27 @@ export const synchronizeChatState = async (
   dependencies: SynchronizationDependencies,
 ) => {
   for (;;) {
-    const result = await dependencies.fetchUpdates(store.getState().lastSeq)
+    const since = store.getState().lastSeq
+    const result = await dependencies.fetchUpdates(since)
+    if (dependencies.isCurrent?.() === false) return
     if (result.resetRequired) {
-      store.getState().setLastSeq(0)
-      store.getState().setSession(await dependencies.refreshSession())
-      if (dependencies.activeChatId) {
-        const history = await dependencies.loadActiveChat(dependencies.activeChatId)
-        store.getState().replaceMessages(dependencies.activeChatId, history)
+      if (since === 0) throw new Error('Server cannot reset an empty checkpoint')
+      const chatId = dependencies.activeChatId
+      const session = await dependencies.refreshSession()
+      if (dependencies.isCurrent?.() === false) return
+      store.getState().setSession(session)
+      if (session.checkpoint !== undefined) store.getState().discardCachedHistory()
+      if (chatId && session.chats.some((chat) => chat.id === chatId)) {
+        const history = await dependencies.loadActiveChat(chatId)
+        if (dependencies.isCurrent?.() === false) return
+        store.getState().replaceMessages(chatId, history)
       }
+      store.getState().setLastSeq(session.checkpoint ?? 0)
       continue
     }
     for (const { seq, update } of result.updates) store.getState().applyUpdate(seq, update)
-    return
+    if (result.checkpoint !== undefined && result.checkpoint > store.getState().lastSeq)
+      store.getState().setLastSeq(result.checkpoint)
+    if (!result.hasMore || store.getState().lastSeq <= since) return
   }
 }

@@ -24,6 +24,7 @@ describe('client updates', () => {
     expect(ClientToServerFrameSchema.safeParse({ t: 'ping' }).success).toBe(true)
   })
 
+  // @anchor INV:client-updates/rejects-frames
   test('rejects unknown updates and invalid sequence numbers', () => {
     expect(ClientUpdateSchema.safeParse({ type: 'message.unknown' }).success).toBe(false)
     expect(

@@ -5,8 +5,18 @@ export const users = sqliteTable('users', {
   id: text('id').primaryKey(),
   username: text('username').notNull().unique(),
   displayName: text('display_name').notNull(),
+  bio: text('bio').notNull().default(''),
+  guestUntil: integer('guest_until'),
+  totpSecret: text('totp_secret'),
+  totpCounter: integer('totp_counter'),
+  totpRecoveryHash: text('totp_recovery_hash'),
+  totpPending: text('totp_pending'),
+  totpPendingUntil: integer('totp_pending_until'),
   passwordHash: text('password_hash').notNull(),
   isAdmin: integer('is_admin', { mode: 'boolean' }).notNull().default(false),
+  role: text('role', { enum: ['user', 'admin', 'owner'] })
+    .notNull()
+    .default('user'),
   createdAt: integer('created_at').notNull(),
 })
 
@@ -26,6 +36,10 @@ export const invites = sqliteTable('invites', {
   maxUses: integer('max_uses'),
   uses: integer('uses').notNull().default(0),
   expiresAt: integer('expires_at'),
+  role: text('role', { enum: ['user', 'admin'] })
+    .notNull()
+    .default('user'),
+  revokedAt: integer('revoked_at'),
   createdAt: integer('created_at').notNull(),
 })
 
@@ -34,17 +48,66 @@ export const bots = sqliteTable('bots', {
   username: text('username').notNull().unique(),
   name: text('name').notNull(),
   description: text('description').notNull(),
+  avatar: text('avatar'),
+  welcome: text('welcome').notNull().default(''),
   ownerId: text('owner_id').references(() => users.id, { onDelete: 'set null' }),
   tokenHash: text('token_hash').notNull().unique(),
   listed: integer('listed', { mode: 'boolean' }).notNull().default(true),
+  guestAccess: integer('guest_access', { mode: 'boolean' }).notNull().default(false),
   access: text('access', { enum: ['public', 'by_link'] })
     .notNull()
     .default('public'),
+  inviteHash: text('invite_hash'),
+  inviteExpiresAt: integer('invite_expires_at'),
+  inviteRoles: text('invite_roles', { mode: 'json' }).$type<string[]>().notNull().default([]),
   roles: text('roles', { mode: 'json' }).$type<string[]>().notNull().default([]),
+  roleLabels: text('role_labels', { mode: 'json' })
+    .$type<Record<string, string>>()
+    .notNull()
+    .default({}),
   defaultRoles: text('default_roles', { mode: 'json' }).$type<string[]>().notNull().default([]),
   commandsRev: integer('commands_rev').notNull().default(0),
   createdAt: integer('created_at').notNull(),
 })
+
+export const botInvites = sqliteTable(
+  'bot_invites',
+  {
+    id: text('id').primaryKey(),
+    botId: text('bot_id')
+      .notNull()
+      .references(() => bots.id, { onDelete: 'cascade' }),
+    code: text('code'),
+    tokenHash: text('token_hash').notNull().unique(),
+    roles: text('roles', { mode: 'json' }).$type<string[]>().notNull(),
+    maxUses: integer('max_uses'),
+    uses: integer('uses').notNull().default(0),
+    expiresAt: integer('expires_at'),
+    revokedAt: integer('revoked_at'),
+    createdAt: integer('created_at').notNull(),
+  },
+  (table) => [index('bot_invites_bot_idx').on(table.botId)],
+)
+
+export const botAvatars = sqliteTable('bot_avatars', {
+  botId: text('bot_id')
+    .primaryKey()
+    .references(() => bots.id, { onDelete: 'cascade' }),
+  image: text('image').notNull(),
+})
+
+export const botInviteUses = sqliteTable(
+  'bot_invite_uses',
+  {
+    inviteId: text('invite_id')
+      .notNull()
+      .references(() => botInvites.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+  },
+  (table) => [primaryKey({ columns: [table.inviteId, table.userId] })],
+)
 
 export const botCommands = sqliteTable(
   'bot_commands',
@@ -56,6 +119,7 @@ export const botCommands = sqliteTable(
     description: text('description').notNull(),
     roles: text('roles', { mode: 'json' }).$type<string[] | null>(),
     sort: integer('sort').notNull(),
+    shortcut: text('shortcut'),
   },
   (table) => [primaryKey({ columns: [table.botId, table.name] })],
 )
@@ -71,7 +135,13 @@ export const chats = sqliteTable(
       .notNull()
       .references(() => bots.id, { onDelete: 'cascade' }),
     roles: text('roles', { mode: 'json' }).$type<string[]>().notNull().default([]),
+    guest: integer('guest', { mode: 'boolean' }).notNull().default(false),
     blockedAt: integer('blocked_at'),
+    revokedAt: integer('revoked_at'),
+    hiddenAt: integer('hidden_at'),
+    notifications: text('notifications', { enum: ['all', 'silent', 'off'] })
+      .notNull()
+      .default('all'),
     lastMessageAt: integer('last_message_at'),
     lastReadSeq: integer('last_read_seq').notNull().default(0),
     nextSeq: integer('next_seq').notNull().default(1),
@@ -98,6 +168,7 @@ export const messages = sqliteTable(
     replyTo: text('reply_to'),
     createdAt: integer('created_at').notNull(),
     editedAt: integer('edited_at'),
+    deletedAt: integer('deleted_at'),
   },
   (table) => [
     uniqueIndex('messages_chat_seq_unique').on(table.chatId, table.seq),
@@ -118,9 +189,18 @@ export const files = sqliteTable(
     name: text('name').notNull(),
     width: integer('width'),
     height: integer('height'),
+    storage: text('storage', { enum: ['local', 's3'] })
+      .notNull()
+      .default('local'),
+    previewState: text('preview_state', { enum: ['pending', 'ready', 'unavailable'] }),
+    detachedAt: integer('detached_at'),
+    attached: integer('attached', { mode: 'boolean' }).notNull().default(true),
     createdAt: integer('created_at').notNull(),
   },
-  (table) => [index('files_chat_idx').on(table.chatId)],
+  (table) => [
+    index('files_chat_idx').on(table.chatId),
+    index('files_preview_idx').on(table.previewState, table.id),
+  ],
 )
 
 export const chatKv = sqliteTable(
@@ -170,6 +250,7 @@ export const pushSubs = sqliteTable('push_subs', {
   userId: text('user_id')
     .notNull()
     .references(() => users.id, { onDelete: 'cascade' }),
+  sessionId: text('session_id').references(() => sessions.id, { onDelete: 'cascade' }),
   endpoint: text('endpoint').notNull().unique(),
   p256dh: text('p256dh').notNull(),
   auth: text('auth').notNull(),

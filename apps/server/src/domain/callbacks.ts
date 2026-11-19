@@ -27,6 +27,7 @@ export class CallbackRegistry {
   ) {
     if (!rateLimiter.allow(userId)) throw new DomainError('RATE_LIMIT', 'Too many button presses')
     const current = getChatForUser(db, chatId, userId)
+    if (current.chat.blockedAt !== null) throw new DomainError('BOT_BLOCKED', 'Bot is blocked')
     const message = db.select().from(messages).where(eq(messages.id, messageId)).get()
     const hasButton = message?.content.buttons
       ?.flat()
@@ -51,7 +52,7 @@ export class CallbackRegistry {
         chatId,
         event: {
           type: 'callback',
-          chat: toChatRef(current.chat),
+          chat: toChatRef(current.chat, current.bot),
           user: toUserRef(current.user),
           messageId,
           data,

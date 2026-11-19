@@ -11,7 +11,12 @@ export const upgradeClientWebSocket = (
 ) => {
   const session = getRequestSession(database.db, request)
   const upgraded = server.upgrade(request, {
-    data: { kind: 'client', userId: session?.user.id ?? null },
+    data: {
+      kind: 'client',
+      userId: session?.user.id ?? null,
+      sessionId: session?.sessionId ?? null,
+      expiresAt: session?.expiresAt ?? 0,
+    },
   })
   return upgraded ? undefined : new Response('WebSocket upgrade failed', { status: 400 })
 }
@@ -24,10 +29,14 @@ export const createClientWebSocketHandlers = (hub: Hub): WebSocketHandler<AppWeb
       socket.close(4401, 'unauthorized')
       return
     }
-    hub.connectUser(userId, socket)
+    hub.connectUser(userId, socket, socket.data.sessionId ?? undefined, socket.data.expiresAt)
   },
   message: (socket, frame) => {
     if (socket.data.kind !== 'client') return
+    if (socket.data.expiresAt <= Date.now()) {
+      socket.close(4401, 'session expired')
+      return
+    }
     try {
       const value: unknown = JSON.parse(String(frame))
       if (typeof value !== 'object' || value === null || !('t' in value)) return

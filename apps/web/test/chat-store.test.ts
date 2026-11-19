@@ -1,12 +1,12 @@
 import { describe, expect, test } from 'bun:test'
-import type { ClientChat, Message, UserRef } from '@appercot/protocol'
+import type { ClientChat, Message } from '@appercot/protocol'
 import { createChatStore, type SessionPayload } from '../src/entities/chat/model/store'
 
 const user: SessionPayload['user'] = {
   id: 'user-1',
   username: 'alice',
   displayName: 'Alice',
-  isAdmin: false,
+  role: 'user',
 }
 
 const bot: ClientChat['bot'] = {
@@ -45,6 +45,7 @@ const lastMessage = (store: ReturnType<typeof createChatStore>) =>
   store.getState().messagesByChat[chat.id]?.at(-1)
 
 describe('chat store', () => {
+  // @anchor INV:chat-store/keeps-processed
   test('moves an optimistic message through accepted and processed without duplicates', () => {
     const store = createChatStore()
     store.getState().setSession(session)
@@ -76,9 +77,21 @@ describe('chat store', () => {
     })
 
     expect(lastMessage(store)?.status).toBe('processed')
+    store.getState().completeOutgoingMessage(chat.id, 'client-1', message())
+    expect(lastMessage(store)?.status).toBe('processed')
     expect(store.getState().applyUpdate(3, { type: 'chat.cleared', chatId: chat.id })).toBe(false)
     expect(lastMessage(store)?.status).toBe('processed')
     expect(store.getState().lastSeq).toBe(3)
+  })
+
+  // @anchor INV:chat-store/ignores-cleared
+  test('discards a send confirmation that arrives after the chat was cleared', () => {
+    const store = createChatStore()
+    store.getState().setSession(session)
+    store.getState().beginOptimisticMessage(chat.id, 'client-1', { text: 'Hello' }, 1000)
+    store.getState().applyUpdate(1, { type: 'chat.cleared', chatId: chat.id })
+    store.getState().completeOutgoingMessage(chat.id, 'client-1', message())
+    expect(store.getState().messagesByChat[chat.id]).toEqual([])
   })
 
   test('keeps the same client id when a failed message is retried', () => {
@@ -99,6 +112,23 @@ describe('chat store', () => {
     expect(lastMessage(store)).toMatchObject({ id: 'server-message', status: 'accepted' })
   })
 
+  // @anchor INV:chat-store/hides-consumed
+  test('removes a consumed wizard reply even when deletion arrives before its send confirmation', () => {
+    const store = createChatStore()
+    store.getState().setSession(session)
+    store.getState().beginOptimisticMessage(chat.id, 'wizard-input', { text: 'Hello' }, 1000)
+    store.getState().applyUpdate(1, {
+      type: 'message.deleted',
+      chatId: chat.id,
+      messageId: 'message-1',
+      clientId: 'wizard-input',
+    })
+    store.getState().completeOutgoingMessage(chat.id, 'wizard-input', message())
+    expect(store.getState().messagesByChat[chat.id]).toEqual([])
+    expect(store.getState().pendingByChat[chat.id]).toEqual([])
+  })
+
+  // @anchor INV:chat-store/preserves-pending
   test('preserves pending messages when history is replaced or prepended', () => {
     const store = createChatStore()
     store.getState().setSession(session)
@@ -114,6 +144,7 @@ describe('chat store', () => {
     expect(store.getState().pendingByChat[chat.id]).toEqual(['pending-1'])
   })
 
+  // @anchor INV:chat-store/isolates-checkpoints
   test('stores the synchronization checkpoint separately for each user', () => {
     const values = new Map<string, string>([['appercot:last-seq:user-1', '7']])
     const storage: Pick<Storage, 'getItem' | 'setItem' | 'removeItem'> = {
@@ -130,7 +161,7 @@ describe('chat store', () => {
     expect(values.get('appercot:last-seq:user-1')).toBe('8')
     expect(store.getState().chats[0]?.bot.online).toBe(false)
 
-    const otherUser: UserRef & { isAdmin: boolean } = { ...user, id: 'user-2' }
+    const otherUser: SessionPayload['user'] = { ...user, id: 'user-2' }
     store.getState().setSession({ ...session, user: otherUser })
     expect(store.getState().lastSeq).toBe(0)
   })

@@ -3,6 +3,8 @@ import { z } from 'zod'
 export const ERROR_CODES = {
   badRequest: 'BAD_REQUEST',
   unauthorized: 'UNAUTHORIZED',
+  totpRequired: 'TOTP_REQUIRED',
+  totpInvalid: 'TOTP_INVALID',
   forbidden: 'FORBIDDEN',
   notFound: 'NOT_FOUND',
   botBlocked: 'BOT_BLOCKED',

@@ -7,12 +7,15 @@ import {
 import { graphqlClient, MessagesDocument, SendMessageDocument, SyncDocument } from '@/shared/api'
 import type { MessagesQuery } from '@/shared/api/graphql/generated/graphql'
 
-export const parseGraphqlMessage = (message: MessagesQuery['messages'][number]): Message => {
-  const { replyTo, editedAt, ...requiredFields } = message
+export const parseGraphqlMessage = (
+  message: Omit<MessagesQuery['messages'][number], 'deleted'> & { deleted?: boolean },
+): Message => {
+  const { replyTo, editedAt, deleted, ...requiredFields } = message
   return MessageSchema.parse({
     ...requiredFields,
     ...(replyTo === null ? {} : { replyTo }),
     ...(editedAt === null ? {} : { editedAt }),
+    ...(deleted ? { deleted } : {}),
   })
 }
 
@@ -34,6 +37,8 @@ export const fetchSynchronization = async (since: number) => {
   const result = await graphqlClient.request(SyncDocument, { since })
   return {
     resetRequired: result.sync.resetRequired,
+    checkpoint: result.sync.checkpoint,
+    hasMore: result.sync.hasMore,
     updates: result.sync.updates.map((update) => ({
       seq: update.seq,
       update: ClientUpdateSchema.parse(update.payload),

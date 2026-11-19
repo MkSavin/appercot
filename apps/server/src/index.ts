@@ -1,13 +1,17 @@
 import { resolve } from 'node:path'
 import { bootstrapAuth } from './auth/password'
+import { getRequestSession } from './auth/session'
 import { createDatabase, type DatabaseContext } from './db/client'
+import { getAvatarForUser } from './domain/bot-profile'
 import { CallbackRegistry } from './domain/callbacks'
+import { S3_MAX_BYTES } from './domain/files'
+import { createMediaStorage } from './domain/media-storage'
 import { startPruneJob } from './domain/prune'
 import { PushService } from './domain/push'
 import type { AppEnv } from './env'
 import { loadEnv } from './env'
 import { createGraphQLHandler } from './graphql'
-import { serveUserFile, uploadBotFile, uploadUserFile } from './http/files'
+import { createFileHandlers } from './http/files'
 import { createRouter } from './http/router'
 import { resolveRuntimeDirectory } from './runtime'
 import { createBotWebSocketHandlers, upgradeBotWebSocket } from './ws/bot-ws'
@@ -19,6 +23,7 @@ interface ServerOptions {
   database: DatabaseContext
   env: AppEnv
   port?: number
+  hostname?: string
   publicDir?: string
 }
 
@@ -26,6 +31,7 @@ export const startServer = ({
   database,
   env,
   port = env.PORT,
+  hostname = '0.0.0.0',
   publicDir = resolve(resolveRuntimeDirectory(), 'public'),
 }: ServerOptions) => {
   const hub = new Hub()
@@ -34,19 +40,36 @@ export const startServer = ({
   hub.onBotMessage((userId, chatId, message) => push.sendMessage(userId, chatId, message))
   const botHandlers = createBotWebSocketHandlers(database, hub, callbacks)
   const clientHandlers = createClientWebSocketHandlers(hub)
+  const mediaStorage = createMediaStorage(env)
+  const fileHandlers = createFileHandlers(database.db, env, mediaStorage)
   const route = createRouter({
     graphql: createGraphQLHandler(database.db, env, hub, callbacks, push),
     botWebSocket: (request, server) => upgradeBotWebSocket(request, server, database),
     clientWebSocket: (request, server) => upgradeClientWebSocket(request, server, database),
-    uploadUserFile: (request) => uploadUserFile(request, database.db, env),
-    uploadBotFile: (request) => uploadBotFile(request, database.db, env),
-    serveFile: (request, fileId) => serveUserFile(request, fileId, database.db, env),
+    uploadUserFile: fileHandlers.uploadUser,
+    uploadBotFile: fileHandlers.uploadBot,
+    serveFile: fileHandlers.serve,
+    mediaLimits: fileHandlers.limits,
+    serveAvatar: (request, botId) => {
+      const session = getRequestSession(database.db, request)
+      const avatar = getAvatarForUser(database.db, session?.user ?? null, botId)
+      if (!avatar) return new Response(null, { status: 404 })
+      return new Response(new Uint8Array(avatar.bytes), {
+        headers: {
+          'content-type': avatar.mime,
+          'cache-control': 'private, no-store',
+          'x-content-type-options': 'nosniff',
+        },
+      })
+    },
     publicDir,
   })
-  startPruneJob(database.db)
+  startPruneJob(database.db, mediaStorage)
   return Bun.serve<AppWebSocketData>({
-    hostname: '0.0.0.0',
+    hostname,
     port,
+    maxRequestBodySize: S3_MAX_BYTES,
+    idleTimeout: 120,
     fetch: async (request, server) => {
       const response = await route(request, server)
       response?.headers.set(

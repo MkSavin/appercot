@@ -1,8 +1,17 @@
-import type { BotCommand, BotEvent, BotEventType, Params } from '@appercot/protocol'
+import {
+  allowsBotAction,
+  type BotCommand,
+  type BotEvent,
+  type BotEventType,
+  type BotRole,
+  type Params,
+} from '@appercot/protocol'
 import { BotApi } from './api'
+import { CommandDefinition } from './command'
 import { BotConnection } from './connection'
 import { Context } from './context'
 import { FlowBuilder } from './flow/builder'
+import type { UploadOptions, UploadSource } from './media'
 
 type CallbackEvent = Extract<BotEvent, { type: 'callback' }>
 
@@ -13,11 +22,11 @@ interface CreateBotOptions {
 }
 
 interface StartOptions {
-  roles?: string[]
+  roles?: Array<BotRole | string>
   defaultRoles?: string[]
   listed?: boolean
   access?: 'public' | 'by_link'
-  commands?: BotCommand[]
+  commands?: Array<BotCommand | CommandDefinition>
 }
 
 interface CommandOptions {
@@ -33,11 +42,18 @@ interface RegisteredFlow {
 
 export type ContextListener = (context: Context) => unknown
 
+/** @anchor DOC:sdk */
 export class Bot {
   readonly api: BotApi
   private readonly connection: BotConnection
   private readonly listeners = new Map<BotEventType, Set<ContextListener>>()
-  private readonly commands = new Map<string, ContextListener>()
+  private readonly handlers = new Map<
+    string,
+    { handler: ContextListener; roles?: string[]; definition?: CommandDefinition }
+  >()
+  private published?: Array<BotCommand | CommandDefinition>
+  private configure?: () => Promise<unknown>
+  private appliedConfiguration?: () => Promise<unknown>
   private readonly flows = new Map<string, RegisteredFlow>()
   private readonly chatChains = new Map<string, Promise<void>>()
 
@@ -47,6 +63,11 @@ export class Bot {
       token: options.token,
       ackOnError: options.ackOnError ?? true,
       onEvent: (event) => this.enqueue(event),
+      configuresOnHello: () => this.configure !== undefined,
+      onHello: async () => {
+        this.appliedConfiguration = undefined
+        await this.applyConfiguration()
+      },
     })
     this.api = new BotApi(this.connection)
   }
@@ -59,15 +80,29 @@ export class Bot {
   }
 
   command(name: string, listener: ContextListener): this
+  command(name: string, description: string, listener: ContextListener): CommandDefinition
   command(name: string, options: CommandOptions, listener: ContextListener): this
   command(
     name: string,
-    optionsOrListener: CommandOptions | ContextListener,
+    optionsOrListener: string | CommandOptions | ContextListener,
     listener?: ContextListener,
   ) {
     const handler = typeof optionsOrListener === 'function' ? optionsOrListener : listener
     if (!handler) throw new Error('Command listener is required')
-    this.commands.set(name, handler)
+    if (typeof optionsOrListener === 'string') {
+      const definition = new CommandDefinition(name, optionsOrListener)
+      this.handlers.set(name, { handler, definition })
+      return definition
+    }
+    this.handlers.set(name, {
+      handler,
+      roles: typeof optionsOrListener === 'function' ? undefined : optionsOrListener.roles,
+    })
+    return this
+  }
+
+  commands(commands: Array<BotCommand | CommandDefinition>) {
+    this.published = commands
     return this
   }
 
@@ -80,19 +115,39 @@ export class Bot {
 
   async start(options: StartOptions = {}) {
     for (const flow of this.flows.values()) flow.validate()
-    await this.connection.start()
+    const definitions = [...this.handlers.values()].flatMap(({ definition }) =>
+      definition ? [definition] : [],
+    )
+    const configured =
+      options.commands ?? this.published ?? (definitions.length ? definitions : undefined)
+    const commands = configured?.map((item) => {
+      const command = item instanceof CommandDefinition ? item.toJSON() : item
+      return { ...command, roles: this.handlers.get(command.name)?.roles ?? command.roles }
+    })
     if (options.roles) {
       const roles: Params<'setRoles'> = { roles: options.roles }
       if (options.defaultRoles) roles.defaultRoles = options.defaultRoles
       if (options.listed !== undefined) roles.listed = options.listed
       if (options.access) roles.access = options.access
-      await this.api.setRoles(roles)
+      this.configure = () => this.api.setRoles({ ...roles, commands })
+    } else if (commands) {
+      this.configure = () => this.api.setCommands({ commands })
+    } else {
+      this.configure = undefined
     }
-    if (options.commands) await this.api.setCommands({ commands: options.commands })
+    await this.connection.start()
+    await this.applyConfiguration()
   }
 
-  uploadFile(chatId: string, file: File) {
-    return this.api.uploadFile(chatId, file)
+  private async applyConfiguration() {
+    const configure = this.configure
+    if (!configure || configure === this.appliedConfiguration) return
+    await configure()
+    this.appliedConfiguration = configure
+  }
+
+  uploadFile(chatId: string, file: UploadSource, options?: UploadOptions) {
+    return this.api.uploadFile(chatId, file, options)
   }
 
   stop() {
@@ -110,6 +165,12 @@ export class Bot {
 
   private async dispatch(event: BotEvent) {
     const context = new Context(event, this.api)
+    const command = event.type === 'command' ? this.handlers.get(event.name) : undefined
+    if (
+      command &&
+      !allowsBotAction(command.definition?.toJSON().roles ?? command.roles, context.roles)
+    )
+      return
     if (event.type === 'command' || event.type === 'chat_cleared') {
       for (const flow of this.flows.values()) await flow.clear(context)
     }
@@ -125,12 +186,9 @@ export class Bot {
         if (await flow.handleMessage(context, event.message.content.text ?? '')) return
       }
     }
-    if (event.type === 'command') {
-      const command = this.commands.get(event.name)
-      if (command) {
-        await command(context)
-        return
-      }
+    if (command) {
+      await command.handler(context)
+      return
     }
     for (const listener of this.listeners.get(event.type) ?? []) await listener(context)
   }

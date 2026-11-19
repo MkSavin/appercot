@@ -47,6 +47,7 @@ describe('PWA and push subscription', () => {
     expect(actions).toEqual(['open:/c/chat-2'])
   })
 
+  // @anchor INV:pwa/restricts-deeplinks
   test('accepts only local chat deep links in push payloads', () => {
     expect(
       PushPayloadSchema.parse({

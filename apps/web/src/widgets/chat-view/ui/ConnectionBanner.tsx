@@ -17,7 +17,11 @@ export const ConnectionBanner = ({ connection, botOnline }: ConnectionBannerProp
       role="status"
     >
       <Icon aria-hidden="true" className="size-3.5 shrink-0" />
-      {networkOffline ? strings.chat.offline : strings.chat.botOffline}
+      {connection === 'connecting'
+        ? strings.chat.reconnecting
+        : networkOffline
+          ? strings.chat.offline
+          : strings.chat.botOffline}
     </div>
   )
 }

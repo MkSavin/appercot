@@ -124,6 +124,7 @@ const createOrderFlow = (bot: ReturnType<typeof createBot>) => {
 }
 
 describe('bot flows', () => {
+  // @anchor INV:flow/consumes-text
   test('moves between edited screens, validates input and finishes', async () => {
     const { bot, api } = setup()
     const order = createOrderFlow(bot)
@@ -135,8 +136,10 @@ describe('bot flows', () => {
     await dispatch(bot, callbackEvent(sizeCallback))
     expect(api.edits.at(-1)?.text).toBe('Размер S. Сколько штук?')
     await dispatch(bot, messageEvent('0'))
+    expect(api.deleted).toEqual(['user-message'])
     expect(api.sent.at(-1)?.text).toBe('Нужно целое число ≥ 1')
     await dispatch(bot, messageEvent('2'))
+    expect(api.deleted).toEqual(['user-message', 'user-message'])
     expect(api.edits.at(-1)?.text).toBe('2 × S. Подтвердить?')
 
     await dispatch(bot, callbackEvent(firstCallback(api.edits.at(-1))))
@@ -145,6 +148,7 @@ describe('bot flows', () => {
     expect(api.answers).toEqual([undefined, undefined])
   })
 
+  // @anchor INV:flow/rejects-stale
   test('rejects a button from an outdated screen', async () => {
     const { bot, api } = setup()
     const order = createOrderFlow(bot)
@@ -216,7 +220,7 @@ describe('bot flows', () => {
     await dispatch(bot, callbackEvent(firstCallback(api.edits.at(-1))))
     expect(api.edits.at(-1)?.text).toBe('Адрес?')
     await dispatch(bot, callbackEvent(firstCallback(api.edits.at(-1))))
-    expect(api.deleted).toEqual(['message-1'])
+    expect(api.deleted).toEqual(['user-message', 'message-1'])
     expect(api.values.has('__flow :shipping')).toBe(false)
   })
 

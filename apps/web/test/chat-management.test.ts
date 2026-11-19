@@ -27,7 +27,7 @@ const chat: ClientChat = {
 }
 
 const session: SessionPayload = {
-  user: { id: 'user-1', username: 'alice', displayName: 'Alice', isAdmin: false },
+  user: { id: 'user-1', username: 'alice', displayName: 'Alice', role: 'user' },
   chats: [chat],
   vapidPublicKey: null,
 }

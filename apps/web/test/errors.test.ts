@@ -17,6 +17,9 @@ const graphQLError = (code: string) =>
 test('maps protocol errors to actionable Russian messages', () => {
   expect(getRequestErrorMessage(graphQLError('RATE_LIMIT'))).toContain('Слишком много')
   expect(getRequestErrorMessage(graphQLError('UNAUTHORIZED'))).toContain('Сессия')
+  expect(getRequestErrorMessage(graphQLError('UNAUTHORIZED'), 'authentication')).toBe(
+    'Неверное имя пользователя или пароль.',
+  )
   expect(getRequestErrorMessage(graphQLError('BOT_BLOCKED'))).toContain('заблокирован')
   expect(getRequestErrorMessage(new Error('Offline'))).toBe('Offline')
   expect(getRequestErrorMessage(null)).toContain('Не удалось')

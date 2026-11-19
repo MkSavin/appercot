@@ -6,6 +6,8 @@ export const UpdateType = builder.objectRef<{ seq: number; payload: unknown }>('
 export const SyncPayloadType = builder.objectRef<{
   updates: Array<{ seq: number; payload: unknown }>
   resetRequired: boolean
+  checkpoint: number
+  hasMore: boolean
 }>('SyncPayload')
 export const ButtonResultType = builder.objectRef<{ toast: string | null }>('ButtonResult')
 
@@ -28,6 +30,7 @@ builder.objectType(MessageType, {
     replyTo: field.exposeID('replyTo', { nullable: true }),
     createdAt: field.exposeFloat('createdAt'),
     editedAt: field.exposeFloat('editedAt', { nullable: true }),
+    deleted: field.boolean({ resolve: (message) => message.deleted ?? false }),
   }),
 })
 
@@ -42,6 +45,8 @@ builder.objectType(SyncPayloadType, {
   fields: (field) => ({
     updates: field.field({ type: [UpdateType], resolve: (payload) => payload.updates }),
     resetRequired: field.exposeBoolean('resetRequired'),
+    checkpoint: field.exposeInt('checkpoint'),
+    hasMore: field.exposeBoolean('hasMore'),
   }),
 })
 

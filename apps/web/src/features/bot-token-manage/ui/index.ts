@@ -1,2 +1,2 @@
-export * from './BotManager'
 export * from './BotTokenDialog'
+export * from './CreateBotDialog'

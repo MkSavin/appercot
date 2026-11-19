@@ -19,6 +19,7 @@ describe('standalone server packaging', () => {
     }
   })
 
+  // @anchor INV:packaging/uses-executable
   test('uses the executable directory instead of the Bun virtual filesystem', async () => {
     await mkdir(resolve(dataDir, 'dist/drizzle'), { recursive: true })
     try {

@@ -7,6 +7,7 @@ import {
   MEDIA_MAX,
   TEXT_MAX,
 } from './limits'
+import { ShortcutSchema } from './shortcuts'
 
 const textEncoder = new TextEncoder()
 
@@ -24,6 +25,7 @@ const hasContent = (content: { text?: string; media?: unknown[]; buttons?: unkno
 
 export const CallbackButtonSchema = z.strictObject({
   text: z.string().min(1),
+  shortcut: ShortcutSchema.optional(),
   callback: z
     .string()
     .min(1)
@@ -32,11 +34,13 @@ export const CallbackButtonSchema = z.strictObject({
 
 export const UrlButtonSchema = z.strictObject({
   text: z.string().min(1),
+  shortcut: ShortcutSchema.optional(),
   url: z.url().refine(isHttpUrl),
 })
 
 export const CommandButtonSchema = z.strictObject({
   text: z.string().min(1),
+  shortcut: ShortcutSchema.optional(),
   command: z.string().regex(new RegExp(`^/[a-z0-9_]{1,${COMMAND_NAME_MAX}}$`)),
 })
 

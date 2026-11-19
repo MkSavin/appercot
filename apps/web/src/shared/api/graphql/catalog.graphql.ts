@@ -9,13 +9,15 @@ export const BrowseBotsDocument = graphql(`
       description
       online
       listed
+      avatar
+      welcome
     }
   }
 `)
 
 export const AddBotDocument = graphql(`
-  mutation AddBot($username: String!) {
-    addBot(username: $username) {
+  mutation AddBot($username: String!, $invite: String) {
+    addBot(username: $username, invite: $invite) {
       id
       bot {
         id
@@ -24,15 +26,19 @@ export const AddBotDocument = graphql(`
         description
         online
         listed
+        avatar
+        welcome
       }
       roles
       blocked
+      notifications
       unread
       lastMessageAt
       createdAt
       commands {
         name
         description
+        shortcut
       }
     }
   }

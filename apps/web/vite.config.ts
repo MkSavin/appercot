@@ -44,18 +44,18 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/graphql': 'http://localhost:3000',
+      '/graphql': 'http://127.0.0.1:3000',
       '/api': {
-        target: 'http://localhost:3000',
+        target: 'http://127.0.0.1:3000',
         ws: true,
       },
     },
   },
   preview: {
     proxy: {
-      '/graphql': 'http://localhost:3000',
+      '/graphql': 'http://127.0.0.1:3000',
       '/api': {
-        target: 'http://localhost:3000',
+        target: 'http://127.0.0.1:3000',
         ws: true,
       },
     },

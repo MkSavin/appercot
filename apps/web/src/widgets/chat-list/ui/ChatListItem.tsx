@@ -1,47 +1,74 @@
 import type { ClientChat } from '@appercot/protocol'
+import { Pin } from 'lucide-react'
+import { ContextMenu } from 'radix-ui'
 import { Link } from 'wouter'
 import { BotAvatar } from '@/entities/bot'
-import { UnreadBadge } from '@/entities/chat'
+import { UnreadBadge, useChatStore } from '@/entities/chat'
+import { strings } from '@/shared/config'
 import { cn } from '@/shared/lib/cn'
 
 interface ChatListItemProps {
   chat: ClientChat
   active: boolean
-  preview?: string
+  pinned: boolean
+  onPin: () => void
 }
 
-export const ChatListItem = ({ chat, active, preview }: ChatListItemProps) => (
-  <li className="min-w-0">
-    <Link
-      href={`/c/${chat.id}`}
-      aria-current={active ? 'page' : undefined}
-      className={cn(
-        'flex w-full min-w-0 items-center gap-3 rounded-xl px-3 py-3 transition-colors hover:bg-sidebar-accent focus-visible:outline-2 focus-visible:outline-ring',
-        active && 'bg-sidebar-accent',
-      )}
-    >
-      <BotAvatar bot={chat.bot} showPresence />
-      <span className="min-w-0 flex-1">
-        <span className="flex items-baseline justify-between gap-2">
-          <span className="truncate text-sm font-medium">{chat.bot.name}</span>
-          {chat.lastMessageAt ? (
-            <time
-              className="shrink-0 text-[11px] text-muted-foreground"
-              dateTime={new Date(chat.lastMessageAt).toISOString()}
+const timeFormat = new Intl.DateTimeFormat('ru', { hour: '2-digit', minute: '2-digit' })
+const dateFormat = new Intl.DateTimeFormat('ru', { day: 'numeric', month: 'short' })
+
+export const ChatListItem = ({ chat, active, pinned, onPin }: ChatListItemProps) => {
+  const content = useChatStore((state) => state.messagesByChat[chat.id]?.at(-1)?.content)
+  const preview = content?.text || (content?.media?.length ? strings.chat.attachment : undefined)
+  const date = chat.lastMessageAt ? new Date(chat.lastMessageAt) : null
+  return (
+    <li className={cn('group flex min-w-0 items-center rounded-lg', active && 'bg-secondary')}>
+      <ContextMenu.Root>
+        <ContextMenu.Trigger asChild>
+          <Link
+            href={`/c/${chat.id}`}
+            aria-current={active ? 'page' : undefined}
+            className={cn(
+              'workspace-link flex min-w-0 flex-1 items-center gap-3 rounded-lg px-3 py-3',
+            )}
+          >
+            <BotAvatar bot={chat.bot} showPresence />
+            <span className="min-w-0 flex-1">
+              <span className="flex items-baseline justify-between gap-2">
+                <span className="truncate text-sm font-medium">{chat.bot.name}</span>
+                {date ? (
+                  <time
+                    className="shrink-0 text-[11px] text-muted-foreground"
+                    dateTime={date.toISOString()}
+                  >
+                    {(date.toDateString() === new Date().toDateString()
+                      ? timeFormat
+                      : dateFormat
+                    ).format(date)}
+                  </time>
+                ) : null}
+              </span>
+              <span className="mt-0.5 flex items-center justify-between gap-2">
+                <span className="truncate text-xs text-muted-foreground">
+                  {preview || chat.bot.description || `@${chat.bot.username}`}
+                </span>
+                <UnreadBadge count={chat.unread} />
+              </span>
+            </span>
+          </Link>
+        </ContextMenu.Trigger>
+        <ContextMenu.Portal>
+          <ContextMenu.Content className="z-50 min-w-44 rounded-lg border bg-popover p-1 text-popover-foreground shadow-md">
+            <ContextMenu.Item
+              onSelect={onPin}
+              className="flex min-h-10 cursor-default items-center gap-2 rounded-md px-3 text-sm outline-none data-[highlighted]:bg-secondary"
             >
-              {new Intl.DateTimeFormat('ru', { hour: '2-digit', minute: '2-digit' }).format(
-                chat.lastMessageAt,
-              )}
-            </time>
-          ) : null}
-        </span>
-        <span className="mt-0.5 flex items-center justify-between gap-2">
-          <span className="truncate text-xs text-muted-foreground">
-            {preview || chat.bot.description || `@${chat.bot.username}`}
-          </span>
-          <UnreadBadge count={chat.unread} />
-        </span>
-      </span>
-    </Link>
-  </li>
-)
+              <Pin aria-hidden="true" className="size-4" />
+              {pinned ? strings.chat.unpin : strings.chat.pin}
+            </ContextMenu.Item>
+          </ContextMenu.Content>
+        </ContextMenu.Portal>
+      </ContextMenu.Root>
+    </li>
+  )
+}

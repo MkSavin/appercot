@@ -1,5 +1,11 @@
 import type { BotMethod, Params, Result } from '@appercot/protocol'
 import type { BotConnection } from './connection'
+import {
+  mediaKindForUpload,
+  type SendFileOptions,
+  type UploadOptions,
+  type UploadSource,
+} from './media'
 
 export class BotApi {
   constructor(private readonly connection: BotConnection) {}
@@ -56,7 +62,17 @@ export class BotApi {
     return this.call('kvClear', params)
   }
 
-  uploadFile(chatId: string, file: File) {
-    return this.connection.uploadFile(chatId, file)
+  async uploadFile(chatId: string, file: UploadSource, options?: UploadOptions) {
+    return (await this.connection.uploadFile(chatId, file, options)).fileId
+  }
+
+  async sendFile(chatId: string, file: UploadSource, options: SendFileOptions = {}) {
+    const { fileId, mime } = await this.connection.uploadFile(chatId, file, options)
+    const media = {
+      fileId,
+      kind: options.kind ?? mediaKindForUpload(mime),
+      caption: options.caption,
+    }
+    return this.sendMessage({ chatId, content: { media: [media] } })
   }
 }

@@ -24,6 +24,7 @@ const waitForMessages = async (baseUrl: string, cookie: string, chatId: string, 
 }
 
 describe('bot SDK', () => {
+  // @anchor INV:bot/orders-events
   test('handles events sequentially and persists storage', async () => {
     const fixture = createServerFixture()
     let sdk: ReturnType<typeof createBot> | undefined
@@ -101,6 +102,42 @@ describe('bot SDK', () => {
       expect((await sdk.api.kvGet({ chatId })).count).toBe(2)
     } finally {
       sdk?.stop()
+      fixture.stop()
+    }
+  })
+
+  // @anchor INV:bot/restarts-connection
+  test('rejects waits on stop and supports a subsequent start', async () => {
+    const fixture = createServerFixture()
+    const botId = Bun.randomUUIDv7()
+    const token = createBotToken(botId)
+    const sdk = createBot({
+      url: `${fixture.baseUrl.replace('http:', 'ws:')}/api/bot/ws`,
+      token: token.token,
+    })
+    try {
+      fixture.db
+        .insert(bots)
+        .values({
+          id: botId,
+          username: 'restartbot',
+          name: 'Restart',
+          description: '',
+          tokenHash: token.hash,
+          roles: [],
+          defaultRoles: [],
+          commandsRev: 0,
+          createdAt: Date.now(),
+        })
+        .run()
+      const starting = sdk.start()
+      sdk.stop()
+      await expect(starting).rejects.toThrow('Connection stopped')
+      await sdk.start()
+      sdk.stop()
+      await sdk.start({ commands: [{ name: 'ping', description: 'Ping' }] })
+    } finally {
+      sdk.stop()
       fixture.stop()
     }
   })

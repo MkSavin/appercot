@@ -19,7 +19,7 @@ RUN bun run build
 
 FROM debian:bookworm-slim AS runtime
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends ca-certificates curl sqlite3 \
+  && apt-get install -y --no-install-recommends ca-certificates curl ffmpeg sqlite3 \
   && rm -rf /var/lib/apt/lists/* \
   && useradd --system --uid 10001 --no-create-home --shell /usr/sbin/nologin appercot \
   && mkdir -p /data \

@@ -46,6 +46,9 @@ export class FlowRuntime<State> {
     const screen = this.flow.screens.get(session.screenId)
     if (!screen?.input) return false
     const error = await screen.input.handler(session.state, text)
+    if (context.message?.sender === 'user' && text.trim()) {
+      await context.delete(context.message.id)
+    }
     if (typeof error === 'string') {
       await context.api.sendMessage({ chatId: context.chat.id, content: { text: error } })
       return true

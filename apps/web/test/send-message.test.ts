@@ -8,7 +8,7 @@ import {
 } from '../src/features/send-message/model/send-message'
 
 const session: SessionPayload = {
-  user: { id: 'user-1', username: 'alice', displayName: 'Alice', isAdmin: false },
+  user: { id: 'user-1', username: 'alice', displayName: 'Alice', role: 'user' },
   chats: [
     {
       id: 'chat-1',
@@ -58,6 +58,7 @@ describe('send message', () => {
     expect(store.getState().pendingByChat['chat-1']).toEqual([])
   })
 
+  // @anchor INV:send-message/reuses-id
   test('marks a failed send and retries with the identical client id', async () => {
     const store = createChatStore()
     store.getState().setSession(session)

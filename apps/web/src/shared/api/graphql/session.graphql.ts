@@ -7,7 +7,9 @@ export const SessionDocument = graphql(`
         id
         username
         displayName
-        isAdmin
+        bio
+        twoFactorEnabled
+        role
       }
       chats {
         id
@@ -18,30 +20,37 @@ export const SessionDocument = graphql(`
           description
           online
           listed
+          avatar
+          welcome
         }
         roles
         blocked
+        notifications
         unread
         lastMessageAt
         createdAt
         commands {
           name
           description
+          shortcut
         }
       }
       vapidPublicKey
+      checkpoint
     }
   }
 `)
 
 export const LoginDocument = graphql(`
-  mutation Login($username: String!, $password: String!) {
-    login(username: $username, password: $password) {
+  mutation Login($username: String!, $password: String!, $otp: String) {
+    login(username: $username, password: $password, otp: $otp) {
       user {
         id
         username
         displayName
-        isAdmin
+        bio
+        twoFactorEnabled
+        role
       }
       chats {
         id
@@ -52,18 +61,23 @@ export const LoginDocument = graphql(`
           description
           online
           listed
+          avatar
+          welcome
         }
         roles
         blocked
+        notifications
         unread
         lastMessageAt
         createdAt
         commands {
           name
           description
+          shortcut
         }
       }
       vapidPublicKey
+      checkpoint
     }
   }
 `)
@@ -85,7 +99,9 @@ export const RegisterDocument = graphql(`
         id
         username
         displayName
-        isAdmin
+        bio
+        twoFactorEnabled
+        role
       }
       chats {
         id
@@ -96,24 +112,29 @@ export const RegisterDocument = graphql(`
           description
           online
           listed
+          avatar
+          welcome
         }
         roles
         blocked
+        notifications
         unread
         lastMessageAt
         createdAt
         commands {
           name
           description
+          shortcut
         }
       }
       vapidPublicKey
+      checkpoint
     }
   }
 `)
 
 export const LogoutDocument = graphql(`
-  mutation Logout {
-    logout
+  mutation Logout($pushEndpoint: String) {
+    logout(pushEndpoint: $pushEndpoint)
   }
 `)

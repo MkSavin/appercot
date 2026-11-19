@@ -1,12 +1,15 @@
 import type { Button } from '@appercot/protocol'
 import { LoaderCircle } from 'lucide-react'
+import { displayShortcut } from '@/shared/lib/shortcuts'
 import { Button as UiButton } from '@/shared/ui/button'
+import { Kbd } from '@/shared/ui/kbd'
 
 interface MessageKeyboardProps {
   rows: Button[][]
   onAction: (button: Button, key: string) => void
   pendingKey?: string | null
   messageId?: string
+  shortcuts?: Record<string, string | undefined>
 }
 
 export const MessageKeyboard = ({
@@ -14,6 +17,7 @@ export const MessageKeyboard = ({
   onAction,
   pendingKey,
   messageId = '',
+  shortcuts,
 }: MessageKeyboardProps) => (
   <div className="mt-3 grid max-w-xl gap-2">
     {rows.map((row, rowIndex) => (
@@ -21,6 +25,7 @@ export const MessageKeyboard = ({
         {row.map((button, columnIndex) => {
           const key = `${messageId}:${rowIndex}:${columnIndex}`
           const pending = pendingKey === key
+          const shortcut = shortcuts?.[key]
           return (
             <UiButton
               type="button"
@@ -33,6 +38,7 @@ export const MessageKeyboard = ({
             >
               {pending ? <LoaderCircle aria-hidden="true" className="animate-spin" /> : null}
               {button.text}
+              {shortcut ? <Kbd>{displayShortcut(shortcut)}</Kbd> : null}
             </UiButton>
           )
         })}

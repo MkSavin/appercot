@@ -13,6 +13,7 @@ interface ClientTransportOptions {
   random?: () => number
   onUpdate: (frame: ClientUpdateFrame) => void
   onReady?: () => void
+  onUnauthorized?: () => void
   onConnection?: (status: ConnectionStatus) => void
 }
 
@@ -95,11 +96,16 @@ export const createClientWebSocketTransport = (options: ClientTransportOptions) 
       }
     })
 
-    connectedSocket.addEventListener('close', () => {
+    connectedSocket.addEventListener('close', (event) => {
       if (socket !== connectedSocket) return
       socket = null
       clearHeartbeat()
       options.onConnection?.('offline')
+      if (event.code === 4401 && options.onUnauthorized) {
+        running = false
+        options.onUnauthorized()
+        return
+      }
       scheduleReconnect()
     })
 

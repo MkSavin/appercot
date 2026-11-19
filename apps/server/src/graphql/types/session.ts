@@ -1,3 +1,4 @@
+import type { BotAccess } from '@appercot/protocol'
 import type { UserDto } from '../../auth/session'
 import type { VisibleCommand } from '../../domain/commands'
 import { builder } from '../builder'
@@ -9,6 +10,11 @@ export interface BotDto {
   description: string
   online: boolean
   listed: boolean
+  guestAccess: boolean
+  access: BotAccess
+  memberCount?: number
+  avatar: string | null
+  welcome: string
 }
 
 export interface ConnectionDto {
@@ -20,15 +26,26 @@ export interface ConnectionDto {
   lastMessageAt: number | null
   createdAt: number
   commands: VisibleCommand[]
+  notifications: 'all' | 'silent' | 'off'
 }
 
 export interface SessionDto {
   user: UserDto
   chats: ConnectionDto[]
   vapidPublicKey: string | null
+  checkpoint: number
 }
 
 export const UserType = builder.objectRef<UserDto>('User')
+export const PlatformRoleType = builder.enumType('PlatformRole', {
+  values: ['user', 'admin', 'owner'] as const,
+})
+export const BotAccessType = builder.enumType('BotAccess', {
+  values: ['public', 'by_link'] as const,
+})
+export const ChatNotificationsType = builder.enumType('ChatNotifications', {
+  values: ['all', 'silent', 'off'] as const,
+})
 export const BotType = builder.objectRef<BotDto>('Bot')
 export const BotCommandType = builder.objectRef<VisibleCommand>('BotCommand')
 export const ConnectionType = builder.objectRef<ConnectionDto>('Connection')
@@ -39,7 +56,10 @@ builder.objectType(UserType, {
     id: field.exposeID('id'),
     username: field.exposeString('username'),
     displayName: field.exposeString('displayName'),
+    bio: field.exposeString('bio'),
+    twoFactorEnabled: field.exposeBoolean('twoFactorEnabled'),
     isAdmin: field.exposeBoolean('isAdmin'),
+    role: field.expose('role', { type: PlatformRoleType }),
   }),
 })
 
@@ -51,6 +71,11 @@ builder.objectType(BotType, {
     description: field.exposeString('description'),
     online: field.exposeBoolean('online'),
     listed: field.exposeBoolean('listed'),
+    guestAccess: field.exposeBoolean('guestAccess'),
+    access: field.expose('access', { type: BotAccessType }),
+    memberCount: field.int({ resolve: (bot) => bot.memberCount ?? 0 }),
+    avatar: field.exposeString('avatar', { nullable: true }),
+    welcome: field.exposeString('welcome'),
   }),
 })
 
@@ -58,6 +83,7 @@ builder.objectType(BotCommandType, {
   fields: (field) => ({
     name: field.exposeString('name'),
     description: field.exposeString('description'),
+    shortcut: field.exposeString('shortcut', { nullable: true }),
   }),
 })
 
@@ -71,6 +97,7 @@ builder.objectType(ConnectionType, {
     lastMessageAt: field.exposeFloat('lastMessageAt', { nullable: true }),
     createdAt: field.exposeFloat('createdAt'),
     commands: field.field({ type: [BotCommandType], resolve: (chat) => chat.commands }),
+    notifications: field.expose('notifications', { type: ChatNotificationsType }),
   }),
 })
 
@@ -82,5 +109,6 @@ builder.objectType(SessionType, {
       resolve: (session) => session.chats,
     }),
     vapidPublicKey: field.exposeString('vapidPublicKey', { nullable: true }),
+    checkpoint: field.exposeInt('checkpoint'),
   }),
 })

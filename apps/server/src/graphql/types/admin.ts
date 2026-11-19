@@ -7,6 +7,9 @@ export interface InviteDto {
   uses: number
   maxUses: number | null
   url: string
+  expiresAt: number | null
+  revokedAt: number | null
+  role: 'user' | 'admin'
 }
 
 export interface BotTokenDto {
@@ -15,6 +18,7 @@ export interface BotTokenDto {
 }
 
 export const InviteType = builder.objectRef<InviteDto>('Invite')
+export const InviteRoleType = builder.enumType('InviteRole', { values: ['user', 'admin'] as const })
 export const BotTokenType = builder.objectRef<BotTokenDto>('BotToken')
 
 builder.objectType(InviteType, {
@@ -23,6 +27,9 @@ builder.objectType(InviteType, {
     uses: field.exposeInt('uses'),
     maxUses: field.exposeInt('maxUses', { nullable: true }),
     url: field.exposeString('url'),
+    role: field.expose('role', { type: InviteRoleType }),
+    expiresAt: field.exposeFloat('expiresAt', { nullable: true }),
+    revokedAt: field.exposeFloat('revokedAt', { nullable: true }),
   }),
 })
 

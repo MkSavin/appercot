@@ -1,12 +1,24 @@
 import { z } from 'zod'
-import { BotRefSchema, ChatRefSchema, MessageSchema } from './entities'
+import {
+  BotCommandSchema,
+  BotRefSchema,
+  ChatRefSchema,
+  MessageSchema,
+  PlatformRoleSchema,
+} from './entities'
 
 const idSchema = z.string().min(1)
 
 export const ClientChatSchema = ChatRefSchema.extend({
-  bot: BotRefSchema.extend({ listed: z.boolean() }),
+  bot: BotRefSchema.extend({
+    listed: z.boolean(),
+    avatar: z.string().nullable().optional(),
+    welcome: z.string().optional(),
+  }),
   unread: z.int().nonnegative(),
   lastMessageAt: z.int().nonnegative().nullable(),
+  commands: z.array(BotCommandSchema).optional(),
+  notifications: z.enum(['all', 'silent', 'off']).optional(),
 })
 
 export const MessageNewUpdateSchema = z.strictObject({
@@ -23,6 +35,7 @@ export const MessageDeletedUpdateSchema = z.strictObject({
   type: z.literal('message.deleted'),
   chatId: idSchema,
   messageId: idSchema,
+  clientId: idSchema.optional(),
 })
 
 export const MessageStatusUpdateSchema = z.strictObject({
@@ -58,6 +71,11 @@ export const BotPresenceUpdateSchema = z.strictObject({
   online: z.boolean(),
 })
 
+export const PlatformRoleUpdateSchema = z.strictObject({
+  type: z.literal('platform.role'),
+  role: PlatformRoleSchema,
+})
+
 export const ClientUpdateSchema = z.discriminatedUnion('type', [
   MessageNewUpdateSchema,
   MessageEditedUpdateSchema,
@@ -68,6 +86,7 @@ export const ClientUpdateSchema = z.discriminatedUnion('type', [
   ChatRemovedUpdateSchema,
   BotTypingUpdateSchema,
   BotPresenceUpdateSchema,
+  PlatformRoleUpdateSchema,
 ])
 
 export const ClientUpdateFrameSchema = z.strictObject({

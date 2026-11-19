@@ -8,18 +8,21 @@ export interface SocketLike {
 export interface BotConnection {
   socket: SocketLike
   inFlight: Set<number>
+  readyForEvents: boolean
 }
 
+/** @anchor DOC:server */
 export class Hub {
   private readonly botConnections = new Map<string, BotConnection>()
   private readonly userSockets = new Map<string, Set<SocketLike>>()
   private readonly focusedChats = new Map<SocketLike, string | null>()
+  private readonly sessionBySocket = new Map<SocketLike, { id: string; expiresAt: number }>()
   private botMessageHandler?: (userId: string, chatId: string, message: Message) => Promise<void>
 
-  connectBot(botId: string, socket: SocketLike) {
+  connectBot(botId: string, socket: SocketLike, readyForEvents = true) {
     const previous = this.botConnections.get(botId)
     previous?.socket.close(4001, 'replaced')
-    const connection: BotConnection = { socket, inFlight: new Set() }
+    const connection: BotConnection = { socket, inFlight: new Set(), readyForEvents }
     this.botConnections.set(botId, connection)
     return { connection, replaced: previous !== undefined }
   }
@@ -39,11 +42,12 @@ export class Hub {
     return this.botConnections.has(botId)
   }
 
-  connectUser(userId: string, socket: SocketLike) {
+  connectUser(userId: string, socket: SocketLike, sessionId?: string, expiresAt = Infinity) {
     const sockets = this.userSockets.get(userId) ?? new Set<SocketLike>()
     sockets.add(socket)
     this.userSockets.set(userId, sockets)
     this.focusedChats.set(socket, null)
+    if (sessionId) this.sessionBySocket.set(socket, { id: sessionId, expiresAt })
   }
 
   disconnectUser(userId: string, socket: SocketLike) {
@@ -51,6 +55,17 @@ export class Hub {
     sockets?.delete(socket)
     if (sockets?.size === 0) this.userSockets.delete(userId)
     this.focusedChats.delete(socket)
+    this.sessionBySocket.delete(socket)
+  }
+
+  disconnectSessions(userId: string, sessionIds: readonly string[]) {
+    const revoked = new Set(sessionIds)
+    for (const socket of this.userSockets.get(userId) ?? []) {
+      const session = this.sessionBySocket.get(socket)
+      if (!session || !revoked.has(session.id)) continue
+      this.disconnectUser(userId, socket)
+      socket.close(4401, 'session revoked')
+    }
   }
 
   setFocusedChat(socket: SocketLike, chatId: string | null) {
@@ -72,6 +87,13 @@ export class Hub {
 
   sendToUser(userId: string, frame: unknown) {
     const serialized = JSON.stringify(frame)
-    for (const socket of this.userSockets.get(userId) ?? []) socket.send(serialized)
+    for (const socket of this.userSockets.get(userId) ?? []) {
+      if ((this.sessionBySocket.get(socket)?.expiresAt ?? Infinity) <= Date.now()) {
+        this.disconnectUser(userId, socket)
+        socket.close(4401, 'session expired')
+      } else {
+        socket.send(serialized)
+      }
+    }
   }
 }

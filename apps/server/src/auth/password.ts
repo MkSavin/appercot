@@ -16,7 +16,8 @@ export const bootstrapAuth = (db: AppDatabase, env: AppEnv) => {
       .from(users)
       .where(eq(users.username, env.ADMIN_USERNAME))
       .get()
-    if (!administrator) {
+    const owner = db.select({ id: users.id }).from(users).where(eq(users.role, 'owner')).get()
+    if (!administrator && !owner) {
       const passwordHash = Bun.password.hashSync(env.ADMIN_PASSWORD, { algorithm: 'argon2id' })
       db.insert(users)
         .values({
@@ -25,6 +26,7 @@ export const bootstrapAuth = (db: AppDatabase, env: AppEnv) => {
           displayName: env.ADMIN_USERNAME,
           passwordHash,
           isAdmin: true,
+          role: 'owner',
           createdAt: Date.now(),
         })
         .run()

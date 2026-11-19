@@ -35,11 +35,14 @@ describe('chat interaction presentation', () => {
 
   test('distinguishes network and bot offline states', () => {
     expect(renderToStaticMarkup(<ConnectionBanner connection="offline" botOnline />)).toContain(
-      'Нет соединения',
+      'Нет связи с сервером',
     )
     expect(
       renderToStaticMarkup(<ConnectionBanner connection="online" botOnline={false} />),
-    ).toContain('Бот офлайн')
+    ).toContain('Бот ответит, когда вернётся в сеть')
+    expect(renderToStaticMarkup(<ConnectionBanner connection="connecting" botOnline />)).toContain(
+      'Восстанавливаем связь с сервером',
+    )
     expect(renderToStaticMarkup(<ConnectionBanner connection="online" botOnline />)).toBe('')
   })
 

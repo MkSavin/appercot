@@ -35,20 +35,25 @@ interface ChatState {
   chats: ChatConnection[]
   messagesByChat: Record<string, ChatMessage[]>
   pendingByChat: Record<string, string[]>
+  draftsByChat: Record<string, string>
   typingByChat: Record<string, number>
   lastSeq: number
   connection: ConnectionStatus
   authentication: AuthenticationStatus
+  activeChatId?: string | null
 }
 
 interface ChatActions {
   setSession: (session: SessionPayload) => void
   setAnonymous: () => void
   clearSession: () => void
+  setDraft: (chatId: string, text: string) => void
   setConnection: (connection: ConnectionStatus) => void
   setLastSeq: (seq: number) => void
+  setActiveChat: (chatId: string | null) => void
+  discardCachedHistory: () => void
   applyUpdate: (seq: number, update: ClientUpdate) => boolean
-  replaceMessages: (chatId: string, messages: Message[]) => void
+  replaceMessages: (chatId: string, messages: Message[], preserveEarlier?: boolean) => void
   prependMessages: (chatId: string, messages: Message[]) => void
   beginOptimisticMessage: (
     chatId: string,
@@ -61,6 +66,7 @@ interface ChatActions {
   retryOutgoingMessage: (chatId: string, clientId: string) => void
   upsertChat: (chat: ClientChat) => void
   clearChatMessages: (chatId: string) => void
+  removeChat: (chatId: string) => void
   expireTyping: (chatId: string, until: number) => void
 }
 
@@ -107,8 +113,22 @@ const mergeMessages = (current: ChatMessage[], incoming: ChatMessage[]) => {
   return [...messagesById.values()].sort(byMessageOrder)
 }
 
-const withMessage = (messages: ChatMessage[], message: ChatMessage) =>
-  mergeMessages(messages, [message])
+const withMessage = (messages: ChatMessage[], message: ChatMessage) => {
+  const last = messages.at(-1)
+  return !last || byMessageOrder(last, message) < 0
+    ? [...messages, message]
+    : mergeMessages(messages, [message])
+}
+
+const cacheLimit = 150
+const maximumCachedChats = 12
+const isLocal = (message: ChatMessage) =>
+  message.clientId && (message.status === 'pending' || message.status === 'failed')
+
+const warmHistory = (messages: ChatMessage[]) =>
+  messages.length <= cacheLimit
+    ? messages
+    : [...messages.slice(0, -cacheLimit).filter(isLocal), ...messages.slice(-cacheLimit)]
 
 const withChat = (chats: ChatConnection[], chat: ChatConnection) => {
   const previous = chats.find((current) => current.id === chat.id)
@@ -132,7 +152,10 @@ const applyClientUpdate = (
 ): Partial<ChatState> => {
   switch (update.type) {
     case 'message.new': {
-      const current = state.messagesByChat[update.message.chatId] ?? []
+      const { chatId } = update.message
+      const cached = state.messagesByChat[chatId]
+      if (!cached && state.activeChatId !== undefined && state.activeChatId !== chatId) return {}
+      const current = cached ?? []
       const existing = current.some((message) => message.id === update.message.id)
       const pending = existing
         ? undefined
@@ -152,15 +175,20 @@ const applyClientUpdate = (
           (clientId) => clientId !== pending.clientId,
         )
       }
+      const messages = withMessage(withoutPending, update.message)
       return {
         messagesByChat: {
           ...state.messagesByChat,
-          [update.message.chatId]: withMessage(withoutPending, update.message),
+          [chatId]:
+            state.activeChatId != null && state.activeChatId === chatId
+              ? messages
+              : warmHistory(messages),
         },
         pendingByChat,
       }
     }
     case 'message.edited':
+      if (!state.messagesByChat[update.message.chatId]) return {}
       return {
         messagesByChat: {
           ...state.messagesByChat,
@@ -170,15 +198,29 @@ const applyClientUpdate = (
         },
       }
     case 'message.deleted':
+      if (!state.messagesByChat[update.chatId]) return {}
       return {
         messagesByChat: {
           ...state.messagesByChat,
           [update.chatId]: (state.messagesByChat[update.chatId] ?? []).filter(
-            (message) => message.id !== update.messageId,
+            (message) =>
+              message.id !== update.messageId &&
+              (update.clientId === undefined || message.clientId !== update.clientId),
           ),
         },
+        ...(update.clientId
+          ? {
+              pendingByChat: {
+                ...state.pendingByChat,
+                [update.chatId]: (state.pendingByChat[update.chatId] ?? []).filter(
+                  (clientId) => clientId !== update.clientId,
+                ),
+              },
+            }
+          : {}),
       }
     case 'message.status':
+      if (!state.messagesByChat[update.chatId]) return {}
       return {
         messagesByChat: {
           ...state.messagesByChat,
@@ -204,10 +246,16 @@ const applyClientUpdate = (
       const pendingByChat = Object.fromEntries(
         Object.entries(state.pendingByChat).filter(([chatId]) => chatId !== update.chatId),
       )
+      const draftsByChat = { ...state.draftsByChat }
+      const typingByChat = { ...state.typingByChat }
+      delete draftsByChat[update.chatId]
+      delete typingByChat[update.chatId]
       return {
         chats: state.chats.filter((chat) => chat.id !== update.chatId),
         messagesByChat,
         pendingByChat,
+        draftsByChat,
+        typingByChat,
       }
     }
     case 'bot.typing':
@@ -220,12 +268,16 @@ const applyClientUpdate = (
             : chat,
         ),
       }
+    case 'platform.role':
+      return state.user ? { user: { ...state.user, role: update.role } } : {}
   }
 }
 
+/** @anchor DOC:web */
 export const createChatStore = (options: ChatStoreOptions = {}) => {
   const checkpointStorage = options.checkpointStorage ?? getBrowserStorage()
   const now = options.now ?? Date.now
+  const visited = new Set<string>()
 
   return create<ChatStore>()((set, get) => ({
     user: null,
@@ -233,6 +285,7 @@ export const createChatStore = (options: ChatStoreOptions = {}) => {
     chats: [],
     messagesByChat: {},
     pendingByChat: {},
+    draftsByChat: {},
     typingByChat: {},
     lastSeq: 0,
     connection: 'offline',
@@ -240,6 +293,14 @@ export const createChatStore = (options: ChatStoreOptions = {}) => {
     setSession: (session) => {
       const previousUser = get().user
       const isSameUser = previousUser?.id === session.user.id
+      const lastSeq = isSameUser
+        ? get().lastSeq
+        : (session.checkpoint ?? readCheckpoint(checkpointStorage, session.user.id))
+      if (!isSameUser) {
+        visited.clear()
+        if (session.checkpoint !== undefined)
+          writeCheckpoint(checkpointStorage, session.user.id, lastSeq)
+      }
       set({
         user: session.user,
         vapidPublicKey: session.vapidPublicKey,
@@ -250,30 +311,71 @@ export const createChatStore = (options: ChatStoreOptions = {}) => {
         ),
         messagesByChat: isSameUser ? get().messagesByChat : {},
         pendingByChat: isSameUser ? get().pendingByChat : {},
+        draftsByChat: isSameUser ? get().draftsByChat : {},
         typingByChat: isSameUser ? get().typingByChat : {},
-        lastSeq: isSameUser ? get().lastSeq : readCheckpoint(checkpointStorage, session.user.id),
+        lastSeq,
         authentication: 'authenticated',
       })
     },
     setAnonymous: () => set({ authentication: 'anonymous', user: null }),
-    clearSession: () =>
+    clearSession: () => {
+      visited.clear()
       set({
         user: null,
         vapidPublicKey: null,
         chats: [],
         messagesByChat: {},
         pendingByChat: {},
+        draftsByChat: {},
         typingByChat: {},
         lastSeq: 0,
         connection: 'offline',
         authentication: 'anonymous',
-      }),
+        activeChatId: undefined,
+      })
+    },
+    setDraft: (chatId, text) =>
+      set((state) => ({
+        draftsByChat: { ...state.draftsByChat, [chatId]: text },
+      })),
     setConnection: (connection) => set({ connection }),
     setLastSeq: (lastSeq) => {
       const user = get().user
       if (user) writeCheckpoint(checkpointStorage, user.id, lastSeq)
       set({ lastSeq })
     },
+    setActiveChat: (activeChatId) => {
+      if (activeChatId) {
+        visited.delete(activeChatId)
+        visited.add(activeChatId)
+      }
+      if (visited.size > maximumCachedChats) {
+        const oldest = visited.values().next().value
+        if (oldest) visited.delete(oldest)
+      }
+      set((state) => {
+        const histories = { ...state.messagesByChat }
+        for (const [id, messages] of Object.entries(histories)) {
+          if (id === activeChatId) continue
+          if (visited.has(id)) histories[id] = warmHistory(messages)
+          else {
+            const pending = messages.filter(isLocal)
+            if (pending.length) histories[id] = pending
+            else delete histories[id]
+          }
+        }
+        return { activeChatId, messagesByChat: histories }
+      })
+    },
+    discardCachedHistory: () =>
+      set((state) => ({
+        typingByChat: {},
+        messagesByChat: Object.fromEntries(
+          Object.entries(state.messagesByChat)
+            .map(([id, messages]) => [id, messages.filter(isLocal)])
+            .filter(([, rows]) => rows?.length),
+        ),
+      })),
     applyUpdate: (seq, update) => {
       const state = get()
       if (seq <= state.lastSeq) return false
@@ -282,12 +384,19 @@ export const createChatStore = (options: ChatStoreOptions = {}) => {
       if (state.user) writeCheckpoint(checkpointStorage, state.user.id, seq)
       return true
     },
-    replaceMessages: (chatId, messages) => {
-      const pending = (get().messagesByChat[chatId] ?? []).filter(
-        (message) => message.clientId && ['pending', 'failed'].includes(message.status),
-      )
+    replaceMessages: (chatId, messages, preserveEarlier = false) => {
+      const cache = get().messagesByChat[chatId] ?? []
+      const pending = cache.filter(isLocal)
+      const first = messages[0]
+      const earlier =
+        preserveEarlier && first && cache.some((item) => item.id === first.id)
+          ? cache.filter((item) => item.seq < first.seq)
+          : []
       set((state) => ({
-        messagesByChat: { ...state.messagesByChat, [chatId]: mergeMessages(messages, pending) },
+        messagesByChat: {
+          ...state.messagesByChat,
+          [chatId]: mergeMessages([...earlier, ...messages], pending),
+        },
       }))
     },
     prependMessages: (chatId, messages) =>
@@ -302,7 +411,7 @@ export const createChatStore = (options: ChatStoreOptions = {}) => {
       const optimistic: ChatMessage = {
         id: `pending:${clientId}`,
         chatId,
-        seq: Math.max(createdAt, ...current.map((message) => message.seq + 1)),
+        seq: Math.max(createdAt, (current.at(-1)?.seq ?? 0) + 1),
         sender: 'user',
         content,
         status: 'pending',
@@ -322,19 +431,30 @@ export const createChatStore = (options: ChatStoreOptions = {}) => {
       return optimistic
     },
     completeOutgoingMessage: (chatId, clientId, message) =>
-      set((state) => ({
-        messagesByChat: {
-          ...state.messagesByChat,
-          [chatId]: withMessage(
-            (state.messagesByChat[chatId] ?? []).filter((current) => current.clientId !== clientId),
-            message,
-          ),
-        },
-        pendingByChat: {
-          ...state.pendingByChat,
-          [chatId]: (state.pendingByChat[chatId] ?? []).filter((current) => current !== clientId),
-        },
-      })),
+      set((state) => {
+        const messages = state.messagesByChat[chatId] ?? []
+        const pending = state.pendingByChat[chatId] ?? []
+        const existing = messages.find((current) => current.id === message.id)
+        if (!existing && !pending.includes(clientId)) return state
+        const resolved = !message.deleted && existing?.status === 'processed' ? existing : message
+        return {
+          messagesByChat: {
+            ...state.messagesByChat,
+            [chatId]: resolved.deleted
+              ? messages.filter(
+                  (current) => current.clientId !== clientId && current.id !== resolved.id,
+                )
+              : withMessage(
+                  messages.filter((current) => current.clientId !== clientId),
+                  resolved,
+                ),
+          },
+          pendingByChat: {
+            ...state.pendingByChat,
+            [chatId]: pending.filter((current) => current !== clientId),
+          },
+        }
+      }),
     failOutgoingMessage: (chatId, clientId) =>
       set((state) => ({
         messagesByChat: {
@@ -354,6 +474,8 @@ export const createChatStore = (options: ChatStoreOptions = {}) => {
         },
       })),
     upsertChat: (chat) => set((state) => ({ chats: withChat(state.chats, chat) })),
+    removeChat: (chatId) =>
+      set((state) => applyClientUpdate(state, { type: 'chat.removed', chatId }, now)),
     clearChatMessages: (chatId) =>
       set((state) => ({
         messagesByChat: { ...state.messagesByChat, [chatId]: [] },

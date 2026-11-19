@@ -1,7 +1,9 @@
+import { Database } from 'bun:sqlite'
 import { describe, expect, test } from 'bun:test'
 import { eq } from 'drizzle-orm'
-import { bots } from '../src/db/schema'
-import { createServerFixture, graphqlRequest } from './helpers'
+import { hashPassword } from '../src/auth/password'
+import { bots, users } from '../src/db/schema'
+import { connectBot, createServerFixture, graphqlRequest } from './helpers'
 
 const login = async (baseUrl: string, username: string, password: string) => {
   const result = await graphqlRequest(
@@ -15,6 +17,292 @@ const login = async (baseUrl: string, username: string, password: string) => {
 }
 
 describe('administration', () => {
+  // @anchor INV:admin/migrates-owner
+  test('keeps the oldest legacy administrator as the platform owner', async () => {
+    const db = new Database(':memory:')
+    try {
+      const migration = (name: string) =>
+        Bun.file(new URL(`../drizzle/${name}.sql`, import.meta.url)).text()
+      db.exec(await migration('0000_lonely_moira_mactaggert'))
+      const insert = db.query(
+        'INSERT INTO users (id, username, display_name, password_hash, is_admin, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+      )
+      insert.run('member', 'member', 'Member', 'hash', 0, 1)
+      insert.run('creator', 'creator', 'Creator', 'hash', 1, 2)
+      insert.run('manager', 'manager', 'Manager', 'hash', 1, 3)
+      db.exec(await migration('0001_tense_tomas'))
+      expect(db.query('SELECT id, role FROM users ORDER BY created_at').all()).toEqual([
+        { id: 'member', role: 'user' },
+        { id: 'creator', role: 'owner' },
+        { id: 'manager', role: 'admin' },
+      ])
+    } finally {
+      db.close()
+    }
+  })
+
+  // @anchor INV:admin/scopes-management
+  test('scopes bot management, invitations and membership to the appropriate account', async () => {
+    const fixture = createServerFixture()
+    try {
+      const ownerCookie = await login(fixture.baseUrl, 'admin', 'password123')
+      const passwordHash = await hashPassword('password123')
+      const managerId = Bun.randomUUIDv7()
+      const memberId = Bun.randomUUIDv7()
+      fixture.db
+        .insert(users)
+        .values([
+          {
+            id: managerId,
+            username: 'manager',
+            displayName: 'Manager',
+            passwordHash,
+            createdAt: Date.now(),
+          },
+          {
+            id: memberId,
+            username: 'visitor',
+            displayName: 'Visitor',
+            passwordHash,
+            createdAt: Date.now(),
+          },
+        ])
+        .run()
+      const managerCookie = await login(fixture.baseUrl, 'manager', 'password123')
+      const memberCookie = await login(fixture.baseUrl, 'visitor', 'password123')
+      const call = async (cookie: string, query: string, variables: Record<string, unknown> = {}) =>
+        (await graphqlRequest(fixture.baseUrl, query, variables, cookie)).body
+      const create =
+        'mutation($name: String!) { createBot(username: $name, name: "Example", description: "") { bot { id } token } }'
+      expect(
+        (await call(managerCookie, create, { name: 'managedbot' })).errors?.[0]?.extensions?.code,
+      ).toBe('FORBIDDEN')
+      const promote = 'mutation($id: ID!) { setUserRole(userId: $id, role: admin) { role } }'
+      expect((await call(ownerCookie, promote, { id: managerId })).data.setUserRole).toEqual({
+        role: 'admin',
+      })
+      expect(
+        (await call(managerCookie, promote, { id: memberId })).errors?.[0]?.extensions?.code,
+      ).toBe('FORBIDDEN')
+      expect(
+        (await call(managerCookie, 'query { adminInvites { code } }')).errors?.[0]?.extensions
+          ?.code,
+      ).toBe('FORBIDDEN')
+      const managed = (await call(managerCookie, create, { name: 'managedbot' })).data
+        .createBot as {
+        bot: { id: string }
+        token: string
+      }
+      const foreign = (await call(ownerCookie, create, { name: 'foreignbot' })).data.createBot as {
+        bot: { id: string }
+      }
+      const botId = managed.bot.id
+      expect((await call(managerCookie, 'query { adminBots { id } }')).data.adminBots).toEqual([
+        { id: botId },
+      ])
+      const access = 'mutation($bot: ID!) { setBotAccess(botId: $bot, access: by_link) { access } }'
+      expect(
+        (await call(managerCookie, access, { bot: foreign.bot.id })).errors?.[0]?.extensions?.code,
+      ).toBe('FORBIDDEN')
+      expect((await call(managerCookie, access, { bot: botId })).data.setBotAccess).toEqual({
+        access: 'by_link',
+      })
+      expect(
+        (await call(memberCookie, 'query { browseBots { username } }')).data.browseBots,
+      ).toEqual([{ username: 'foreignbot' }])
+
+      const issue = async () => {
+        const result = await call(
+          managerCookie,
+          'mutation($bot: ID!) { issueBotInvite(botId: $bot) { id url } }',
+          { bot: botId },
+        )
+        const { id, url } = result.data.issueBotInvite as { id: string; url: string }
+        return { id, token: new URL(url).searchParams.get('invite') }
+      }
+      const oldInvite = await issue()
+      const invite = await issue()
+      const revokeLink = 'mutation($bot: ID!, $id: ID!) { revokeBotInvite(botId: $bot, id: $id) }'
+      expect(
+        (
+          await call(
+            managerCookie,
+            'query($bot: ID!) { botInvitations(botId: $bot) { id revokedAt } }',
+            { bot: botId },
+          )
+        ).data.botInvitations,
+      ).toEqual(
+        expect.arrayContaining([
+          { id: invite.id, revokedAt: null },
+          { id: oldInvite.id, revokedAt: null },
+        ]),
+      )
+      const add =
+        'mutation($invite: String) { addBot(username: "managedbot", invite: $invite) { id roles } }'
+      expect((await call(memberCookie, add)).errors?.[0]?.extensions?.code).toBe('NOT_FOUND')
+      expect(
+        (await call(managerCookie, revokeLink, { bot: botId, id: oldInvite.id })).data
+          .revokeBotInvite,
+      ).toBe(true)
+      expect(
+        (await call(memberCookie, add, { invite: oldInvite.token })).errors?.[0]?.extensions?.code,
+      ).toBe('NOT_FOUND')
+      const membership = (await call(memberCookie, add, { invite: invite.token })).data.addBot as {
+        id: string
+        roles: string[]
+      }
+      expect(membership.roles).toEqual([])
+      expect(
+        (
+          await call(managerCookie, revokeLink, {
+            bot: botId,
+            id: invite.id,
+          })
+        ).data.revokeBotInvite,
+      ).toBe(true)
+
+      const bot = await connectBot(fixture.baseUrl, managed.token)
+      try {
+        expect((await bot.next()).t).toBe('hello')
+        expect(
+          (
+            await bot.call('setup', 'setRoles', {
+              roles: [
+                { code: 'operator', name: 'Оператор' },
+                { code: 'editor', name: 'Редактор' },
+              ],
+              commands: [{ name: 'operate', description: 'Operate', roles: ['operator'] }],
+            })
+          ).ok,
+        ).toBe(true)
+        const grant =
+          'mutation($bot: ID!, $chat: ID!, $roles: [String!]!) { setBotMemberRoles(botId: $bot, chatId: $chat, roles: $roles) }'
+        const variables = { bot: botId, chat: membership.id, roles: ['operator'] }
+        expect(
+          (await call(managerCookie, grant, { ...variables, roles: ['guest'] })).errors?.[0]
+            ?.extensions?.code,
+        ).toBe('BAD_REQUEST')
+        expect(
+          (await call(managerCookie, grant, { ...variables, roles: ['operator', 'editor'] }))
+            .errors?.[0]?.extensions?.code,
+        ).toBe('BAD_REQUEST')
+        expect((await call(managerCookie, grant, variables)).data.setBotMemberRoles).toBe(true)
+        expect(
+          (await call(memberCookie, 'query { session { chats { commands { name } } } }')).data
+            .session,
+        ).toEqual({ chats: [{ commands: [{ name: 'operate' }] }] })
+        expect(
+          (
+            await bot.call('send', 'sendMessage', {
+              chatId: membership.id,
+              content: { text: 'Private history' },
+            })
+          ).ok,
+        ).toBe(true)
+
+        const revoke =
+          'mutation($bot: ID!, $chat: ID!, $revoked: Boolean!) { setBotMemberRevoked(botId: $bot, chatId: $chat, revoked: $revoked) }'
+        expect(
+          (await call(managerCookie, revoke, { ...variables, revoked: true })).data
+            .setBotMemberRevoked,
+        ).toBe(true)
+        expect(
+          (await call(memberCookie, add, { invite: invite.token })).errors?.[0]?.extensions?.code,
+        ).toBe('FORBIDDEN')
+        expect(
+          (
+            await call(memberCookie, 'query($chat: ID!) { messages(chatId: $chat) { id } }', {
+              chat: membership.id,
+            })
+          ).errors?.[0]?.extensions?.code,
+        ).toBe('FORBIDDEN')
+        expect(
+          JSON.stringify(
+            (await call(memberCookie, 'query { sync(since: 0) { updates { payload } } }')).data,
+          ),
+        ).not.toContain('Private history')
+        expect(
+          (
+            await bot.call('revoked', 'sendMessage', {
+              chatId: membership.id,
+              content: { text: 'Blocked' },
+            })
+          ).ok,
+        ).toBe(false)
+        expect(
+          (await call(managerCookie, revoke, { ...variables, revoked: false })).data
+            .setBotMemberRevoked,
+        ).toBe(true)
+        expect(
+          (await call(memberCookie, 'query { session { chats { id } } }')).data.session,
+        ).toEqual({ chats: [{ id: membership.id }] })
+
+        const roleLink =
+          'mutation($bot: ID!, $roles: [String!]) { issueBotInvite(botId: $bot, roles: $roles, maxUses: 1) { id url } }'
+        expect(
+          (await call(managerCookie, roleLink, { bot: botId, roles: ['authenticated'] }))
+            .errors?.[0]?.extensions?.code,
+        ).toBe('BAD_REQUEST')
+        const issued = (await call(managerCookie, roleLink, { bot: botId, roles: ['operator'] }))
+          .data.issueBotInvite as { id: string; url: string }
+        const roleToken = new URL(issued.url).searchParams.get('invite')
+        expect((await call(ownerCookie, add, { invite: roleToken })).data.addBot).toMatchObject({
+          roles: ['operator'],
+        })
+        expect((await call(ownerCookie, add, { invite: roleToken })).errors).toBeUndefined()
+        expect(
+          (await call(managerCookie, add, { invite: roleToken })).errors?.[0]?.extensions?.code,
+        ).toBe('FORBIDDEN')
+        const changedLink = await call(
+          managerCookie,
+          'mutation($bot: ID!, $id: ID!) { editBotInvite(botId: $bot, id: $id, roles: [], maxUses: 2, expiresInDays: null) { uses maxUses roles expiresAt } }',
+          { bot: botId, id: issued.id },
+        )
+        expect(changedLink.data.editBotInvite).toEqual({
+          uses: 1,
+          maxUses: 2,
+          roles: [],
+          expiresAt: null,
+        })
+        expect((await call(managerCookie, add, { invite: roleToken })).data.addBot).toMatchObject({
+          roles: ['owner'],
+        })
+
+        const direct =
+          'mutation($bot: ID!, $username: String!, $roles: [String!]!) { inviteBotMember(botId: $bot, username: $username, roles: $roles) }'
+        expect(
+          (await call(managerCookie, direct, { bot: foreign.bot.id, username: 'admin', roles: [] }))
+            .errors?.[0]?.extensions?.code,
+        ).toBe('FORBIDDEN')
+        expect(
+          (
+            await call(managerCookie, direct, {
+              bot: botId,
+              username: 'admin',
+              roles: ['operator'],
+            })
+          ).data.inviteBotMember,
+        ).toBe(true)
+        expect(
+          (await call(ownerCookie, 'query { session { chats { roles } } }')).data.session,
+        ).toEqual({ chats: [{ roles: ['operator'] }] })
+        expect(
+          (
+            await call(
+              managerCookie,
+              'query($bot: ID!) { adminBot(botId: $bot) { memberCount } }',
+              { bot: botId },
+            )
+          ).data.adminBot,
+        ).toEqual({ memberCount: 3 })
+      } finally {
+        bot.socket.close()
+      }
+    } finally {
+      fixture.stop()
+    }
+  })
+
   test('manages users, invites, bot tokens, ownership and catalog visibility', async () => {
     const fixture = createServerFixture()
     try {
@@ -163,6 +451,54 @@ describe('administration', () => {
         cookie,
       )
       expect(invalidInvite.body.errors?.[0]?.extensions?.code).toBe('BAD_REQUEST')
+    } finally {
+      fixture.stop()
+    }
+  })
+
+  // @anchor INV:admin/registration-invites
+  test('edits registration roles and limits for future sign-ups and revokes a single link', async () => {
+    const fixture = createServerFixture()
+    try {
+      const cookie = await login(fixture.baseUrl, 'admin', 'password123')
+      const call = async (
+        query: string,
+        variables: Record<string, unknown> = {},
+        authenticated = true,
+      ) =>
+        (
+          await graphqlRequest(
+            fixture.baseUrl,
+            query,
+            variables,
+            authenticated ? cookie : undefined,
+          )
+        ).body
+      const { data } = await call('mutation { createInvite(role: user, maxUses: 2) { code role } }')
+      const { code } = data.createInvite as { code: string }
+      const register =
+        'mutation($code: String!, $name: String!) { register(username: $name, displayName: $name, password: "password123", invite: $code) { user { role } } }'
+      expect((await call(register, { code, name: 'first' }, false)).data.register).toEqual({
+        user: { role: 'user' },
+      })
+      expect(
+        (
+          await call(
+            'mutation($code: String!) { editPlatformInvite(code: $code, role: admin, maxUses: 3) { role uses maxUses } }',
+            { code },
+          )
+        ).data.editPlatformInvite,
+      ).toEqual({ role: 'admin', uses: 1, maxUses: 3 })
+      expect((await call(register, { code, name: 'second' }, false)).data.register).toEqual({
+        user: { role: 'admin' },
+      })
+      expect(
+        (await call('mutation($code: String!) { revokePlatformInvite(code: $code) }', { code }))
+          .data.revokePlatformInvite,
+      ).toBe(true)
+      expect(
+        (await call(register, { code, name: 'third' }, false)).errors?.[0]?.extensions?.code,
+      ).toBe('FORBIDDEN')
     } finally {
       fixture.stop()
     }

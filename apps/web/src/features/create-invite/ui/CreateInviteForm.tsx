@@ -1,83 +1,126 @@
-import { LoaderCircle, Plus } from 'lucide-react'
-import { useState } from 'react'
+import { Copy, Plus } from 'lucide-react'
+import { useId, useState } from 'react'
 import { type AdminInvite, createInviteRequest } from '@/entities/user'
 import { showRequestError } from '@/shared/api'
 import { strings } from '@/shared/config'
 import { Button } from '@/shared/ui/button'
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/shared/ui/dialog'
 import { Input } from '@/shared/ui/input'
+import { InviteLimits, PlatformInviteRole, readInviteLimits } from '@/shared/ui/invite-fields'
 
-export const CreateInviteForm = ({ onCreated }: { onCreated: (invite: AdminInvite) => void }) => {
-  const [maxUses, setMaxUses] = useState('')
-  const [expiresInDays, setExpiresInDays] = useState('')
-  const [submitting, setSubmitting] = useState(false)
-
+export const CreateInviteForm = ({
+  onCreated,
+  single = false,
+}: {
+  onCreated: (invite: AdminInvite) => void
+  single?: boolean
+}) => {
+  const id = useId()
+  const [open, setOpen] = useState(false)
+  const [pending, setPending] = useState(false)
+  const [issued, setIssued] = useState<AdminInvite>()
+  const [copied, setCopied] = useState(false)
+  const title = single ? 'Пригласить пользователя' : strings.admin.createInvite
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    setSubmitting(true)
+    const data = new FormData(event.currentTarget)
+    setPending(true)
     try {
       const invite = await createInviteRequest({
-        maxUses: maxUses ? Number(maxUses) : undefined,
-        expiresInDays: expiresInDays ? Number(expiresInDays) : undefined,
+        ...readInviteLimits(data),
+        role: data.get('role') === 'admin' ? 'admin' : 'user',
       })
+      setIssued(invite)
       onCreated(invite)
-      setMaxUses('')
-      setExpiresInDays('')
     } catch (error) {
       showRequestError(error)
     } finally {
-      setSubmitting(false)
+      setPending(false)
     }
   }
-
   return (
-    <form
-      method="post"
-      action="/admin/invites"
-      aria-labelledby="create-invite-title"
-      className="grid gap-4 rounded-xl border bg-card p-5 sm:grid-cols-2"
-      onSubmit={submit}
+    <Dialog
+      open={open}
+      onOpenChange={(value) => {
+        if (pending) return
+        setOpen(value)
+        if (!value) {
+          setIssued(undefined)
+          setCopied(false)
+        }
+      }}
     >
-      <h3 id="create-invite-title" className="font-medium sm:col-span-2">
-        {strings.admin.createInvite}
-      </h3>
-      <div className="grid gap-2">
-        <label htmlFor="invite-max-uses" className="text-sm">
-          {strings.admin.maxUses}
-        </label>
-        <Input
-          id="invite-max-uses"
-          name="maxUses"
-          type="number"
-          min="1"
-          step="1"
-          inputMode="numeric"
-          value={maxUses}
-          onChange={(event) => setMaxUses(event.target.value)}
-        />
-      </div>
-      <div className="grid gap-2">
-        <label htmlFor="invite-expiry" className="text-sm">
-          {strings.admin.expiresInDays}
-        </label>
-        <Input
-          id="invite-expiry"
-          name="expiresInDays"
-          type="number"
-          min="1"
-          step="1"
-          inputMode="numeric"
-          value={expiresInDays}
-          onChange={(event) => setExpiresInDays(event.target.value)}
-        />
-      </div>
-      <Button type="submit" disabled={submitting} className="sm:col-span-2 sm:justify-self-start">
-        {submitting ? (
-          <LoaderCircle aria-hidden="true" className="animate-spin" />
-        ) : (
+      <DialogTrigger asChild>
+        <Button>
           <Plus aria-hidden="true" />
+          {title}
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-h-[90dvh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{issued ? 'Ссылка готова' : title}</DialogTitle>
+          <DialogDescription>
+            {single
+              ? 'По этой ссылке сможет зарегистрироваться один человек.'
+              : strings.settings.platformInviteDescription}
+          </DialogDescription>
+        </DialogHeader>
+        {issued ? (
+          <div className="grid gap-3">
+            <label htmlFor={id} className="text-sm font-medium">
+              Пригласительная ссылка
+            </label>
+            <Input
+              id={id}
+              readOnly
+              value={issued.url}
+              onFocus={(event) => event.currentTarget.select()}
+            />
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button variant="outline">Готово</Button>
+              </DialogClose>
+              <Button
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(issued.url)
+                    setCopied(true)
+                  } catch (error) {
+                    showRequestError(error)
+                  }
+                }}
+              >
+                <Copy aria-hidden="true" />
+                {copied ? strings.message.copied : strings.admin.copyLink}
+              </Button>
+            </DialogFooter>
+          </div>
+        ) : (
+          <form className="grid gap-4" onSubmit={submit}>
+            <PlatformInviteRole />
+            <InviteLimits single={single} />
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button type="button" variant="outline" disabled={pending}>
+                  {strings.chat.cancel}
+                </Button>
+              </DialogClose>
+              <Button type="submit" disabled={pending}>
+                {strings.admin.createInvite}
+              </Button>
+            </DialogFooter>
+          </form>
         )}
-        {strings.admin.createInvite}
-      </Button>
-    </form>
+      </DialogContent>
+    </Dialog>
   )
 }

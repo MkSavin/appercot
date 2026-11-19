@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { renderToStaticMarkup } from 'react-dom/server'
+import { renderToReadableStream, renderToStaticMarkup } from 'react-dom/server'
 import { Router } from 'wouter'
 import { memoryLocation } from 'wouter/memory-location'
 import { BotMessage } from '../src/entities/message/ui/BotMessage'
@@ -44,8 +44,11 @@ describe('authentication forms', () => {
 })
 
 describe('message presentation', () => {
-  test('renders GFM markdown without raw HTML and includes code copying', () => {
-    const markup = renderToStaticMarkup(<BotMessage message={botMessage} />)
+  // @anchor INV:ui/sanitizes-markdown
+  test('renders GFM markdown without raw HTML and includes code copying', async () => {
+    const stream = await renderToReadableStream(<BotMessage message={botMessage} />)
+    await stream.allReady
+    const markup = await new Response(stream).text()
     expect(markup).toContain('<strong>Жирный текст</strong>')
     expect(markup).not.toContain('<script>')
     expect(markup).not.toContain('alert("xss")')
@@ -62,6 +65,7 @@ describe('message presentation', () => {
 })
 
 describe('composer keyboard handling', () => {
+  // @anchor INV:ui/ignores-composition
   test('submits only a plain desktop Enter outside IME composition', () => {
     expect(shouldSubmitOnEnter({ key: 'Enter', shiftKey: false }, false)).toBe(true)
     expect(shouldSubmitOnEnter({ key: 'Enter', shiftKey: true }, false)).toBe(false)

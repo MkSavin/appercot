@@ -8,15 +8,20 @@ const bot = createBot({
   token,
 })
 
-bot.command('start', (ctx) => ctx.reply(`Привет, **${ctx.user.displayName}**`))
-bot.command('help', (ctx) => ctx.reply('/start — приветствие\nТекст — эхо и счётчик'))
-bot.on('chat_started', (ctx) => ctx.reply('Это echo-бот. Используйте /help'))
+const start = bot
+  .command('start', 'Начать', (ctx) => ctx.reply(`Привет, **${ctx.user.displayName}**`))
+  .roles('all', 'guest')
+const help = bot
+  .command('help', 'Помощь', (ctx) => ctx.replyWithCommand(start, 'Для приветствия выполните %s.'))
+  .roles('all', 'guest')
+  .shortcut('Mod+Shift+H')
+bot.on('chat_started', (ctx) => ctx.replyWithCommand(help, 'Это echo-бот. Используйте %s.'))
 bot.on('message', async (ctx) => {
   const count = (await ctx.storage.get<number>('messages')) ?? 0
   await ctx.storage.set('messages', count + 1)
   await ctx.reply({
     text: `Эхо: ${ctx.text}\nСообщений: ${count + 1}`,
-    buttons: [[{ text: 'Показать счётчик', callback: 'count' }]],
+    buttons: [[{ text: 'Показать счётчик', callback: 'count', shortcut: 'Alt+C' }]],
   })
 })
 bot.on('callback', async (ctx) => {
@@ -24,11 +29,7 @@ bot.on('callback', async (ctx) => {
   await ctx.answer(`Сообщений: ${count}`)
 })
 
-await bot.start({
-  commands: [
-    { name: 'start', description: 'Начать' },
-    { name: 'help', description: 'Помощь' },
-  ],
-})
+bot.commands([start, help])
+await bot.start({ roles: [{ code: 'user', name: 'Участник' }] })
 
 console.log('Echo bot connected')

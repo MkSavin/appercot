@@ -1,11 +1,12 @@
 /// <reference path="../types/web-push.d.ts" />
 
 import { type Message, PushPayloadSchema } from '@appercot/protocol'
-import { and, eq } from 'drizzle-orm'
+import { and, eq, gt, isNull, or } from 'drizzle-orm'
 import { sendNotification, setVapidDetails } from 'web-push'
 import { z } from 'zod'
+import type { AuthSession } from '../auth/session'
 import type { AppDatabase } from '../db/client'
-import { bots, chats, pushSubs } from '../db/schema'
+import { bots, chats, pushSubs, sessions } from '../db/schema'
 import type { AppEnv } from '../env'
 import { DomainError } from './errors'
 
@@ -32,7 +33,7 @@ export class PushService {
     }
   }
 
-  subscribe(userId: string, input: unknown) {
+  subscribe({ sessionId, user }: AuthSession, input: unknown) {
     if (!this.configured) throw new DomainError('BAD_REQUEST', 'Web Push is not configured')
     const subscription = PushSubscriptionSchema.parse(input)
     const createdAt = Date.now()
@@ -40,7 +41,8 @@ export class PushService {
       .insert(pushSubs)
       .values({
         id: Bun.randomUUIDv7(),
-        userId,
+        userId: user.id,
+        sessionId,
         endpoint: subscription.endpoint,
         p256dh: subscription.keys.p256dh,
         auth: subscription.keys.auth,
@@ -49,7 +51,8 @@ export class PushService {
       .onConflictDoUpdate({
         target: pushSubs.endpoint,
         set: {
-          userId,
+          userId: user.id,
+          sessionId,
           p256dh: subscription.keys.p256dh,
           auth: subscription.keys.auth,
           createdAt,
@@ -67,25 +70,46 @@ export class PushService {
     return true
   }
 
+  isSubscribed(userId: string, endpoint: string) {
+    return Boolean(
+      this.db
+        .select({ id: pushSubs.id })
+        .from(pushSubs)
+        .where(and(eq(pushSubs.userId, userId), eq(pushSubs.endpoint, endpoint)))
+        .get(),
+    )
+  }
+
   async sendMessage(userId: string, chatId: string, message: Message) {
     if (!this.configured) return
     const result = this.db
-      .select({ bot: bots })
+      .select({ bot: bots, notifications: chats.notifications, blocked: chats.blockedAt })
       .from(chats)
       .innerJoin(bots, eq(bots.id, chats.botId))
-      .where(and(eq(chats.id, chatId), eq(chats.userId, userId)))
+      .where(and(eq(chats.id, chatId), eq(chats.userId, userId), isNull(chats.revokedAt)))
       .get()
-    if (!result) return
-    const subscriptions = this.db.select().from(pushSubs).where(eq(pushSubs.userId, userId)).all()
+    if (!result || result.notifications === 'off' || result.blocked !== null) return
+    const subscriptions = this.db
+      .select({ subscription: pushSubs })
+      .from(pushSubs)
+      .leftJoin(sessions, eq(sessions.id, pushSubs.sessionId))
+      .where(
+        and(
+          eq(pushSubs.userId, userId),
+          or(isNull(pushSubs.sessionId), gt(sessions.expiresAt, Date.now())),
+        ),
+      )
+      .all()
     const payload = JSON.stringify(
       PushPayloadSchema.parse({
         title: result.bot.name,
         body: message.content.text ?? (message.content.media?.length ? 'Медиа' : 'Новое сообщение'),
         tag: chatId,
         url: `/c/${chatId}`,
+        ...(result.notifications === 'silent' ? { silent: true } : {}),
       }),
     )
-    for (const subscription of subscriptions) {
+    for (const { subscription } of subscriptions) {
       try {
         await this.send(
           {

@@ -1,0 +1,1 @@
+ALTER TABLE `files` ADD `attached` integer DEFAULT true NOT NULL;

@@ -84,6 +84,21 @@ describe('Web Push', () => {
       expect(delivered).toHaveLength(1)
 
       hub.disconnectUser(userId, socket)
+      const setMode = (mode: string) =>
+        graphqlRequest(
+          fixture.baseUrl,
+          'mutation($chat: ID!, $mode: ChatNotifications!) { setChatNotifications(chatId: $chat, mode: $mode) }',
+          { chat: chatId, mode },
+          cookie,
+        )
+      expect((await setMode('off')).body.data.setChatNotifications).toBe(true)
+      sendBotMessage(fixture.db, hub, botId, { chatId, content: { text: 'Muted' } })
+      expect(delivered).toHaveLength(1)
+      expect((await setMode('silent')).body.data.setChatNotifications).toBe(true)
+      sendBotMessage(fixture.db, hub, botId, { chatId, content: { text: 'Quiet' } })
+      await waitFor(() => delivered.length === 2)
+      expect(JSON.parse(delivered[1]?.payload ?? '')).toMatchObject({ body: 'Quiet', silent: true })
+
       failDelivery = true
       sendBotMessage(fixture.db, hub, botId, { chatId, content: { text: 'Expired' } })
       await waitFor(() => fixture.db.select().from(pushSubs).all().length === 0)
@@ -96,6 +111,28 @@ describe('Web Push', () => {
       )
       expect(unsubscribed.body.errors).toBeUndefined()
       expect(unsubscribed.body.data.unsubscribePush).toBe(true)
+      const reSubscribed = await graphqlRequest(
+        fixture.baseUrl,
+        'mutation Subscribe($subscription: JSON!) { subscribePush(subscription: $subscription) }',
+        { subscription },
+        cookie,
+      )
+      expect(reSubscribed.body.data.subscribePush).toBe(true)
+      const active = await graphqlRequest(
+        fixture.baseUrl,
+        'query { mySessions { id } }',
+        {},
+        cookie,
+      )
+      const [session] = active.body.data.mySessions as [{ id: string }]
+      const revoke = await graphqlRequest(
+        fixture.baseUrl,
+        'mutation($id: ID!) { revokeMySession(id: $id) }',
+        { id: session.id },
+        cookie,
+      )
+      expect(revoke.body.data.revokeMySession).toBe(true)
+      expect(fixture.db.select().from(pushSubs).all()).toHaveLength(0)
     } finally {
       fixture.stop()
     }

@@ -3,6 +3,8 @@ import { strings } from '@/shared/config'
 import { toast } from '@/shared/lib/toast'
 
 const protocolMessages: Record<string, string> = {
+  TOTP_REQUIRED: 'Введите код из приложения 2FA или резервный код.',
+  TOTP_INVALID: 'Код неверен или уже использован.',
   UNAUTHORIZED: strings.errors.unauthorized,
   FORBIDDEN: strings.errors.forbidden,
   BOT_BLOCKED: strings.errors.blocked,
@@ -11,9 +13,18 @@ const protocolMessages: Record<string, string> = {
   KV_QUOTA: strings.errors.quota,
 }
 
-export const getRequestErrorMessage = (error: unknown) => {
+export const getRequestErrorCode = (error: unknown) =>
+  error instanceof ClientError ? error.response.errors?.[0]?.extensions?.code : undefined
+
+export const getRequestErrorMessage = (
+  error: unknown,
+  context: 'authentication' | 'session' = 'session',
+) => {
   if (error instanceof ClientError) {
-    const code = error.response.errors?.[0]?.extensions.code
+    const code = getRequestErrorCode(error)
+    if (code === 'UNAUTHORIZED' && context === 'authentication') {
+      return strings.auth.invalidCredentials
+    }
     if (typeof code === 'string' && protocolMessages[code]) return protocolMessages[code]
     return error.response.errors?.[0]?.message ?? strings.errors.network
   }
