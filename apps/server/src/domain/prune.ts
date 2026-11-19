@@ -41,18 +41,38 @@ const pruneMedia = async (db: AppDatabase, storage: MediaStorage, now: number) =
 }
 
 export const startPruneJob = (db: AppDatabase, storage: MediaStorage) => {
-  let running = false
-  const timer = setInterval(() => {
-    if (running) return
+  let timer: Timer | undefined
+  let running: Promise<void> | undefined
+  let paused = false
+  const execute = () => {
+    if (paused || running) return
     const now = Date.now()
     pruneOldRecords(db, now)
-    running = true
-    void pruneMedia(db, storage, now)
+    running = pruneMedia(db, storage, now)
       .catch(() => {})
       .finally(() => {
-        running = false
+        running = undefined
       })
-  }, HOUR)
-  timer.unref()
-  return timer
+  }
+  const resume = () => {
+    if (timer || paused) return
+    paused = false
+    timer = setInterval(execute, HOUR)
+    timer.unref()
+  }
+  const pause = async () => {
+    paused = true
+    if (timer) clearInterval(timer)
+    timer = undefined
+    await running
+  }
+  resume()
+  return {
+    pause,
+    resume: () => {
+      paused = false
+      resume()
+    },
+    stop: pause,
+  }
 }

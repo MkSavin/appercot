@@ -18,6 +18,8 @@ import { pushUserUpdate } from './updates'
 
 const userMessageRateLimiter = new RateLimiter(5, 1000)
 
+export const resetUserMessageRateLimits = () => userMessageRateLimiter.reset()
+
 export { toMessageDto } from './message-dto'
 
 interface InsertMessageInput {

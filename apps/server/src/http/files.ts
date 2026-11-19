@@ -84,6 +84,8 @@ export const createFileHandlers = (db: AppDatabase, env: AppEnv, storage: MediaS
   }
 
   return {
+    pausePreviews: previews.pause,
+    resumePreviews: previews.resume,
     limits: () => Response.json({ maxBytes: env.MEDIA_MAX_BYTES }),
     uploadUser: (request: Request) => {
       const session = getRequestSession(db, request)

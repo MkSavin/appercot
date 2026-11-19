@@ -2,6 +2,7 @@ import { type FormEvent, type ReactNode, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { saveProfile } from '@/entities/user'
 import { showRequestError } from '@/shared/api'
+import { testId, testIds } from '@/shared/lib/test-ids'
 import type { SessionUser } from '@/shared/model'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
@@ -98,7 +99,7 @@ export const ProfileEditor = ({
           </SettingsField>
         </FieldGroup>
         <div className="flex items-center gap-3">
-          <Button type="submit" disabled={pending}>
+          <Button {...testId(testIds.settings.save)} type="submit" disabled={pending}>
             {t('common:save')}
           </Button>
           {saved ? (

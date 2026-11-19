@@ -25,6 +25,7 @@ describe('chat interaction presentation', () => {
           ],
           [{ text: 'Docs', url: 'https://example.test' }],
         ]}
+        messageId="message-1"
         onAction={() => {}}
       />,
     )
@@ -32,6 +33,9 @@ describe('chat interaction presentation', () => {
     expect(markup).toContain('Help')
     expect(markup).toContain('Docs')
     expect(markup).toContain('type="button"')
+    expect(markup).toContain('data-test-id="message.button.message-1:0:0"')
+    expect(markup).toContain('data-test-id="message.button.message-1:0:1"')
+    expect(markup).toContain('data-test-id="message.button.message-1:1:0"')
   })
 
   test('distinguishes network and bot offline states', () => {

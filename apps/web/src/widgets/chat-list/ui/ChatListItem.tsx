@@ -6,6 +6,7 @@ import { Link } from 'wouter'
 import { BotAvatar } from '@/entities/bot'
 import { UnreadBadge, useChatStore } from '@/entities/chat'
 import { cn } from '@/shared/lib/cn'
+import { testId, testIds } from '@/shared/lib/test-ids'
 
 interface ChatListItemProps {
   chat: ClientChat
@@ -27,6 +28,7 @@ export const ChatListItem = ({ chat, active, pinned, onPin }: ChatListItemProps)
       <ContextMenu.Root>
         <ContextMenu.Trigger asChild>
           <Link
+            {...testId(testIds.chats.item(chat.id))}
             href={`/c/${chat.id}`}
             aria-current={active ? 'page' : undefined}
             className={cn(

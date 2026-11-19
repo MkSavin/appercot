@@ -23,7 +23,7 @@ Self-hosted bot messenger and PWA. Bun serves GraphQL, WebSocket, files and the 
 
 ## UI changes
 
-- Before implementing a component, search the existing shared, entity and widget components and reuse or generalize a suitable one first.
+- Reuse existing components before adding one. For browser tests, reuse fixtures and typed `shared/lib/test-ids.ts` selectors; shortcuts must be layout-independent.
 - Keep one public component per file. Small private one-off components and shadcn component collections may stay together; split large files into widgets, entity parts or local partials.
 - Put interface text in namespaced JSON resources under `apps/web/src/shared/config/locales` and read it through `useTranslation` or the shared `i18n` instance outside React with keys such as `chat:online`.
 - Use page-shaped placeholders for loading layouts instead of page loaders.

@@ -85,6 +85,17 @@ export class Hub {
     }
   }
 
+  closeAll(reason = 'test reset') {
+    const bots = [...this.botConnections.values()]
+    const users = [...this.userSockets.values()].flatMap((sockets) => [...sockets])
+    this.botConnections.clear()
+    this.userSockets.clear()
+    this.focusedChats.clear()
+    this.sessionBySocket.clear()
+    for (const { socket } of bots) socket.close(4412, reason)
+    for (const socket of users) socket.close(4412, reason)
+  }
+
   sendToUser(userId: string, frame: unknown) {
     const serialized = JSON.stringify(frame)
     for (const socket of this.userSockets.get(userId) ?? []) {

@@ -11,6 +11,7 @@ import {
 } from '@/entities/message'
 import { showRequestError } from '@/shared/api'
 import { ariaShortcut, displayShortcut, Shortcut } from '@/shared/lib/shortcuts'
+import { testId, testIds } from '@/shared/lib/test-ids'
 import { Button } from '@/shared/ui/button'
 import { Kbd } from '@/shared/ui/kbd'
 import { Textarea } from '@/shared/ui/textarea'
@@ -127,6 +128,7 @@ export const Composer = ({ chatId, onOpenCommands }: ComposerProps) => {
           {t('chat:message')}
         </label>
         <Textarea
+          {...testId(testIds.chat.composer.input)}
           id={`message-${chatId}`}
           name="message"
           value={text}
@@ -177,6 +179,7 @@ export const Composer = ({ chatId, onOpenCommands }: ComposerProps) => {
             </Button>
           ) : null}
           <Button
+            {...testId(testIds.chat.composer.send)}
             type="submit"
             size="icon-sm"
             className="ml-auto rounded-full"

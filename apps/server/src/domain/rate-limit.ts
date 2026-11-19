@@ -6,6 +6,10 @@ export class RateLimiter {
     private readonly windowMs: number,
   ) {}
 
+  reset() {
+    this.hits.clear()
+  }
+
   allow(key: string, now = Date.now()) {
     const recent = (this.hits.get(key) ?? []).filter((timestamp) => now - timestamp < this.windowMs)
     if (recent.length >= this.limit) {

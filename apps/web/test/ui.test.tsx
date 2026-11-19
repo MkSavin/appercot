@@ -31,6 +31,9 @@ describe('authentication forms', () => {
     expect(login).toContain('for="login-username"')
     expect(login).toContain('autoComplete="username"')
     expect(login).toContain('autoComplete="current-password"')
+    expect(login).toContain('data-test-id="auth.login.username"')
+    expect(login).toContain('data-test-id="auth.login.password"')
+    expect(login).toContain('data-test-id="auth.login.submit"')
     expect(login).toContain('required=""')
 
     const register = renderToStaticMarkup(

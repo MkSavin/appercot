@@ -5,7 +5,7 @@ import type { AppEnv } from '../env'
 
 export type StorageKind = 'local' | 's3'
 
-export const createMediaStorage = (env: AppEnv) => {
+export const createMediaStorage = (env: AppEnv, environmentPrefix = '') => {
   const directory = join(env.DATA_DIR, 'files')
   const s3 = env.S3_ENDPOINT
     ? new S3Client({
@@ -20,11 +20,13 @@ export const createMediaStorage = (env: AppEnv) => {
         retry: 2,
       })
     : undefined
+  const key = (id: string, preview = false) =>
+    `files/${environmentPrefix}${id}${preview ? '.jpg' : ''}`
   const blob = (kind: StorageKind, id: string, preview = false) => {
-    const key = preview ? `${id}.jpg` : id
-    if (kind === 'local') return Bun.file(join(directory, key))
+    const objectKey = key(id, preview)
+    if (kind === 'local') return Bun.file(join(directory, `${id}${preview ? '.jpg' : ''}`))
     if (!s3) throw new Error('S3 storage is not configured')
-    return s3.file(`files/${key}`)
+    return s3.file(objectKey)
   }
   return {
     kind: s3 ? ('s3' as const) : ('local' as const),
@@ -32,7 +34,7 @@ export const createMediaStorage = (env: AppEnv) => {
     source: (kind: StorageKind, id: string) => {
       if (kind === 'local') return join(directory, id)
       if (!s3) throw new Error('S3 storage is not configured')
-      return s3.file(`files/${id}`).presign({ expiresIn: 90 })
+      return s3.file(key(id)).presign({ expiresIn: 90 })
     },
     write: async (
       kind: StorageKind,
@@ -41,18 +43,19 @@ export const createMediaStorage = (env: AppEnv) => {
       type: string,
       preview = false,
     ) => {
-      const key = preview ? `${id}.jpg` : id
+      const objectKey = key(id, preview)
       const payload =
         body instanceof Uint8Array
           ? body
           : new Response(body, { headers: { 'content-type': type } })
       if (kind === 's3') {
         if (!s3) throw new Error('S3 storage is not configured')
-        await s3.file(`files/${key}`).write(payload, { type })
+        await s3.file(objectKey).write(payload, { type })
       } else {
+        const localKey = `${id}${preview ? '.jpg' : ''}`
         await mkdir(directory, { recursive: true })
-        if (payload instanceof Response) await Bun.write(join(directory, key), payload)
-        else await Bun.write(join(directory, key), payload)
+        if (payload instanceof Response) await Bun.write(join(directory, localKey), payload)
+        else await Bun.write(join(directory, localKey), payload)
       }
     },
     remove: async (kind: StorageKind, id: string, preview = false) => {

@@ -94,7 +94,7 @@ export class BotConnection {
     if (!this.ready) await this.start()
     const socket = this.socket
     if (!this.ready || !socket) throw new Error('Connection closed')
-    const id = Bun.randomUUIDv7()
+    const id = globalThis.crypto.randomUUID()
     const result = new Promise<unknown>((resolve, reject) => {
       socket.send(JSON.stringify({ t: 'req', id, method, params }))
       const timer = setTimeout(() => {

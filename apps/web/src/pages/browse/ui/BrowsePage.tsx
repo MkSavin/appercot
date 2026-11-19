@@ -4,6 +4,7 @@ import { useLocation, useSearch } from 'wouter'
 import { addBotRequest, type BotDetails, browseBotsRequest } from '@/entities/bot'
 import { useChatStore } from '@/entities/chat'
 import { showRequestError } from '@/shared/api'
+import { testId, testIds } from '@/shared/lib/test-ids'
 import { Button } from '@/shared/ui/button'
 import { ContextPanel } from '@/shared/ui/context-panel'
 import { PagePlaceholder } from '@/shared/ui/page-placeholder'
@@ -94,6 +95,7 @@ export const BrowsePage = () => {
         contentClassName="px-4"
         search={
           <SearchInput
+            {...testId(testIds.catalog.search)}
             value={query}
             onChange={(event) => setQuery(event.currentTarget.value)}
             aria-label={t('browse:search')}

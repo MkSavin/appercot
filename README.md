@@ -23,6 +23,65 @@ bun run dev
 BOT_TOKEN='<botId>:<token>' BOT_URL='ws://localhost:3000/api/bot/ws' bun examples/echo-bot/index.ts
 ```
 
+## Тестовое окружение для разработчиков ботов
+
+`@appercot/test` запускает настоящие GraphQL, WebSocket, SQLite, файловое хранилище и SPA без mock-сервера. Соберите SPA, задайте тестовые credentials и запустите CLI отдельным процессом:
+
+```bash
+bun run --filter '@appercot/web' build
+export ADMIN_PASSWORD='test-admin-password'
+export ALICE_PASSWORD='test-alice-password'
+export ECHO_BOT_TOKEN='bot-echo:test-secret'
+export BOT_APPERCOT_TEST_TOKEN='test-control-token'
+bun packages/test/src/cli.ts --config examples/appercot.test.json
+```
+
+`--config` имеет приоритет над `APPERCOT_CONFIG`. Для отдельного env-файла используйте опцию Bun до пути скрипта: `bun --env-file=.env.test packages/test/src/cli.ts --config examples/appercot.test.json`. После migrations, seed и listen CLI печатает в stdout одну строку `{"endpoint":"http://127.0.0.1:…"}`; диагностика идёт в stderr. Остановить процесс можно SIGINT/SIGTERM либо закрытием его stdin. SQLite и артефакты остаются для диагностики, lock снимается. При повторном запуске маркированного каталога CLI восстанавливает `baseline.json` с прежними ID/credentials. Этот файл содержит тестовые секреты: используйте только одноразовые credentials и не публикуйте dataDir.
+
+В runner передаются `BOT_APPERCOT_TEST_ENDPOINT` и `BOT_APPERCOT_TEST_TOKEN`. Control token остаётся в тестовом процессе; браузеру нужен только endpoint. Клиент не импортирует API runner или Bun:
+
+```ts
+import { AppercotTestClient } from '@appercot/test'
+
+const appercot = new AppercotTestClient({
+  endpoint: process.env.BOT_APPERCOT_TEST_ENDPOINT!,
+  token: process.env.BOT_APPERCOT_TEST_TOKEN!,
+  timeoutMs: 10_000,
+})
+
+beforeAll(() => appercot.ready())
+beforeEach(() => appercot.flushState())
+afterAll(() => bot.stop())
+```
+
+`fixtures()` возвращает неизменяемый baseline с исходными ID, паролями и bot tokens. `createUser`, `createBot`, `createChat` возвращают fixture и credentials; `sendMessage` использует обычный путь выбранной стороны чата, поэтому пользовательский `clientId` нужно повторять при retry. HTTP и validation errors представлены `AppercotTestClientError`; сетевые ошибки и timeout имеют отдельные коды без HTTP status.
+
+Семантика очистки:
+
+- `flushState()` отзывает все сессии и восстанавливает исходные ID, credentials, чаты и историю. Глобальные номера updates/outbox не используются повторно.
+- `flushUser(id)` сохраняет профиль, credentials и созданные боты, но удаляет сессии, push subscriptions, чаты и связанные messages/KV/events/files. Baseline-чаты не пересоздаются.
+- `deleteUser(id)` также удаляет учётную запись; владельцем её ботов становится `null` по обычному FK-правилу.
+- `flushChat(id)` восстанавливает baseline membership/settings/history либо очищает runtime-чат с сохранением текущего membership. Несовместимые роли дают `409 TEST_FIXTURE_CONFLICT`.
+- `deleteChat(id)` физически удаляет только этот чат и связанные данные. Отсутствующий ID даёт `404 TEST_FIXTURE_NOT_FOUND`.
+- Удаляются только зарегистрированные окружением файлы/S3-ключи. Ошибку I/O можно повторить следующей очисткой: pending deletion сохраняется в SQLite.
+
+Reset/delete сериализуются: новые state-запросы во время сброса получают `503 TEST_RESET_IN_PROGRESS`, затронутые сокеты переподключаются, SPA получает полный refresh через обычную синхронизацию. Независимые параллельные suites должны использовать отдельные endpoint и dataDir.
+
+Один сценарий Bun/Vitest/Jest с командой, callback и reconnect запускается вместе с отдельным CLI командой:
+
+```bash
+bun run --filter '@appercot/test' test:compatibility
+```
+
+Playwright-пример использует внешний endpoint и только стабильные `data-test-id`:
+
+```bash
+bun run --filter '@appercot/test' test:browser
+bun run --filter '@appercot/test' test:browser -- --headed
+```
+
+Обычный сервер тоже читает `APPERCOT_CONFIG`, но принимает только launch-секции; `users`, `bots`, `chats` и `test` разрешены исключительно тестовому CLI. Наличие `BOT_APPERCOT_TEST_TOKEN` не включает control API в production.
+
 ## Проверка и production-сборка
 
 ```bash

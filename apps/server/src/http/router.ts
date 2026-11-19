@@ -14,6 +14,7 @@ interface RouterOptions {
   mediaLimits: () => Response
   serveFile: (request: Request, fileId: string, thumbnail: boolean) => Promise<Response>
   serveAvatar: (request: Request, botId: string) => Response
+  testControl?: (request: Request) => Promise<Response>
   publicDir: string
 }
 
@@ -23,6 +24,8 @@ export const createRouter = (options: RouterOptions) => {
     server: Server<AppWebSocketData>,
   ): Promise<Response | undefined> => {
     const pathname = new URL(request.url).pathname
+    if (pathname === '/_appercot/test' || pathname.startsWith('/_appercot/test/'))
+      return options.testControl ? options.testControl(request) : textResponse(404, 'Not found')
     if (pathname === '/healthz' && request.method === 'GET') return textResponse(200, 'ok')
     if (pathname === '/graphql') {
       const peer = server.requestIP(request)?.address

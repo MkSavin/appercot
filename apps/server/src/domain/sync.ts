@@ -1,6 +1,6 @@
 import { and, asc, desc, eq, gt, isNotNull } from 'drizzle-orm'
 import type { AppDatabase } from '../db/client'
-import { chats, userUpdates } from '../db/schema'
+import { chats, testSyncResets, userUpdates } from '../db/schema'
 
 const batchSize = 256
 export const latestUserSequence = (db: AppDatabase, userId: string) =>
@@ -12,6 +12,12 @@ export const latestUserSequence = (db: AppDatabase, userId: string) =>
     .get()?.seq ?? 0
 
 export const syncUserUpdates = (db: AppDatabase, userId: string, since: number) => {
+  const reset = db
+    .select({ seq: testSyncResets.seq })
+    .from(testSyncResets)
+    .where(and(eq(testSyncResets.userId, userId), gt(testSyncResets.seq, since)))
+    .get()
+  if (reset) return { updates: [], resetRequired: true, checkpoint: 0, hasMore: false }
   if (since > 0) {
     const checkpoint = db
       .select({ seq: userUpdates.seq })

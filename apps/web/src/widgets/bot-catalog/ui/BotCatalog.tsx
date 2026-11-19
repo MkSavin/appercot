@@ -2,6 +2,7 @@ import { ArrowRight, LoaderCircle } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'wouter'
 import { BotAvatar, type BotDetails } from '@/entities/bot'
+import { testId, testIds } from '@/shared/lib/test-ids'
 import { Badge } from '@/shared/ui/badge'
 
 interface BotCatalogProps {
@@ -55,11 +56,16 @@ export const BotCatalog = ({ bots, chatByBotId, pendingBotId, onAdd }: BotCatalo
         return (
           <li key={bot.id} className="min-w-0">
             {chatId ? (
-              <Link href={`/c/${chatId}`} className={tileClass}>
+              <Link
+                {...testId(testIds.catalog.bot(bot.id))}
+                href={`/c/${chatId}`}
+                className={tileClass}
+              >
                 {content}
               </Link>
             ) : (
               <button
+                {...testId(testIds.catalog.bot(bot.id))}
                 type="button"
                 className={tileClass}
                 disabled={pendingBotId !== undefined}

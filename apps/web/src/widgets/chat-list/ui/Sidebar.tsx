@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useChatStore } from '@/entities/chat'
+import { testId, testIds } from '@/shared/lib/test-ids'
 import { Button } from '@/shared/ui/button'
 import { ContextPanel } from '@/shared/ui/context-panel'
 import { SearchInput } from '@/shared/ui/search-input'
@@ -61,6 +62,7 @@ export const Sidebar = ({ activeChatId }: { activeChatId?: string }) => {
       contentClassName="px-2 pb-4"
       search={
         <SearchInput
+          {...testId(testIds.chats.search)}
           value={query}
           onChange={(event) => setQuery(event.currentTarget.value)}
           aria-label={t('chat:search')}

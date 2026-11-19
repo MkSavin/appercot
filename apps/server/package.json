@@ -3,6 +3,13 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./db": "./src/db/client.ts",
+    "./hub": "./src/ws/hub.ts",
+    "./media-storage": "./src/domain/media-storage.ts",
+    "./test": "./src/test/index.ts"
+  },
   "scripts": {
     "dev": "cd ../.. && bun --watch apps/server/src/index.ts",
     "build": "bun scripts/build.ts",

@@ -8,6 +8,7 @@ import {
   resetBotTokenRequest,
   setBotOwnerRequest,
 } from '@/entities/bot'
+import { testId, testIds } from '@/shared/lib/test-ids'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -96,7 +97,12 @@ export const BotConnectionSettings = ({
               {t('admin:owner')}
             </label>
             <Input id="bot-new-owner" name="owner" autoCapitalize="none" spellCheck={false} />
-            <Button type="submit" variant="outline" disabled={pending}>
+            <Button
+              {...testId(testIds.settings.save)}
+              type="submit"
+              variant="outline"
+              disabled={pending}
+            >
               {t('admin:saveOwner')}
             </Button>
             <p className="text-xs text-muted-foreground sm:col-span-2">

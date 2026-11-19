@@ -38,6 +38,7 @@ interface ChatState {
   draftsByChat: Record<string, string>
   typingByChat: Record<string, number>
   lastSeq: number
+  historyEpoch: number
   connection: ConnectionStatus
   authentication: AuthenticationStatus
   activeChatId?: string | null
@@ -299,6 +300,7 @@ export const createChatStore = (options: ChatStoreOptions = {}) => {
     draftsByChat: {},
     typingByChat: {},
     lastSeq: 0,
+    historyEpoch: 0,
     connection: 'offline',
     authentication: 'loading',
     setSession: (session) => {
@@ -385,6 +387,7 @@ export const createChatStore = (options: ChatStoreOptions = {}) => {
     },
     discardCachedHistory: () =>
       set((state) => ({
+        historyEpoch: state.historyEpoch + 1,
         typingByChat: {},
         messagesByChat: Object.fromEntries(
           Object.entries(state.messagesByChat)

@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { useChatStore } from '@/entities/chat'
 import { loginRequest } from '@/entities/session'
 import { getRequestErrorCode, getRequestErrorMessage } from '@/shared/api'
+import { testId, testIds } from '@/shared/lib/test-ids'
 import { AuthShell } from '@/shared/ui/auth-shell'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
@@ -150,6 +151,7 @@ export const LoginForm = ({
             {t('auth:username')}
           </label>
           <Input
+            {...testId(testIds.auth.login.username)}
             id="login-username"
             name="username"
             value={username}
@@ -170,6 +172,7 @@ export const LoginForm = ({
           </label>
           <div className="relative">
             <Input
+              {...testId(testIds.auth.login.password)}
               id="login-password"
               name="password"
               type={showPassword ? 'text' : 'password'}
@@ -198,7 +201,13 @@ export const LoginForm = ({
             {error}
           </p>
         ) : null}
-        <Button type="submit" size="lg" className="h-12 w-full" disabled={submitting}>
+        <Button
+          {...testId(testIds.auth.login.submit)}
+          type="submit"
+          size="lg"
+          className="h-12 w-full"
+          disabled={submitting}
+        >
           {submitting ? <LoaderCircle aria-hidden="true" className="animate-spin" /> : null}
           {t('auth:signIn')}
         </Button>

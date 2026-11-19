@@ -10,6 +10,7 @@ import { RateLimiter } from './rate-limit'
 interface PendingCallback {
   botId: string
   resolve: (toast: string | null) => void
+  timeout: Timer
 }
 
 const rateLimiter = new RateLimiter(10, 1000)
@@ -37,13 +38,13 @@ export class CallbackRegistry {
     }
     const callbackId = Bun.randomUUIDv7()
     const result = new Promise<string | null>((resolve) => {
-      this.pending.set(callbackId, { botId: current.bot.id, resolve })
-      setTimeout(() => {
+      const timeout = setTimeout(() => {
         const pending = this.pending.get(callbackId)
         if (!pending) return
         this.pending.delete(callbackId)
         pending.resolve(null)
       }, 10_000)
+      this.pending.set(callbackId, { botId: current.bot.id, resolve, timeout })
     })
     enqueueBotEvent(
       db,
@@ -64,12 +65,22 @@ export class CallbackRegistry {
     return { toast: await result }
   }
 
+  cancelAll() {
+    rateLimiter.reset()
+    for (const pending of this.pending.values()) {
+      clearTimeout(pending.timeout)
+      pending.resolve(null)
+    }
+    this.pending.clear()
+  }
+
   answer(callbackId: string, botId: string, toast?: string) {
     const pending = this.pending.get(callbackId)
     if (!pending || pending.botId !== botId) {
       throw new DomainError('NOT_FOUND', 'Callback was not found')
     }
     this.pending.delete(callbackId)
+    clearTimeout(pending.timeout)
     pending.resolve(toast ?? null)
     return { ok: true } as const
   }

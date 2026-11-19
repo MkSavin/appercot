@@ -1,6 +1,7 @@
 import type { Button } from '@appercot/protocol'
 import { LoaderCircle } from 'lucide-react'
 import { displayShortcut, type ShortcutCombination } from '@/shared/lib/shortcuts'
+import { testId, testIds } from '@/shared/lib/test-ids'
 import { Button as UiButton } from '@/shared/ui/button'
 import { Kbd } from '@/shared/ui/kbd'
 
@@ -28,6 +29,7 @@ export const MessageKeyboard = ({
           const shortcut = shortcuts?.[key]
           return (
             <UiButton
+              {...testId(testIds.message.button(messageId, rowIndex, columnIndex))}
               type="button"
               variant="outline"
               size="sm"

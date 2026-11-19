@@ -264,7 +264,7 @@ export const joinBotMembership = (
   hub: Hub,
   userId: string,
   bot: typeof bots.$inferSelect,
-  options: { canJoin: boolean; roles: string[]; guest?: boolean },
+  options: { canJoin: boolean; roles: string[]; guest?: boolean; id?: string },
 ) => {
   const existing = db
     .select()
@@ -313,7 +313,7 @@ export const joinBotMembership = (
 
   const now = Date.now()
   if (!options.canJoin) throw new DomainError('NOT_FOUND', 'Bot or invitation was not found')
-  const chatId = Bun.randomUUIDv7()
+  const chatId = options.id ?? Bun.randomUUIDv7()
   db.insert(chats)
     .values({
       id: chatId,

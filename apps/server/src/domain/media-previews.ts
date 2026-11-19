@@ -17,6 +17,9 @@ const demuxers: Record<string, string> = {
 export const createMediaPreviews = (db: AppDatabase, env: AppEnv, storage: MediaStorage) => {
   const ffmpeg = env.MEDIA_FFMPEG ?? Bun.which('ffmpeg')
   const active = new Set<string>()
+  const tasks = new Set<Promise<void>>()
+  const processes = new Map<string, ReturnType<typeof Bun.spawn>>()
+  let suspended = false
 
   const generate = async (file: typeof files.$inferSelect) => {
     const format = demuxers[file.mime]
@@ -62,7 +65,14 @@ export const createMediaPreviews = (db: AppDatabase, env: AppEnv, storage: Media
       ],
       { stdout: 'pipe', stderr: 'ignore', timeout: 25_000 },
     )
-    const [image, code] = await Promise.all([new Response(process.stdout).bytes(), process.exited])
+    processes.set(file.id, process)
+    let image: Uint8Array<ArrayBuffer>
+    let code: number
+    try {
+      ;[image, code] = await Promise.all([new Response(process.stdout).bytes(), process.exited])
+    } finally {
+      processes.delete(file.id)
+    }
     if (code !== 0 || image.length < 4 || image.length > 256_000) return false
     const stillAttached = db
       .select({ id: files.id })
@@ -75,7 +85,7 @@ export const createMediaPreviews = (db: AppDatabase, env: AppEnv, storage: Media
   }
 
   const kick = () => {
-    if (!ffmpeg) return
+    if (!ffmpeg || suspended) return
     while (active.size < 2) {
       const file = db
         .select()
@@ -92,9 +102,10 @@ export const createMediaPreviews = (db: AppDatabase, env: AppEnv, storage: Media
         .get()
       if (!file) return
       active.add(file.id)
-      void generate(file)
+      const task = generate(file)
         .catch(() => false)
         .then((ready) => {
+          if (suspended) return
           db.update(files)
             .set({ previewState: ready ? 'ready' : 'unavailable' })
             .where(eq(files.id, file.id))
@@ -102,14 +113,17 @@ export const createMediaPreviews = (db: AppDatabase, env: AppEnv, storage: Media
         })
         .finally(() => {
           active.delete(file.id)
+          tasks.delete(task)
           kick()
         })
         .catch(() => {})
+      tasks.add(task)
     }
   }
 
   const ensure = (file: typeof files.$inferSelect) => {
     if (!ffmpeg || !demuxers[file.mime]) return 'unavailable'
+    if (suspended) return 'pending'
     if (file.previewState === null) {
       db.update(files)
         .set({ previewState: 'pending' })
@@ -122,5 +136,14 @@ export const createMediaPreviews = (db: AppDatabase, env: AppEnv, storage: Media
     }
     return file.previewState
   }
-  return { kick, ensure }
+  const pause = async () => {
+    suspended = true
+    for (const process of processes.values()) process.kill()
+    await Promise.all([...tasks])
+  }
+  const resume = () => {
+    suspended = false
+    kick()
+  }
+  return { kick, ensure, pause, resume }
 }

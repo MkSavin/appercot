@@ -185,6 +185,7 @@ export const files = sqliteTable(
     ownerType: text('owner_type', { enum: ['user', 'bot'] }).notNull(),
     ownerId: text('owner_id').notNull(),
     chatId: text('chat_id').references(() => chats.id, { onDelete: 'set null' }),
+    originChatId: text('origin_chat_id'),
     mime: text('mime').notNull(),
     size: integer('size').notNull(),
     name: text('name').notNull(),
@@ -256,4 +257,15 @@ export const pushSubs = sqliteTable('push_subs', {
   p256dh: text('p256dh').notNull(),
   auth: text('auth').notNull(),
   createdAt: integer('created_at').notNull(),
+})
+
+export const testFileDeletions = sqliteTable('test_file_deletions', {
+  fileId: text('file_id').primaryKey(),
+  storage: text('storage', { enum: ['local', 's3'] }).notNull(),
+  createdAt: integer('created_at').notNull(),
+})
+
+export const testSyncResets = sqliteTable('test_sync_resets', {
+  userId: text('user_id').primaryKey(),
+  seq: integer('seq').notNull(),
 })

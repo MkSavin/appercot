@@ -3,6 +3,7 @@
 import { AlertDialog as AlertDialogPrimitive } from 'radix-ui'
 import type * as React from 'react'
 import { cn } from '@/shared/lib/cn'
+import { testId, testIds } from '@/shared/lib/test-ids'
 
 import { Button } from '@/shared/ui/button'
 
@@ -137,6 +138,7 @@ function AlertDialogAction({
   return (
     <Button variant={variant} size={size} asChild>
       <AlertDialogPrimitive.Action
+        {...testId(testIds.dialog.confirm)}
         data-slot="alert-dialog-action"
         className={cn(className)}
         {...props}
@@ -155,6 +157,7 @@ function AlertDialogCancel({
   return (
     <Button variant={variant} size={size} asChild>
       <AlertDialogPrimitive.Cancel
+        {...testId(testIds.dialog.cancel)}
         data-slot="alert-dialog-cancel"
         className={cn(className)}
         {...props}

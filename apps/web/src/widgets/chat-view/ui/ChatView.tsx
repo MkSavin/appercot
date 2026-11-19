@@ -37,9 +37,10 @@ export const ChatView = ({ chatId }: { chatId: string }) => {
     let active = true
     setLoading(true)
     setHistoryError(false)
+    const historyEpoch = useChatStore.getState().historyEpoch
     fetchMessages(chatId)
       .then((history) => {
-        if (!active) return
+        if (!active || useChatStore.getState().historyEpoch !== historyEpoch) return
         useChatStore.getState().replaceMessages(chatId, history, history.length === 50)
         setHasMore(history.length === 50)
       })
@@ -64,6 +65,7 @@ export const ChatView = ({ chatId }: { chatId: string }) => {
       const current = useChatStore.getState()
       if (
         previous.user?.id !== current.user?.id ||
+        previous.historyEpoch !== current.historyEpoch ||
         !current.chats.some((chat) => chat.id === chatId)
       )
         return

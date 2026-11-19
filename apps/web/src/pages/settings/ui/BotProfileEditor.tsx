@@ -2,6 +2,7 @@ import { useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { BotAvatar, type fetchAdminBot, updateBotProfileRequest } from '@/entities/bot'
 import { showRequestError } from '@/shared/api'
+import { testId, testIds } from '@/shared/lib/test-ids'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
 import { Textarea } from '@/shared/ui/textarea'
@@ -116,6 +117,7 @@ export const BotProfileEditor = ({
             {t('bot:tags')}
           </label>
           <Input
+            {...testId(testIds.settings.bot.tags)}
             id={`${id}-tags`}
             name="tags"
             defaultValue={bot.tags.join(', ')}
@@ -138,7 +140,7 @@ export const BotProfileEditor = ({
           <p className="text-xs text-muted-foreground">{t('bot:welcomeHint')}</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <Button type="submit" disabled={pending || reading}>
+          <Button {...testId(testIds.settings.save)} type="submit" disabled={pending || reading}>
             {t('bot:saveProfile')}
           </Button>
           {feedback ? (

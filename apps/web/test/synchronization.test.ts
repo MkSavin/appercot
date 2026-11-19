@@ -59,6 +59,13 @@ describe('chat synchronization', () => {
     expect(store.getState().chats[0]?.bot.online).toBe(false)
   })
 
+  test('invalidates in-flight history responses when cached history is discarded', () => {
+    const store = createChatStore()
+    expect(store.getState().historyEpoch).toBe(0)
+    store.getState().discardCachedHistory()
+    expect(store.getState().historyEpoch).toBe(1)
+  })
+
   // @anchor INV:synchronization/reloads-history
   test('reloads session and open history before restarting a reset synchronization', async () => {
     const store = createChatStore()

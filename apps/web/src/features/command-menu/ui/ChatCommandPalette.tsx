@@ -10,6 +10,7 @@ import {
   Shortcut,
   type ShortcutCombination,
 } from '@/shared/lib/shortcuts'
+import { testId, testIds } from '@/shared/lib/test-ids'
 import {
   CommandDialog,
   CommandEmpty,
@@ -27,9 +28,17 @@ export type PaletteButton = { button: Button; key: string }
 type Entry = {
   id: string
   label: string
+  selector: string
   shortcut?: ShortcutCombination
   description?: string
 } & ({ kind: 'command' } | { kind: 'button'; item: PaletteButton })
+
+const buttonSelector = (key: string) => {
+  const parts = key.split(':')
+  const column = Number(parts.pop())
+  const row = Number(parts.pop())
+  return testIds.commandPalette.button(parts.join(':'), row, column)
+}
 
 export const buildPaletteEntries = (
   commands: readonly VisibleCommand[],
@@ -40,6 +49,7 @@ export const buildPaletteEntries = (
       id: name,
       kind: 'command' as const,
       label: `/${name}`,
+      selector: testIds.commandPalette.command(name),
       description,
       shortcut: shortcut ? parseShortcut(shortcut) : undefined,
     })),
@@ -47,6 +57,7 @@ export const buildPaletteEntries = (
       id: item.key,
       kind: 'button' as const,
       label: item.button.text,
+      selector: buttonSelector(item.key),
       shortcut: item.button.shortcut ? parseShortcut(item.button.shortcut) : undefined,
       item,
     })),
@@ -160,6 +171,7 @@ export const ChatCommandPalette = ({
   }, [enabled, open, entries, onOpenChange, onCommand, onButton])
   const render = (entry: Entry) => (
     <CommandItem
+      {...testId(entry.selector)}
       key={entry.id}
       value={`${entry.id} ${entry.label} ${entry.description ?? ''}`}
       onSelect={() => {
@@ -197,7 +209,11 @@ export const ChatCommandPalette = ({
       description={t('commandPalette:description')}
       className="sm:max-w-xl"
     >
-      <CommandInput placeholder={t('commandPalette:search')} className="pr-9" />
+      <CommandInput
+        {...testId(testIds.commandPalette.input)}
+        placeholder={t('commandPalette:search')}
+        className="pr-9"
+      />
       <CommandList className="min-h-20 p-1">
         <CommandEmpty>{t('commandPalette:empty')}</CommandEmpty>
         {commandEntries.length ? (

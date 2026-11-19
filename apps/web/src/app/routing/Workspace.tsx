@@ -3,24 +3,28 @@ import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'wouter'
 import { cn } from '@/shared/lib/cn'
+import { testId, testIds } from '@/shared/lib/test-ids'
 
 export const Workspace = ({ path, children }: { path: string; children: ReactNode }) => {
   const { t } = useTranslation()
   const destinations = [
     {
       href: '/',
+      selector: testIds.navigation.chats,
       label: t('chat:title'),
       icon: MessagesSquare,
       active: (currentPath: string) => currentPath === '/' || currentPath.startsWith('/c/'),
     },
     {
       href: '/browse',
+      selector: testIds.navigation.catalog,
       label: t('browse:nav'),
       icon: Compass,
       active: (currentPath: string) => currentPath === '/browse',
     },
     {
       href: '/settings',
+      selector: testIds.navigation.settings,
       label: t('settings:title'),
       icon: Settings2,
       active: (currentPath: string) => currentPath.startsWith('/settings'),
@@ -38,8 +42,9 @@ export const Workspace = ({ path, children }: { path: string; children: ReactNod
         <Link href="/" aria-label={t('appName')} className="workspace-mark hidden md:grid">
           <Bot aria-hidden="true" className="size-5" />
         </Link>
-        {destinations.map(({ href, label, icon: Icon, active }) => (
+        {destinations.map(({ href, label, icon: Icon, active, selector }) => (
           <Link
+            {...testId(selector)}
             key={href}
             href={href}
             aria-current={active(path) ? 'page' : undefined}

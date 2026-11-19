@@ -1,0 +1,30 @@
+{
+  "name": "@appercot/test",
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./cli": "./src/cli.ts"
+  },
+  "bin": {
+    "appercot-test-server": "./src/cli.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test:compatibility": "bun scripts/run-compatibility.ts",
+    "test:browser": "playwright test --config=playwright.config.ts"
+  },
+  "dependencies": {
+    "@appercot/chat": "workspace:*",
+    "@appercot/protocol": "workspace:*",
+    "@appercot/server": "workspace:*"
+  },
+  "devDependencies": {
+    "@jest/globals": "^30.5.2",
+    "@playwright/test": "^1.65.1",
+    "@swc/core": "^1.16.22",
+    "@swc/jest": "^0.2.39",
+    "jest": "^30.5.2",
+    "vitest": "^5.1.1"
+  }
+}

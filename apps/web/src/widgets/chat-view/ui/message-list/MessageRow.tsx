@@ -2,6 +2,7 @@ import type { BotCommand, Button } from '@appercot/protocol'
 import type { CSSProperties } from 'react'
 import { BotMessage, SystemMessage, UserMessage } from '@/entities/message'
 import type { ShortcutCombination } from '@/shared/lib/shortcuts'
+import { testId, testIds } from '@/shared/lib/test-ids'
 import type { ChatMessage } from '@/shared/model'
 
 const dayFormat = new Intl.DateTimeFormat('ru', { dateStyle: 'long' })
@@ -39,6 +40,7 @@ export const MessageRow = ({
   const newDay = !previous || date.toDateString() !== new Date(previous.createdAt).toDateString()
   return (
     <li
+      {...testId(testIds.message.item(message.id))}
       data-index={index}
       ref={measureElement}
       className="absolute inset-x-0 top-0 min-w-0 pb-3"

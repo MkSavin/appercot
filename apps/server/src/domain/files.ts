@@ -188,6 +188,7 @@ export const saveUploadedFile = async (
         ownerType: owner.type,
         ownerId: owner.id,
         chatId: source.chatId,
+        originChatId: source.chatId,
         mime,
         size,
         name,

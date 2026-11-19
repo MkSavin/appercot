@@ -15,6 +15,7 @@ import { deleteBotMessage, editBotMessage, sendBotMessage } from '../domain/mess
 import { RateLimiter } from '../domain/rate-limit'
 import { getBotRef, setBotRoles, setChatRoles } from '../domain/roles'
 import { publishBotPresence, pushUserUpdate } from '../domain/updates'
+import type { OperationBarrier } from '../test/barrier'
 import { getFrameRequestId, parseBotFrame } from './frames'
 import type { Hub } from './hub'
 import type { AppWebSocketData } from './types'
@@ -48,8 +49,10 @@ export const createBotWebSocketHandlers = (
   database: DatabaseContext,
   hub: Hub,
   callbacks: CallbackRegistry,
+  barrier?: OperationBarrier,
 ): WebSocketHandler<AppWebSocketData> => {
   const rateLimiter = new RateLimiter(30, 1000)
+  barrier?.onAfterReset(() => rateLimiter.reset())
   const dispatch = async (botId: string, request: BotRequestFrame) => {
     switch (request.method) {
       case 'getMe':
@@ -173,7 +176,8 @@ export const createBotWebSocketHandlers = (
       flushBotEvents(database.db, hub, botId)
     },
     message: (socket, frame) => {
-      void handleMessage(socket, String(frame))
+      if (barrier) void barrier.run(() => handleMessage(socket, String(frame))).catch(() => {})
+      else void handleMessage(socket, String(frame))
     },
     close: (socket) => {
       if (socket.data.kind !== 'bot') return

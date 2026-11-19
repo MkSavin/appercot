@@ -26,7 +26,7 @@
 Новый workspace-пакет `@appercot/test` содержит:
 
 1. CLI `appercot-test-server`, запускающий настоящий сервер с test control API.
-2. `AppercotTestServer` — runner-agnostic fixture-клиент на стандартных `fetch` и `AbortSignal`. Импорт клиента под Bun и Node не тянет Bun API или серверный entry point. Боты подключаются по WebSocket через `@appercot/chat`, SPA использует свой штатный транспорт.
+2. `AppercotTestClient` — runner-agnostic fixture-клиент на стандартных `fetch` и `AbortSignal`. Импорт клиента под Bun и Node не тянет Bun API или серверный entry point. Боты подключаются по WebSocket через `@appercot/chat`, SPA использует свой штатный транспорт.
 3. Общие типы конфигурации, fixture-манифеста и ответов control API.
 4. Адаптеры не требуются: примеры используют штатные `beforeAll`, `afterAll`, `beforeEach` каждого runner.
 
@@ -43,7 +43,7 @@ Reset и delete сериализуются. До изменения БД сер�
 ## Публичный API клиента
 
 ```ts
-const appercot = new AppercotTestServer({
+const appercot = new AppercotTestClient({
   endpoint: process.env.BOT_APPERCOT_TEST_ENDPOINT!,
   token: process.env.BOT_APPERCOT_TEST_TOKEN!,
 })
@@ -76,7 +76,7 @@ await appercot.deleteUser(alice.id)
 await appercot.flushState()
 ```
 
-Методы создания возвращают типизированный fixture-объект и исходные credentials, где применимо. `fixtures()` возвращает манифест исходного baseline со стабильными ID и credentials, включая токены для `createBot` SDK. Манифест не меняется от runtime-операций. `sendMessage` принимает `sender: 'user' | 'bot'`, выводит actor из чата и использует штатный путь отправки соответствующей стороны. Для пользовательской отправки вызывающий задаёт `clientId` и повторно использует его при retry. Валидация контента, права стороны чата, доставка updates и outbox сохраняются. Очистка и удаление возвращают `void`. Ошибки HTTP и валидации преобразуются в `AppercotTestServerError` с `status`, `code`, сообщением и необязательным `path`. Сетевые ошибки и таймауты имеют собственные коды без HTTP-статуса. Таймаут настраивается в конструкторе.
+Методы создания возвращают типизированный fixture-объект и исходные credentials, где применимо. `fixtures()` возвращает манифест исходного baseline со стабильными ID и credentials, включая токены для `createBot` SDK. Манифест не меняется от runtime-операций. `sendMessage` принимает `sender: 'user' | 'bot'`, выводит actor из чата и использует штатный путь отправки соответствующей стороны. Для пользовательской отправки вызывающий задаёт `clientId` и повторно использует его при retry. Валидация контента, права стороны чата, доставка updates и outbox сохраняются. Очистка и удаление возвращают `void`. Ошибки HTTP и валидации преобразуются в `AppercotTestClientError` с `status`, `code`, сообщением и необязательным `path`. Сетевые ошибки и таймауты имеют собственные коды без HTTP-статуса. Таймаут настраивается в конструкторе.
 
 ### Семантика очистки
 
@@ -127,9 +127,7 @@ await appercot.flushState()
       "listed": true,
       "access": "public",
       "defaultRoles": [],
-      "commands": [
-        { "name": "start", "description": "Start", "shortcut": "Alt+S" }
-      ]
+      "commands": [{ "name": "start", "description": "Start", "shortcut": "Alt+S" }]
     }
   ],
   "chats": [
@@ -137,9 +135,7 @@ await appercot.flushState()
       "id": "chat-alice-echo",
       "user": "alice",
       "bot": "echo_bot",
-      "messages": [
-        { "sender": "bot", "content": { "text": "Ready" } }
-      ]
+      "messages": [{ "sender": "bot", "content": { "text": "Ready" } }]
     }
   ],
   "test": { "token": "${BOT_APPERCOT_TEST_TOKEN}" }
