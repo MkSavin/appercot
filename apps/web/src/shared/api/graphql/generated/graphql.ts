@@ -195,7 +195,7 @@ export type AdminBotQueryVariables = Exact<{
 }>;
 
 
-export type AdminBotQuery = { adminBot: { id: string, username: string, name: string, description: string, online: boolean, listed: boolean, access: BotAccess, memberCount: number, avatar: string | null, welcome: string, guestAccess: boolean } };
+export type AdminBotQuery = { adminBot: { id: string, username: string, name: string, description: string, online: boolean, listed: boolean, access: BotAccess, memberCount: number, avatar: string | null, welcome: string, guestAccess: boolean, tags: Array<string> } };
 
 export type InviteBotMemberMutationVariables = Exact<{
   botId: string | number;
@@ -287,10 +287,11 @@ export type UpdateBotProfileMutationVariables = Exact<{
   description: string;
   welcome: string;
   avatar?: string | null | undefined;
+  tags?: Array<string> | string | null | undefined;
 }>;
 
 
-export type UpdateBotProfileMutation = { updateBotProfile: { id: string, username: string, name: string, description: string, online: boolean, listed: boolean, access: BotAccess, avatar: string | null, welcome: string } };
+export type UpdateBotProfileMutation = { updateBotProfile: { id: string, username: string, name: string, description: string, online: boolean, listed: boolean, access: BotAccess, avatar: string | null, welcome: string, tags: Array<string> } };
 
 export type SetBotGuestAccessMutationVariables = Exact<{
   botId: string | number;
@@ -320,7 +321,7 @@ export type BrowseBotsQueryVariables = Exact<{
 }>;
 
 
-export type BrowseBotsQuery = { browseBots: Array<{ id: string, username: string, name: string, description: string, online: boolean, listed: boolean, avatar: string | null, welcome: string }> };
+export type BrowseBotsQuery = { browseBots: Array<{ id: string, username: string, name: string, description: string, online: boolean, listed: boolean, avatar: string | null, welcome: string, tags: Array<string> }> };
 
 export type AddBotMutationVariables = Exact<{
   username: string;
@@ -346,13 +347,6 @@ export type MarkReadMutationVariables = Exact<{
 
 
 export type MarkReadMutation = { markRead: boolean };
-
-export type ClearChatMutationVariables = Exact<{
-  chatId: string | number;
-}>;
-
-
-export type ClearChatMutation = { clearChat: boolean };
 
 export type BlockBotMutationVariables = Exact<{
   chatId: string | number;
@@ -437,7 +431,7 @@ export type UnsubscribePushMutation = { unsubscribePush: boolean };
 export type SessionQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type SessionQuery = { session: { vapidPublicKey: string | null, checkpoint: number, user: { id: string, username: string, displayName: string, bio: string, twoFactorEnabled: boolean, role: PlatformRole }, chats: Array<{ id: string, roles: Array<string>, blocked: boolean, notifications: ChatNotifications, unread: number, lastMessageAt: number | null, createdAt: number, bot: { id: string, username: string, name: string, description: string, online: boolean, listed: boolean, avatar: string | null, welcome: string }, commands: Array<{ name: string, description: string, shortcut: string | null }> }> } };
+export type SessionQuery = { session: { vapidPublicKey: string | null, checkpoint: number, user: { id: string, username: string, displayName: string, bio: string, twoFactorEnabled: boolean, role: PlatformRole }, chats: Array<{ id: string, roles: Array<string>, blocked: boolean, notifications: ChatNotifications, unread: number, lastMessageAt: number | null, createdAt: number, bot: { id: string, username: string, name: string, description: string, online: boolean, listed: boolean, avatar: string | null, welcome: string }, preview: { id: string, chatId: string, seq: number, sender: string, content: unknown, status: string, replyTo: string | null, createdAt: number, editedAt: number | null, deleted: boolean } | null, commands: Array<{ name: string, description: string, shortcut: string | null }> }> } };
 
 export type LoginMutationVariables = Exact<{
   username: string;
@@ -446,7 +440,7 @@ export type LoginMutationVariables = Exact<{
 }>;
 
 
-export type LoginMutation = { login: { vapidPublicKey: string | null, checkpoint: number, user: { id: string, username: string, displayName: string, bio: string, twoFactorEnabled: boolean, role: PlatformRole }, chats: Array<{ id: string, roles: Array<string>, blocked: boolean, notifications: ChatNotifications, unread: number, lastMessageAt: number | null, createdAt: number, bot: { id: string, username: string, name: string, description: string, online: boolean, listed: boolean, avatar: string | null, welcome: string }, commands: Array<{ name: string, description: string, shortcut: string | null }> }> } };
+export type LoginMutation = { login: { vapidPublicKey: string | null, checkpoint: number, user: { id: string, username: string, displayName: string, bio: string, twoFactorEnabled: boolean, role: PlatformRole }, chats: Array<{ id: string, roles: Array<string>, blocked: boolean, notifications: ChatNotifications, unread: number, lastMessageAt: number | null, createdAt: number, bot: { id: string, username: string, name: string, description: string, online: boolean, listed: boolean, avatar: string | null, welcome: string }, preview: { id: string, chatId: string, seq: number, sender: string, content: unknown, status: string, replyTo: string | null, createdAt: number, editedAt: number | null, deleted: boolean } | null, commands: Array<{ name: string, description: string, shortcut: string | null }> }> } };
 
 export type RegisterMutationVariables = Exact<{
   username: string;
@@ -456,7 +450,7 @@ export type RegisterMutationVariables = Exact<{
 }>;
 
 
-export type RegisterMutation = { register: { vapidPublicKey: string | null, checkpoint: number, user: { id: string, username: string, displayName: string, bio: string, twoFactorEnabled: boolean, role: PlatformRole }, chats: Array<{ id: string, roles: Array<string>, blocked: boolean, notifications: ChatNotifications, unread: number, lastMessageAt: number | null, createdAt: number, bot: { id: string, username: string, name: string, description: string, online: boolean, listed: boolean, avatar: string | null, welcome: string }, commands: Array<{ name: string, description: string, shortcut: string | null }> }> } };
+export type RegisterMutation = { register: { vapidPublicKey: string | null, checkpoint: number, user: { id: string, username: string, displayName: string, bio: string, twoFactorEnabled: boolean, role: PlatformRole }, chats: Array<{ id: string, roles: Array<string>, blocked: boolean, notifications: ChatNotifications, unread: number, lastMessageAt: number | null, createdAt: number, bot: { id: string, username: string, name: string, description: string, online: boolean, listed: boolean, avatar: string | null, welcome: string }, preview: { id: string, chatId: string, seq: number, sender: string, content: unknown, status: string, replyTo: string | null, createdAt: number, editedAt: number | null, deleted: boolean } | null, commands: Array<{ name: string, description: string, shortcut: string | null }> }> } };
 
 export type LogoutMutationVariables = Exact<{
   pushEndpoint?: string | null | undefined;
@@ -715,6 +709,7 @@ export const AdminBotDocument = new TypedDocumentString(`
     avatar
     welcome
     guestAccess
+    tags
   }
 }
     `) as unknown as TypedDocumentString<AdminBotQuery, AdminBotQueryVariables>;
@@ -833,12 +828,13 @@ export const ChatProfileDocument = new TypedDocumentString(`
 }
     `) as unknown as TypedDocumentString<ChatProfileQuery, ChatProfileQueryVariables>;
 export const UpdateBotProfileDocument = new TypedDocumentString(`
-    mutation UpdateBotProfile($botId: ID!, $description: String!, $welcome: String!, $avatar: String) {
+    mutation UpdateBotProfile($botId: ID!, $description: String!, $welcome: String!, $avatar: String, $tags: [String!]) {
   updateBotProfile(
     botId: $botId
     description: $description
     welcome: $welcome
     avatar: $avatar
+    tags: $tags
   ) {
     id
     username
@@ -849,6 +845,7 @@ export const UpdateBotProfileDocument = new TypedDocumentString(`
     access
     avatar
     welcome
+    tags
   }
 }
     `) as unknown as TypedDocumentString<UpdateBotProfileMutation, UpdateBotProfileMutationVariables>;
@@ -880,6 +877,7 @@ export const BrowseBotsDocument = new TypedDocumentString(`
     listed
     avatar
     welcome
+    tags
   }
 }
     `) as unknown as TypedDocumentString<BrowseBotsQuery, BrowseBotsQueryVariables>;
@@ -923,11 +921,6 @@ export const MarkReadDocument = new TypedDocumentString(`
   markRead(chatId: $chatId, seq: $seq)
 }
     `) as unknown as TypedDocumentString<MarkReadMutation, MarkReadMutationVariables>;
-export const ClearChatDocument = new TypedDocumentString(`
-    mutation ClearChat($chatId: ID!) {
-  clearChat(chatId: $chatId)
-}
-    `) as unknown as TypedDocumentString<ClearChatMutation, ClearChatMutationVariables>;
 export const BlockBotDocument = new TypedDocumentString(`
     mutation BlockBot($chatId: ID!, $blocked: Boolean!) {
   blockBot(chatId: $chatId, blocked: $blocked)
@@ -1072,6 +1065,18 @@ export const SessionDocument = new TypedDocumentString(`
       notifications
       unread
       lastMessageAt
+      preview {
+        id
+        chatId
+        seq
+        sender
+        content
+        status
+        replyTo
+        createdAt
+        editedAt
+        deleted
+      }
       createdAt
       commands {
         name
@@ -1112,6 +1117,18 @@ export const LoginDocument = new TypedDocumentString(`
       notifications
       unread
       lastMessageAt
+      preview {
+        id
+        chatId
+        seq
+        sender
+        content
+        status
+        replyTo
+        createdAt
+        editedAt
+        deleted
+      }
       createdAt
       commands {
         name
@@ -1157,6 +1174,18 @@ export const RegisterDocument = new TypedDocumentString(`
       notifications
       unread
       lastMessageAt
+      preview {
+        id
+        chatId
+        seq
+        sender
+        content
+        status
+        replyTo
+        createdAt
+        editedAt
+        deleted
+      }
       createdAt
       commands {
         name

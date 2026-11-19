@@ -1,5 +1,7 @@
 import type { Button } from '@appercot/protocol'
 import { lazy, Suspense } from 'react'
+import { useTranslation } from 'react-i18next'
+import type { ShortcutCombination } from '@/shared/lib/shortcuts'
 import type { ChatMessage } from '@/shared/model'
 import type { CommandTextProps } from './CommandText'
 import { MediaGallery } from './MediaGallery'
@@ -13,7 +15,7 @@ interface BotMessageProps extends CommandTextProps {
   message: ChatMessage
   onButtonAction?: (button: Button, key: string) => void
   pendingButtonKey?: string | null
-  buttonShortcuts?: Record<string, string | undefined>
+  buttonShortcuts?: Record<string, ShortcutCombination | undefined>
 }
 
 export const BotMessage = ({
@@ -23,25 +25,28 @@ export const BotMessage = ({
   commands,
   onCommand,
   buttonShortcuts,
-}: BotMessageProps) => (
-  <article className="grid w-full min-w-0 gap-2 py-2 text-[15px] leading-7 text-foreground">
-    {message.content.media ? <MediaGallery media={message.content.media} /> : null}
-    {message.content.text ? (
-      <Suspense fallback={<p className="whitespace-pre-wrap">{message.content.text}</p>}>
-        <MarkdownContent text={message.content.text} commands={commands} onCommand={onCommand} />
-      </Suspense>
-    ) : null}
-    {message.content.buttons && onButtonAction ? (
-      <MessageKeyboard
-        rows={message.content.buttons}
-        messageId={message.id}
-        pendingKey={pendingButtonKey}
-        onAction={onButtonAction}
-        shortcuts={buttonShortcuts}
-      />
-    ) : null}
-    {message.editedAt ? (
-      <span className="mt-2 block text-xs text-muted-foreground">изменено</span>
-    ) : null}
-  </article>
-)
+}: BotMessageProps) => {
+  const { t } = useTranslation()
+  return (
+    <article className="grid w-full min-w-0 gap-2 py-2 text-[15px] leading-7 text-foreground">
+      {message.content.media ? <MediaGallery media={message.content.media} /> : null}
+      {message.content.text ? (
+        <Suspense fallback={<p className="whitespace-pre-wrap">{message.content.text}</p>}>
+          <MarkdownContent text={message.content.text} commands={commands} onCommand={onCommand} />
+        </Suspense>
+      ) : null}
+      {message.content.buttons && onButtonAction ? (
+        <MessageKeyboard
+          rows={message.content.buttons}
+          messageId={message.id}
+          pendingKey={pendingButtonKey}
+          onAction={onButtonAction}
+          shortcuts={buttonShortcuts}
+        />
+      ) : null}
+      {message.editedAt ? (
+        <span className="mt-2 block text-xs text-muted-foreground">{t('message:edited')}</span>
+      ) : null}
+    </article>
+  )
+}

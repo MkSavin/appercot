@@ -119,7 +119,7 @@ export const IssueBotInviteDocument = graphql(`
 
 export const AdminBotDocument = graphql(`
   query AdminBot($botId: ID!) {
-    adminBot(botId: $botId) { id username name description online listed access memberCount avatar welcome guestAccess }
+    adminBot(botId: $botId) { id username name description online listed access memberCount avatar welcome guestAccess tags }
   }
 `)
 

@@ -1,6 +1,7 @@
-import { strings } from '@/shared/config'
+import { useTranslation } from 'react-i18next'
 
 export const TypingIndicator = ({ until }: { until?: number }) => {
+  const { t } = useTranslation()
   if (!until) return null
   return (
     <div
@@ -12,7 +13,7 @@ export const TypingIndicator = ({ until }: { until?: number }) => {
         <span className="size-1.5 animate-pulse rounded-full bg-current [animation-delay:150ms]" />
         <span className="size-1.5 animate-pulse rounded-full bg-current [animation-delay:300ms]" />
       </span>
-      {strings.chat.typing}
+      {t('chat:typing')}
     </div>
   )
 }

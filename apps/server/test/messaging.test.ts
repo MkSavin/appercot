@@ -203,7 +203,7 @@ describe('messaging integration', () => {
   })
 
   // @anchor INV:messaging/idempotent-send
-  test('keeps send idempotent and supports block, read and clear', async () => {
+  test('keeps send idempotent and supports block and read without a clear mutation', async () => {
     const fixture = createServerFixture()
     try {
       const cookie = await loginAdmin(fixture.baseUrl)
@@ -237,14 +237,14 @@ describe('messaging integration', () => {
         { chatId },
         cookie,
       )
-      expect(cleared.body.errors).toBeUndefined()
+      expect(cleared.body.errors?.[0]?.message).toContain('Cannot query field "clearChat"')
       const history = await graphqlRequest(
         fixture.baseUrl,
         'query($chatId: ID!) { messages(chatId: $chatId) { id } }',
         { chatId },
         cookie,
       )
-      expect(history.body.data.messages).toEqual([])
+      expect(history.body.data.messages).not.toEqual([])
       const administrator = fixture.db.select().from(users).where(eq(users.username, 'admin')).get()
       expect(administrator).toBeDefined()
       expect(seeded.botId).toBeDefined()

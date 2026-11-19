@@ -1,9 +1,10 @@
 import { Compass, MessageSquareText } from 'lucide-react'
 import { lazy, Suspense } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'wouter'
 import { useChatStore } from '@/entities/chat'
-import { strings } from '@/shared/config'
 import { Button } from '@/shared/ui/button'
+import { PagePlaceholder } from '@/shared/ui/page-placeholder'
 import { Sidebar } from '@/widgets/chat-list'
 
 const ChatView = lazy(() =>
@@ -14,6 +15,7 @@ const BotChatProfile = lazy(() =>
 )
 
 export const ChatPage = () => {
+  const { t } = useTranslation()
   const params = useParams<{ chatId?: string; panel?: string }>()
   const chatId = params.chatId
   const hasChats = useChatStore((state) => state.chats.length > 0)
@@ -23,13 +25,7 @@ export const ChatPage = () => {
       <Sidebar activeChatId={chatId} />
       <main className={chatId ? 'min-h-0 min-w-0' : 'hidden min-h-0 min-w-0 md:block'}>
         {chatId ? (
-          <Suspense
-            fallback={
-              <p role="status" className="p-6 text-center text-sm text-muted-foreground">
-                {strings.chat.loading}
-              </p>
-            }
-          >
+          <Suspense fallback={<PagePlaceholder variant="chat" />}>
             {params.panel === 'profile' ? (
               <BotChatProfile key={chatId} chatId={chatId} />
             ) : (
@@ -43,16 +39,16 @@ export const ChatPage = () => {
                 <MessageSquareText aria-hidden="true" className="size-7" />
               </span>
               <h1 className="text-3xl font-semibold tracking-tight">
-                {hasChats ? strings.chat.emptyTitle : strings.chat.welcomeTitle}
+                {hasChats ? t('chat:emptyTitle') : t('chat:welcomeTitle')}
               </h1>
               <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                {hasChats ? strings.chat.emptyDescription : strings.chat.welcomeDescription}
+                {hasChats ? t('chat:emptyDescription') : t('chat:welcomeDescription')}
               </p>
               {!hasChats ? (
                 <Button asChild className="mt-6">
                   <Link href="/browse">
                     <Compass aria-hidden="true" />
-                    {strings.chat.browse}
+                    {t('chat:browse')}
                   </Link>
                 </Button>
               ) : null}

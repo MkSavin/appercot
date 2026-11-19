@@ -1,8 +1,8 @@
 import { Copy, Plus } from 'lucide-react'
 import { useId, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { type AdminInvite, createInviteRequest } from '@/entities/user'
 import { showRequestError } from '@/shared/api'
-import { strings } from '@/shared/config'
 import { Button } from '@/shared/ui/button'
 import {
   Dialog,
@@ -24,12 +24,13 @@ export const CreateInviteForm = ({
   onCreated: (invite: AdminInvite) => void
   single?: boolean
 }) => {
+  const { t } = useTranslation()
   const id = useId()
   const [open, setOpen] = useState(false)
   const [pending, setPending] = useState(false)
   const [issued, setIssued] = useState<AdminInvite>()
   const [copied, setCopied] = useState(false)
-  const title = single ? 'Пригласить пользователя' : strings.admin.createInvite
+  const title = single ? t('invitation:singleTitle') : t('admin:createInvite')
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const data = new FormData(event.currentTarget)
@@ -67,17 +68,15 @@ export const CreateInviteForm = ({
       </DialogTrigger>
       <DialogContent className="max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{issued ? 'Ссылка готова' : title}</DialogTitle>
+          <DialogTitle>{issued ? t('invitation:readyTitle') : title}</DialogTitle>
           <DialogDescription>
-            {single
-              ? 'По этой ссылке сможет зарегистрироваться один человек.'
-              : strings.settings.platformInviteDescription}
+            {single ? t('invitation:singleDescription') : t('settings:platformInviteDescription')}
           </DialogDescription>
         </DialogHeader>
         {issued ? (
           <div className="grid gap-3">
             <label htmlFor={id} className="text-sm font-medium">
-              Пригласительная ссылка
+              {t('settings:botLink')}
             </label>
             <Input
               id={id}
@@ -87,7 +86,7 @@ export const CreateInviteForm = ({
             />
             <DialogFooter>
               <DialogClose asChild>
-                <Button variant="outline">Готово</Button>
+                <Button variant="outline">{t('common:done')}</Button>
               </DialogClose>
               <Button
                 onClick={async () => {
@@ -100,7 +99,7 @@ export const CreateInviteForm = ({
                 }}
               >
                 <Copy aria-hidden="true" />
-                {copied ? strings.message.copied : strings.admin.copyLink}
+                {copied ? t('message:copied') : t('admin:copyLink')}
               </Button>
             </DialogFooter>
           </div>
@@ -111,11 +110,11 @@ export const CreateInviteForm = ({
             <DialogFooter>
               <DialogClose asChild>
                 <Button type="button" variant="outline" disabled={pending}>
-                  {strings.chat.cancel}
+                  {t('chat:cancel')}
                 </Button>
               </DialogClose>
               <Button type="submit" disabled={pending}>
-                {strings.admin.createInvite}
+                {t('admin:createInvite')}
               </Button>
             </DialogFooter>
           </form>

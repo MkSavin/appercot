@@ -14,11 +14,13 @@ export const ClientChatSchema = ChatRefSchema.extend({
     listed: z.boolean(),
     avatar: z.string().nullable().optional(),
     welcome: z.string().optional(),
+    tags: z.array(z.string()).optional(),
   }),
   unread: z.int().nonnegative(),
   lastMessageAt: z.int().nonnegative().nullable(),
   commands: z.array(BotCommandSchema).optional(),
   notifications: z.enum(['all', 'silent', 'off']).optional(),
+  preview: MessageSchema.nullable().optional(),
 })
 
 export const MessageNewUpdateSchema = z.strictObject({

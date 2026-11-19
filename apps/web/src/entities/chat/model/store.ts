@@ -65,7 +65,6 @@ interface ChatActions {
   failOutgoingMessage: (chatId: string, clientId: string) => void
   retryOutgoingMessage: (chatId: string, clientId: string) => void
   upsertChat: (chat: ClientChat) => void
-  clearChatMessages: (chatId: string) => void
   removeChat: (chatId: string) => void
   expireTyping: (chatId: string, until: number) => void
 }
@@ -132,7 +131,11 @@ const warmHistory = (messages: ChatMessage[]) =>
 
 const withChat = (chats: ChatConnection[], chat: ChatConnection) => {
   const previous = chats.find((current) => current.id === chat.id)
-  const merged = { ...chat, commands: chat.commands ?? previous?.commands }
+  const merged = {
+    ...chat,
+    commands: chat.commands ?? previous?.commands,
+    preview: chat.preview ?? previous?.preview,
+  }
   return [...chats.filter((current) => current.id !== chat.id), merged].sort(
     (left, right) =>
       (right.lastMessageAt ?? 0) - (left.lastMessageAt ?? 0) || right.createdAt - left.createdAt,
@@ -176,7 +179,15 @@ const applyClientUpdate = (
         )
       }
       const messages = withMessage(withoutPending, update.message)
+      const currentChat = state.chats.find((chat) => chat.id === chatId)
       return {
+        chats: currentChat
+          ? withChat(state.chats, {
+              ...currentChat,
+              preview: update.message,
+              lastMessageAt: update.message.createdAt,
+            })
+          : state.chats,
         messagesByChat: {
           ...state.messagesByChat,
           [chatId]:
@@ -301,6 +312,11 @@ export const createChatStore = (options: ChatStoreOptions = {}) => {
         if (session.checkpoint !== undefined)
           writeCheckpoint(checkpointStorage, session.user.id, lastSeq)
       }
+      const messagesByChat = isSameUser ? { ...get().messagesByChat } : {}
+      for (const chat of session.chats) {
+        if (chat.preview)
+          messagesByChat[chat.id] = mergeMessages([chat.preview], messagesByChat[chat.id] ?? [])
+      }
       set({
         user: session.user,
         vapidPublicKey: session.vapidPublicKey,
@@ -309,7 +325,7 @@ export const createChatStore = (options: ChatStoreOptions = {}) => {
             (right.lastMessageAt ?? 0) - (left.lastMessageAt ?? 0) ||
             right.createdAt - left.createdAt,
         ),
-        messagesByChat: isSameUser ? get().messagesByChat : {},
+        messagesByChat,
         pendingByChat: isSameUser ? get().pendingByChat : {},
         draftsByChat: isSameUser ? get().draftsByChat : {},
         typingByChat: isSameUser ? get().typingByChat : {},
@@ -476,11 +492,6 @@ export const createChatStore = (options: ChatStoreOptions = {}) => {
     upsertChat: (chat) => set((state) => ({ chats: withChat(state.chats, chat) })),
     removeChat: (chatId) =>
       set((state) => applyClientUpdate(state, { type: 'chat.removed', chatId }, now)),
-    clearChatMessages: (chatId) =>
-      set((state) => ({
-        messagesByChat: { ...state.messagesByChat, [chatId]: [] },
-        pendingByChat: { ...state.pendingByChat, [chatId]: [] },
-      })),
     expireTyping: (chatId, until) =>
       set((state) => {
         if (state.typingByChat[chatId] !== until) return state

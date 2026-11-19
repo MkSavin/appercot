@@ -50,6 +50,7 @@ export const bots = sqliteTable('bots', {
   description: text('description').notNull(),
   avatar: text('avatar'),
   welcome: text('welcome').notNull().default(''),
+  tags: text('tags', { mode: 'json' }).$type<string[]>().notNull().default([]),
   ownerId: text('owner_id').references(() => users.id, { onDelete: 'set null' }),
   tokenHash: text('token_hash').notNull().unique(),
   listed: integer('listed', { mode: 'boolean' }).notNull().default(true),

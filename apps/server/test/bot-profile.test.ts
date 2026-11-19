@@ -29,6 +29,15 @@ test('loads bot metadata and media and deletes a chat while keeping the membersh
       { bot: botId, avatar },
     )
     expect(updated.errors).toBeUndefined()
+    const tagged = await call(
+      'mutation($bot: ID!) { updateBotProfile(botId: $bot, description: "Bot profile", welcome: "Ready to start", tags: ["productivity", "tools"]) { tags } }',
+      { bot: botId },
+    )
+    expect(tagged.errors).toBeUndefined()
+    expect(tagged.data.updateBotProfile).toMatchObject({ tags: ['productivity', 'tools'] })
+    expect(
+      (await call('query { browseBots(query: "productivity") { id tags } }')).data.browseBots,
+    ).toEqual([{ id: botId, tags: ['productivity', 'tools'] }])
     const avatarPath = (updated.data.updateBotProfile as { avatar: string }).avatar
     const image = await fetch(fixture.baseUrl + avatarPath, { headers: { cookie } })
     expect(image.headers.get('content-type')).toBe('image/png')
@@ -68,6 +77,13 @@ test('loads bot metadata and media and deletes a chat while keeping the membersh
 
     const input = { chatId, clientId: 'wizard-reply', content: { text: 'Wizard answer' } }
     const message = sendUserMessage(fixture.db, hub, actor.id, input)
+    const sessionWithPreview = await call(
+      'query { session { chats { id preview { id content createdAt } } } }',
+    )
+    expect(sessionWithPreview.errors).toBeUndefined()
+    expect(sessionWithPreview.data.session).toMatchObject({
+      chats: [{ id: chatId, preview: { id: message.id, content: { text: 'Wizard answer' } } }],
+    })
     deleteBotMessage(fixture.db, hub, botId, { chatId, messageId: message.id })
     expect(sendUserMessage(fixture.db, hub, actor.id, input)).toMatchObject({
       id: message.id,

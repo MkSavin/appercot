@@ -1,5 +1,6 @@
 import { Check, Copy, Pencil } from 'lucide-react'
 import { type ReactNode, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { showRequestError } from '@/shared/api'
 import { Badge } from './badge'
 import { Button } from './button'
@@ -38,42 +39,44 @@ export const InvitationList = <T extends Invitation>({
   onEdit: (row: T, data: FormData, limits: ReturnType<typeof readInviteLimits>) => Promise<void>
   onRevoke: (row: T) => Promise<void>
 }) => {
+  const { t } = useTranslation()
   const [action, setAction] = useState<{ row: T; edit: boolean }>()
   const [pending, setPending] = useState(false)
   const [copied, setCopied] = useState<string>()
   const trigger = useRef<HTMLButtonElement>(null)
   const list = useRef<HTMLUListElement>(null)
-  if (!rows.length)
-    return <p className="text-sm text-muted-foreground">Пригласительных ссылок пока нет.</p>
+  if (!rows.length) return <p className="text-sm text-muted-foreground">{t('invitation:empty')}</p>
   const now = Date.now()
   return (
     <>
       <ul ref={list} tabIndex={-1} className="grid gap-2">
         {rows.map((row) => {
           const status = row.revokedAt
-            ? 'Отозвана'
+            ? t('invitation:revoked')
             : row.expiresAt && row.expiresAt <= now
-              ? 'Истекла'
+              ? t('invitation:expired')
               : row.maxUses !== null && row.uses >= row.maxUses
-                ? 'Лимит исчерпан'
-                : 'Активна'
+                ? t('invitation:exhausted')
+                : t('invitation:active')
           return (
             <li key={row.id} className="settings-card flex min-w-0 flex-wrap items-center gap-3">
               <div className="min-w-0 flex-[1_1_12rem]">
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge variant="secondary">{status}</Badge>
-                  {(row.roles.length ? row.roles : ['Базовый доступ']).map((role) => (
+                  {(row.roles.length ? row.roles : [t('invitation:defaultAccess')]).map((role) => (
                     <Badge key={role} variant="outline">
                       {role}
                     </Badge>
                   ))}
                 </div>
                 <p className="mt-2 truncate text-sm" title={row.url ?? undefined}>
-                  {row.url ?? 'Ссылка из предыдущей версии'}
+                  {row.url ?? t('invitation:legacyLink')}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Приняли {row.uses} / {row.maxUses ?? '∞'} ·{' '}
-                  {row.expiresAt ? `До ${dateTime.format(row.expiresAt)}` : 'Бессрочно'}
+                  {t('invitation:accepted', { uses: row.uses, max: row.maxUses ?? '∞' })} ·{' '}
+                  {row.expiresAt
+                    ? t('invitation:until', { date: dateTime.format(row.expiresAt) })
+                    : t('invitation:noExpiry')}
                 </p>
               </div>
               <div className="flex items-center gap-1">
@@ -81,8 +84,8 @@ export const InvitationList = <T extends Invitation>({
                   <Button
                     variant="ghost"
                     size="icon"
-                    aria-label="Скопировать ссылку"
-                    title="Скопировать ссылку"
+                    aria-label={t('invitation:copy')}
+                    title={t('invitation:copy')}
                     onClick={async () => {
                       if (!row.url) return
                       try {
@@ -102,8 +105,8 @@ export const InvitationList = <T extends Invitation>({
                       <Button
                         variant="ghost"
                         size="icon"
-                        aria-label="Редактировать ссылку"
-                        title="Редактировать ссылку"
+                        aria-label={t('invitation:edit')}
+                        title={t('invitation:edit')}
                         onClick={(event) => {
                           trigger.current = event.currentTarget
                           setAction({ row, edit: true })
@@ -120,13 +123,13 @@ export const InvitationList = <T extends Invitation>({
                         setAction({ row, edit: false })
                       }}
                     >
-                      Отозвать
+                      {t('invitation:revoke')}
                     </Button>
                   </>
                 ) : null}
                 {copied === row.id ? (
                   <span role="status" className="sr-only">
-                    Скопировано
+                    {t('common:copied')}
                   </span>
                 ) : null}
               </div>
@@ -150,11 +153,11 @@ export const InvitationList = <T extends Invitation>({
             }}
           >
             <DialogHeader>
-              <DialogTitle>{action.edit ? 'Редактировать ссылку' : 'Отозвать ссылку'}</DialogTitle>
+              <DialogTitle>
+                {action.edit ? t('invitation:edit') : t('invitation:revokeTitle')}
+              </DialogTitle>
               <DialogDescription>
-                {action.edit
-                  ? 'Изменения применятся к следующим переходам по этой ссылке.'
-                  : 'По этой ссылке больше нельзя будет присоединиться. Доступ действующих участников сохранится.'}
+                {action.edit ? t('invitation:editDescription') : t('invitation:revokeDescription')}
               </DialogDescription>
             </DialogHeader>
             <form
@@ -187,14 +190,14 @@ export const InvitationList = <T extends Invitation>({
                   disabled={pending}
                   onClick={() => setAction(undefined)}
                 >
-                  Отмена
+                  {t('common:cancel')}
                 </Button>
                 <Button
                   type="submit"
                   variant={action.edit ? 'default' : 'destructive'}
                   disabled={pending}
                 >
-                  {action.edit ? 'Сохранить' : 'Отозвать'}
+                  {action.edit ? t('common:save') : t('invitation:revoke')}
                 </Button>
               </DialogFooter>
             </form>

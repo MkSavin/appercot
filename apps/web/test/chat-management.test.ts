@@ -1,3 +1,4 @@
+import '../src/shared/config/i18n'
 import { describe, expect, test } from 'bun:test'
 import type { BotCommand, ClientChat } from '@appercot/protocol'
 import {
@@ -6,7 +7,6 @@ import {
   type SessionPayload,
 } from '../src/entities/chat/model/store'
 import { updateChatBlocked } from '../src/features/block-bot/model/update-chat-blocked'
-import { clearChatHistory } from '../src/features/clear-chat/model/clear-chat-history'
 import { filterBotCommands } from '../src/features/command-menu/model/filter-commands'
 
 const chat: ClientChat = {
@@ -60,16 +60,6 @@ describe('chat management', () => {
 
     expect(requested).toBe(true)
     expect(store.getState().chats[0]?.blocked).toBe(true)
-  })
-
-  test('clears local messages after a successful clear mutation', async () => {
-    const store = createChatStore()
-    store.getState().setSession(session)
-    store.getState().beginOptimisticMessage(chat.id, 'client-1', { text: 'Hello' }, 1000)
-    await clearChatHistory(store, chat.id, async () => true)
-
-    expect(store.getState().messagesByChat[chat.id]).toEqual([])
-    expect(store.getState().pendingByChat[chat.id]).toEqual([])
   })
 
   test('filters commands by their names without a leading slash', () => {

@@ -4,6 +4,7 @@ import {
   LoginDocument,
   LogoutDocument,
   PushStatusDocument,
+  parseGraphqlMessage,
   RegisterDocument,
   SessionDocument,
   SubscribePushDocument,
@@ -17,9 +18,12 @@ const toSessionPayload = (session: SessionQuery['session']): SessionPayload => {
   return {
     user: { ...UserRefSchema.parse(user), role, bio, twoFactorEnabled },
     chats: session.chats.map((chat) => {
-      const { commands, ...connection } = chat
+      const { commands, preview, ...connection } = chat
       return {
-        ...ClientChatSchema.parse(connection),
+        ...ClientChatSchema.parse({
+          ...connection,
+          preview: preview ? parseGraphqlMessage(preview) : null,
+        }),
         commands: BotCommandSchema.array().parse(
           commands.map(({ shortcut, ...command }) => ({
             ...command,

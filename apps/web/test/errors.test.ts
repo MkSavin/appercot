@@ -1,3 +1,4 @@
+import '../src/shared/config/i18n'
 import { expect, test } from 'bun:test'
 import { ClientError } from 'graphql-request'
 import { getRequestErrorMessage } from '../src/shared/api/errors'

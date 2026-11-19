@@ -1,3 +1,4 @@
+import '../src/shared/config/i18n'
 import { expect, test } from 'bun:test'
 import { getGraphqlEndpoint } from '../src/shared/api/graphql/client'
 

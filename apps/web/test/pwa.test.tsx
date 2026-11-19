@@ -1,3 +1,4 @@
+import '../src/shared/config/i18n'
 import { describe, expect, test } from 'bun:test'
 import { PushPayloadSchema } from '@appercot/protocol'
 import { renderToStaticMarkup } from 'react-dom/server'

@@ -1,9 +1,9 @@
 import { Eye, EyeOff, LoaderCircle } from 'lucide-react'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useChatStore } from '@/entities/chat'
 import { registerRequest } from '@/entities/session'
 import { getRequestErrorMessage } from '@/shared/api'
-import { strings } from '@/shared/config'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
 
@@ -13,6 +13,7 @@ interface RegisterFormProps {
 }
 
 export const RegisterForm = ({ initialInvite, onSuccess }: RegisterFormProps) => {
+  const { t } = useTranslation()
   const setSession = useChatStore((state) => state.setSession)
   const [displayName, setDisplayName] = useState('')
   const [username, setUsername] = useState('')
@@ -46,7 +47,7 @@ export const RegisterForm = ({ initialInvite, onSuccess }: RegisterFormProps) =>
     >
       <div className="grid gap-2">
         <label htmlFor="register-display-name" className="text-sm font-medium">
-          {strings.auth.displayName}
+          {t('auth:displayName')}
         </label>
         <Input
           id="register-display-name"
@@ -62,7 +63,7 @@ export const RegisterForm = ({ initialInvite, onSuccess }: RegisterFormProps) =>
       </div>
       <div className="grid gap-2">
         <label htmlFor="register-username" className="text-sm font-medium">
-          {strings.auth.username}
+          {t('auth:username')}
         </label>
         <Input
           id="register-username"
@@ -80,7 +81,7 @@ export const RegisterForm = ({ initialInvite, onSuccess }: RegisterFormProps) =>
       </div>
       <div className="grid gap-2">
         <label htmlFor="register-password" className="text-sm font-medium">
-          {strings.auth.password}
+          {t('auth:password')}
         </label>
         <div className="relative">
           <Input
@@ -101,7 +102,7 @@ export const RegisterForm = ({ initialInvite, onSuccess }: RegisterFormProps) =>
             variant="ghost"
             size="icon"
             className="absolute right-1 top-1 text-muted-foreground"
-            aria-label={showPassword ? strings.auth.hidePassword : strings.auth.showPassword}
+            aria-label={showPassword ? t('auth:hidePassword') : t('auth:showPassword')}
             aria-pressed={showPassword}
             onClick={() => setShowPassword((visible) => !visible)}
           >
@@ -109,12 +110,12 @@ export const RegisterForm = ({ initialInvite, onSuccess }: RegisterFormProps) =>
           </Button>
         </div>
         <p id="register-password-hint" className="text-xs text-muted-foreground">
-          {strings.auth.passwordHint}
+          {t('auth:passwordHint')}
         </p>
       </div>
       <div className="grid gap-2">
         <label htmlFor="register-invite" className="text-sm font-medium">
-          {strings.auth.invite}
+          {t('auth:invite')}
         </label>
         <Input
           id="register-invite"
@@ -137,7 +138,7 @@ export const RegisterForm = ({ initialInvite, onSuccess }: RegisterFormProps) =>
       ) : null}
       <Button type="submit" size="lg" className="h-12 w-full" disabled={submitting}>
         {submitting ? <LoaderCircle aria-hidden="true" className="animate-spin" /> : null}
-        {strings.auth.createAccount}
+        {t('auth:createAccount')}
       </Button>
     </form>
   )

@@ -1,5 +1,5 @@
 import { CloudOff, WifiOff } from 'lucide-react'
-import { strings } from '@/shared/config'
+import { useTranslation } from 'react-i18next'
 import type { ConnectionStatus } from '@/shared/model'
 
 interface ConnectionBannerProps {
@@ -8,6 +8,7 @@ interface ConnectionBannerProps {
 }
 
 export const ConnectionBanner = ({ connection, botOnline }: ConnectionBannerProps) => {
+  const { t } = useTranslation()
   if (connection === 'online' && botOnline) return null
   const networkOffline = connection !== 'online'
   const Icon = networkOffline ? WifiOff : CloudOff
@@ -18,10 +19,10 @@ export const ConnectionBanner = ({ connection, botOnline }: ConnectionBannerProp
     >
       <Icon aria-hidden="true" className="size-3.5 shrink-0" />
       {connection === 'connecting'
-        ? strings.chat.reconnecting
+        ? t('chat:reconnecting')
         : networkOffline
-          ? strings.chat.offline
-          : strings.chat.botOffline}
+          ? t('chat:offline')
+          : t('chat:botOffline')}
     </div>
   )
 }

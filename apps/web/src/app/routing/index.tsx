@@ -1,4 +1,3 @@
-import { LoaderCircle } from 'lucide-react'
 import { lazy, type ReactNode, Suspense } from 'react'
 import { Redirect, Route, Switch, useLocation, useSearch } from 'wouter'
 import { useChatStore } from '@/entities/chat'
@@ -6,6 +5,7 @@ import { LoginPage } from '@/pages/login'
 import { NotFoundPage } from '@/pages/not-found'
 import { RegisterPage } from '@/pages/register'
 import { authHref, readAuthReturn } from '@/shared/lib/auth-return'
+import { PagePlaceholder } from '@/shared/ui/page-placeholder'
 import { Workspace } from './Workspace'
 
 const SettingsPage = lazy(() =>
@@ -19,9 +19,10 @@ const GuestChatPage = lazy(() =>
   import('@/pages/guest').then(({ GuestChatPage }) => ({ default: GuestChatPage })),
 )
 
-const LoadingScreen = () => (
-  <main className="grid min-h-dvh place-items-center" aria-label="Загрузка">
-    <LoaderCircle aria-hidden="true" className="size-6 animate-spin text-muted-foreground" />
+const workspacePlaceholder = <PagePlaceholder />
+const authenticationPlaceholder = (
+  <main className="grid min-h-dvh place-items-center p-6">
+    <PagePlaceholder variant="auth" />
   </main>
 )
 
@@ -29,13 +30,13 @@ const Protected = ({ children }: { children: ReactNode }) => {
   const authentication = useChatStore((state) => state.authentication)
   const [path] = useLocation()
   const search = useSearch()
-  if (authentication === 'loading') return <LoadingScreen />
+  if (authentication === 'loading') return workspacePlaceholder
   if (authentication === 'anonymous') {
     return <Redirect to={authHref('/login', search ? `${path}?${search}` : path)} replace />
   }
   return (
     <Workspace path={path}>
-      <Suspense fallback={<LoadingScreen />}>{children}</Suspense>
+      <Suspense fallback={workspacePlaceholder}>{children}</Suspense>
     </Workspace>
   )
 }
@@ -43,13 +44,13 @@ const Protected = ({ children }: { children: ReactNode }) => {
 const PublicOnly = ({ children }: { children: ReactNode }) => {
   const authentication = useChatStore((state) => state.authentication)
   const search = useSearch()
-  if (authentication === 'loading') return <LoadingScreen />
+  if (authentication === 'loading') return authenticationPlaceholder
   if (authentication === 'authenticated') return <Redirect to={readAuthReturn(search)} replace />
   return children
 }
 
 export const AppRouter = () => (
-  <Suspense fallback={<LoadingScreen />}>
+  <Suspense fallback={workspacePlaceholder}>
     <Switch>
       <Route path="/login">
         <PublicOnly>

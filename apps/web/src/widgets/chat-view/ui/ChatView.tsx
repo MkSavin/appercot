@@ -1,16 +1,14 @@
-import { ArrowLeft, Circle } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link } from 'wouter'
-import { BotAvatar } from '@/entities/bot'
 import { markChatReadRequest, useChatStore } from '@/entities/chat'
 import { fetchMessages, sendMessageRequest } from '@/entities/message'
 import { BlockedChatNotice } from '@/features/block-bot'
 import { Composer, retryChatMessage } from '@/features/send-message'
 import { showRequestError } from '@/shared/api'
-import { strings } from '@/shared/config'
-import { cn } from '@/shared/lib/cn'
 import type { ChatMessage } from '@/shared/model'
 import { Button } from '@/shared/ui/button'
+import { ChatHeader } from './ChatHeader'
 import { ConnectionBanner } from './ConnectionBanner'
 import { MessageList } from './MessageList'
 import { TypingIndicator } from './TypingIndicator'
@@ -18,6 +16,7 @@ import { TypingIndicator } from './TypingIndicator'
 const emptyMessages: ChatMessage[] = []
 
 export const ChatView = ({ chatId }: { chatId: string }) => {
+  const { t } = useTranslation()
   const chat = useChatStore((state) => state.chats.find((current) => current.id === chatId))
   const messages = useChatStore((state) => state.messagesByChat[chatId] ?? emptyMessages)
   const connection = useChatStore((state) => state.connection)
@@ -110,9 +109,9 @@ export const ChatView = ({ chatId }: { chatId: string }) => {
     return (
       <section className="workspace-surface grid h-full place-items-center p-5 text-center">
         <div className="grid gap-4">
-          <h1 className="text-xl font-semibold">{strings.chat.notFound}</h1>
+          <h1 className="text-xl font-semibold">{t('chat:notFound')}</h1>
           <Button asChild variant="outline">
-            <Link href="/">{strings.chat.back}</Link>
+            <Link href="/">{t('chat:back')}</Link>
           </Button>
         </div>
       </section>
@@ -121,52 +120,17 @@ export const ChatView = ({ chatId }: { chatId: string }) => {
 
   return (
     <section className="flex h-full min-h-0 flex-col bg-background" aria-labelledby="chat-title">
-      <header className="shrink-0 border-b bg-card pt-[env(safe-area-inset-top)]">
-        <div className="relative flex h-16 items-stretch">
-          <Button
-            asChild
-            variant="ghost"
-            size="icon"
-            className="absolute top-1/2 left-2 z-10 -translate-y-1/2 md:hidden"
-          >
-            <Link href="/" aria-label={strings.chat.back}>
-              <ArrowLeft aria-hidden="true" />
-            </Link>
-          </Button>
-          <Link
-            href={`/c/${chatId}/profile`}
-            className="flex min-w-0 flex-1 items-center gap-3 pr-4 pl-14 hover:bg-accent/60 focus-visible:outline-2 focus-visible:-outline-offset-2 md:px-6"
-            aria-label={`Профиль бота ${chat.bot.name}`}
-          >
-            <BotAvatar bot={chat.bot} />
-            <div className="min-w-0">
-              <h1 id="chat-title" className="truncate text-[15px] font-semibold">
-                {chat.bot.name}
-              </h1>
-              <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
-                <Circle
-                  aria-hidden="true"
-                  className={cn(
-                    'size-2 fill-current',
-                    chat.bot.online ? 'text-emerald-500' : 'text-zinc-400',
-                  )}
-                />
-                {chat.bot.online ? strings.chat.online : strings.chat.offlineStatus}
-              </p>
-            </div>
-          </Link>
-        </div>
-      </header>
+      <ChatHeader chatId={chatId} bot={chat.bot} />
       <ConnectionBanner connection={connection} botOnline={chat.bot.online} />
       {historyError ? (
         <div className="flex flex-wrap items-center justify-center gap-2 bg-destructive/10 px-4 py-1 text-sm text-destructive">
-          <p role="alert">{strings.chat.historyFailed}</p>
+          <p role="alert">{t('chat:historyFailed')}</p>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setHistoryAttempt((attempt) => attempt + 1)}
           >
-            {strings.chat.retry}
+            {t('chat:retry')}
           </Button>
         </div>
       ) : null}

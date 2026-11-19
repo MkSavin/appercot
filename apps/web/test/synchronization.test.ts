@@ -1,3 +1,4 @@
+import '../src/shared/config/i18n'
 import { describe, expect, test } from 'bun:test'
 import type { ClientUpdate, Message } from '@appercot/protocol'
 import { createChatStore, type SessionPayload } from '../src/entities/chat/model/store'

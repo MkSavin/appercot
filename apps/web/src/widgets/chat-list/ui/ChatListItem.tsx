@@ -1,10 +1,10 @@
 import type { ClientChat } from '@appercot/protocol'
 import { Pin } from 'lucide-react'
 import { ContextMenu } from 'radix-ui'
+import { useTranslation } from 'react-i18next'
 import { Link } from 'wouter'
 import { BotAvatar } from '@/entities/bot'
 import { UnreadBadge, useChatStore } from '@/entities/chat'
-import { strings } from '@/shared/config'
 import { cn } from '@/shared/lib/cn'
 
 interface ChatListItemProps {
@@ -18,8 +18,9 @@ const timeFormat = new Intl.DateTimeFormat('ru', { hour: '2-digit', minute: '2-d
 const dateFormat = new Intl.DateTimeFormat('ru', { day: 'numeric', month: 'short' })
 
 export const ChatListItem = ({ chat, active, pinned, onPin }: ChatListItemProps) => {
+  const { t } = useTranslation()
   const content = useChatStore((state) => state.messagesByChat[chat.id]?.at(-1)?.content)
-  const preview = content?.text || (content?.media?.length ? strings.chat.attachment : undefined)
+  const preview = content?.text || (content?.media?.length ? t('chat:attachment') : undefined)
   const date = chat.lastMessageAt ? new Date(chat.lastMessageAt) : null
   return (
     <li className={cn('group flex min-w-0 items-center rounded-lg', active && 'bg-secondary')}>
@@ -64,7 +65,7 @@ export const ChatListItem = ({ chat, active, pinned, onPin }: ChatListItemProps)
               className="flex min-h-10 cursor-default items-center gap-2 rounded-md px-3 text-sm outline-none data-[highlighted]:bg-secondary"
             >
               <Pin aria-hidden="true" className="size-4" />
-              {pinned ? strings.chat.unpin : strings.chat.pin}
+              {pinned ? t('chat:unpin') : t('chat:pin')}
             </ContextMenu.Item>
           </ContextMenu.Content>
         </ContextMenu.Portal>

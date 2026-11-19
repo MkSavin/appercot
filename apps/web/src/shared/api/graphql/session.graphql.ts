@@ -28,6 +28,18 @@ export const SessionDocument = graphql(`
         notifications
         unread
         lastMessageAt
+        preview {
+          id
+          chatId
+          seq
+          sender
+          content
+          status
+          replyTo
+          createdAt
+          editedAt
+          deleted
+        }
         createdAt
         commands {
           name
@@ -69,6 +81,18 @@ export const LoginDocument = graphql(`
         notifications
         unread
         lastMessageAt
+        preview {
+          id
+          chatId
+          seq
+          sender
+          content
+          status
+          replyTo
+          createdAt
+          editedAt
+          deleted
+        }
         createdAt
         commands {
           name
@@ -120,6 +144,18 @@ export const RegisterDocument = graphql(`
         notifications
         unread
         lastMessageAt
+        preview {
+          id
+          chatId
+          seq
+          sender
+          content
+          status
+          replyTo
+          createdAt
+          editedAt
+          deleted
+        }
         createdAt
         commands {
           name

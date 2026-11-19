@@ -1,7 +1,15 @@
 import type { BotCommand, Button } from '@appercot/protocol'
 import { ArrowDown, ArrowUp, CornerDownLeft, PanelTop, Terminal } from 'lucide-react'
 import { useEffect, useMemo } from 'react'
-import { displayShortcut, matchesShortcut } from '@/shared/lib/shortcuts'
+import { useTranslation } from 'react-i18next'
+import {
+  displayShortcut,
+  MetaKey,
+  matchesShortcut,
+  parseShortcut,
+  Shortcut,
+  type ShortcutCombination,
+} from '@/shared/lib/shortcuts'
 import {
   CommandDialog,
   CommandEmpty,
@@ -19,7 +27,7 @@ export type PaletteButton = { button: Button; key: string }
 type Entry = {
   id: string
   label: string
-  shortcut?: string
+  shortcut?: ShortcutCombination
   description?: string
 } & ({ kind: 'command' } | { kind: 'button'; item: PaletteButton })
 
@@ -33,18 +41,26 @@ export const buildPaletteEntries = (
       kind: 'command' as const,
       label: `/${name}`,
       description,
-      shortcut,
+      shortcut: shortcut ? parseShortcut(shortcut) : undefined,
     })),
     ...buttons.map((item) => ({
       id: item.key,
       kind: 'button' as const,
       label: item.button.text,
-      shortcut: item.button.shortcut,
+      shortcut: item.button.shortcut ? parseShortcut(item.button.shortcut) : undefined,
       item,
     })),
   ]
-  const key = (value: string) => displayShortcut(value)
-  const reserved = new Set(['Mod+J', 'Mod+K', 'Ctrl+J', 'Ctrl+K', 'Meta+J', 'Meta+K'].map(key))
+  const key = (value: ShortcutCombination) => displayShortcut(value)
+  const reserved = new Set(
+    [Shortcut.CommandPalette, Shortcut.Search]
+      .flatMap((shortcut) => [
+        shortcut,
+        shortcut.map((part) => (part === MetaKey.Mod ? MetaKey.Control : part)),
+        shortcut.map((part) => (part === MetaKey.Mod ? MetaKey.Meta : part)),
+      ])
+      .map(key),
+  )
   for (const entry of entries) {
     if (!entry.shortcut) continue
     const normalized = key(entry.shortcut)
@@ -54,9 +70,9 @@ export const buildPaletteEntries = (
   const keys = [...'1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ']
   for (const entry of entries) {
     if (entry.shortcut) continue
-    const prefix = entry.kind === 'command' ? 'Mod+Alt+' : 'Alt+'
-    const shortcut = ['', 'Shift+']
-      .flatMap((modifier) => keys.map((letter) => prefix + modifier + letter))
+    const prefix = entry.kind === 'command' ? [MetaKey.Mod, MetaKey.Alt] : [MetaKey.Alt]
+    const shortcut = [[], [MetaKey.Shift]]
+      .flatMap((modifier) => keys.map((letter) => [...prefix, ...modifier, letter]))
       .find((candidate) => !reserved.has(key(candidate)))
     if (shortcut) {
       reserved.add(key(shortcut))
@@ -68,7 +84,12 @@ export const buildPaletteEntries = (
 
 const worksOutsidePalette = (entry: Entry) =>
   entry.kind === 'command' ||
-  Boolean(entry.shortcut && entry.item.button.shortcut === entry.shortcut)
+  Boolean(
+    entry.shortcut &&
+      entry.item.button.shortcut &&
+      displayShortcut(parseShortcut(entry.item.button.shortcut)) ===
+        displayShortcut(entry.shortcut),
+  )
 
 export const explicitButtonShortcuts = (
   commands: readonly VisibleCommand[],
@@ -106,6 +127,7 @@ export const ChatCommandPalette = ({
   onButton: (item: PaletteButton) => void
   enabled?: boolean
 }) => {
+  const { t } = useTranslation()
   const entries = useMemo(() => buildPaletteEntries(commands, buttons), [commands, buttons])
   useEffect(() => {
     const keyboard = (event: KeyboardEvent) => {
@@ -117,7 +139,7 @@ export const ChatCommandPalette = ({
         )
       )
         return
-      if (matchesShortcut(event, 'Ctrl+J') || matchesShortcut(event, 'Meta+J')) {
+      if (matchesShortcut(event, Shortcut.CommandPalette)) {
         event.preventDefault()
         onOpenChange(!open)
         return
@@ -171,19 +193,21 @@ export const ChatCommandPalette = ({
     <CommandDialog
       open={enabled && open}
       onOpenChange={onOpenChange}
-      title="Команды чата"
-      description="Поиск команд и кнопок последнего сообщения"
+      title={t('commandPalette:title')}
+      description={t('commandPalette:description')}
       className="sm:max-w-xl"
     >
-      <CommandInput placeholder="Найдите команду или кнопку…" className="pr-9" />
+      <CommandInput placeholder={t('commandPalette:search')} className="pr-9" />
       <CommandList className="min-h-20 p-1">
-        <CommandEmpty>Ничего не найдено</CommandEmpty>
+        <CommandEmpty>{t('commandPalette:empty')}</CommandEmpty>
         {commandEntries.length ? (
-          <CommandGroup heading="Команды">{commandEntries.map(render)}</CommandGroup>
+          <CommandGroup heading={t('commandPalette:commands')}>
+            {commandEntries.map(render)}
+          </CommandGroup>
         ) : null}
         {commandEntries.length && buttonEntries.length ? <CommandSeparator /> : null}
         {buttonEntries.length ? (
-          <CommandGroup heading="Последнее сообщение бота">
+          <CommandGroup heading={t('commandPalette:latestButtons')}>
             {buttonEntries.map(render)}
           </CommandGroup>
         ) : null}
@@ -194,16 +218,17 @@ export const ChatCommandPalette = ({
             <ArrowUp className="size-3" />
             <ArrowDown className="size-3" />
           </Kbd>
-          Выбрать
+          {t('commandPalette:select')}
         </span>
         <span className="flex items-center gap-1">
           <Kbd>
             <CornerDownLeft className="size-3" />
           </Kbd>
-          Выполнить
+          {t('commandPalette:run')}
         </span>
         <span className="ml-auto flex items-center gap-1">
-          <Kbd>Esc</Kbd>Закрыть
+          <Kbd>Esc</Kbd>
+          {t('commandPalette:close')}
         </span>
       </div>
     </CommandDialog>

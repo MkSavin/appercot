@@ -2,7 +2,6 @@ import { MediaSchema } from '@appercot/protocol'
 import {
   BlockBotDocument,
   ChatProfileDocument,
-  ClearChatDocument,
   DeleteChatDocument,
   graphqlClient,
   MarkReadDocument,
@@ -22,11 +21,6 @@ export const pressButtonRequest = async (variables: {
 export const markChatReadRequest = async (variables: { chatId: string; seq: number }) => {
   const result = await graphqlClient.request(MarkReadDocument, variables)
   return result.markRead
-}
-
-export const clearChatRequest = async (variables: { chatId: string }) => {
-  const result = await graphqlClient.request(ClearChatDocument, variables)
-  return result.clearChat
 }
 
 export const blockBotRequest = async (variables: { chatId: string; blocked: boolean }) => {

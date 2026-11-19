@@ -1,3 +1,4 @@
+import '../src/shared/config/i18n'
 import { describe, expect, test } from 'bun:test'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { Router } from 'wouter'
@@ -12,6 +13,7 @@ const bot = {
   description: 'Bot description',
   online: true,
   listed: true,
+  tags: ['productivity', 'tools'],
 }
 
 const renderCatalog = (chatByBotId: Record<string, string>) =>
@@ -35,6 +37,8 @@ describe('catalog and administration', () => {
     expect(available).toContain('@examplebot')
     expect(available).toContain('Начать чат')
     expect(available).toContain('в сети')
+    expect(available).toContain('productivity')
+    expect(available).toContain('tools')
 
     const added = renderCatalog({ 'bot-1': 'chat-1' })
     expect(added).toContain('href="/c/chat-1"')

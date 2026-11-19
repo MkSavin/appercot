@@ -1,6 +1,7 @@
 import { Search } from 'lucide-react'
-import { type ComponentProps, useEffect, useRef } from 'react'
-import { displayShortcut, matchesShortcut } from '@/shared/lib/shortcuts'
+import type { ComponentProps } from 'react'
+import { useEffect, useRef } from 'react'
+import { ariaShortcut, displayShortcut, matchesShortcut, Shortcut } from '@/shared/lib/shortcuts'
 import { InputGroup, InputGroupAddon, InputGroupInput } from './input-group'
 import { Kbd } from './kbd'
 
@@ -12,7 +13,7 @@ export const SearchInput = (
     const focus = (event: KeyboardEvent) => {
       if (
         event.defaultPrevented ||
-        !matchesShortcut(event, 'Mod+K') ||
+        !matchesShortcut(event, Shortcut.Search) ||
         !input.current?.getClientRects().length
       )
         return
@@ -33,11 +34,11 @@ export const SearchInput = (
         ref={input}
         type="search"
         autoComplete="off"
-        aria-keyshortcuts="Control+K Meta+K"
+        aria-keyshortcuts={ariaShortcut(Shortcut.Search)}
         {...props}
       />
       <Kbd aria-hidden="true" className="hidden sm:inline-flex">
-        {displayShortcut('Mod+K')}
+        {displayShortcut(Shortcut.Search)}
       </Kbd>
     </InputGroup>
   )

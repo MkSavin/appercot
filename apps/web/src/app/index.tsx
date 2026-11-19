@@ -1,4 +1,5 @@
 import { createRoot } from 'react-dom/client'
+import '@/shared/config'
 import { registerServiceWorker } from '@/shared/lib/register-sw'
 import { applyTheme, getThemePreference } from '@/shared/lib/theme'
 import { AppProviders } from './composition/AppProviders'

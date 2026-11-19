@@ -1,15 +1,15 @@
 import { Check, CheckCheck, CircleAlert, LoaderCircle } from 'lucide-react'
-import { strings } from '@/shared/config'
+import { useTranslation } from 'react-i18next'
 import type { MessageDeliveryStatus } from '@/shared/model'
 
-const labels: Record<MessageDeliveryStatus, string> = {
-  pending: strings.message.pending,
-  accepted: strings.message.accepted,
-  processed: strings.message.processed,
-  failed: strings.message.failed,
-}
-
 export const StatusTicks = ({ status }: { status: MessageDeliveryStatus }) => {
+  const { t } = useTranslation()
+  const labels: Record<MessageDeliveryStatus, string> = {
+    pending: t('message:pending'),
+    accepted: t('message:accepted'),
+    processed: t('message:processed'),
+    failed: t('message:failed'),
+  }
   const Icon =
     status === 'pending'
       ? LoaderCircle

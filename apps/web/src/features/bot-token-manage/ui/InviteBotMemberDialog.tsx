@@ -1,8 +1,8 @@
 import { Copy, Link2, UserPlus } from 'lucide-react'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { inviteBotMemberRequest, issueBotInviteRequest } from '@/entities/bot'
 import { showRequestError } from '@/shared/api'
-import { strings } from '@/shared/config'
 import { Button } from '@/shared/ui/button'
 import { ChoiceCards } from '@/shared/ui/choice-cards'
 import {
@@ -23,21 +23,6 @@ import {
   readInviteLimits,
 } from '@/shared/ui/invite-fields'
 
-const options = [
-  {
-    value: 'link',
-    label: strings.settings.botLink,
-    description: strings.settings.botLinkHint,
-    icon: Link2,
-  },
-  {
-    value: 'direct',
-    label: strings.settings.byUsername,
-    description: strings.settings.byUsernameDescription,
-    icon: UserPlus,
-  },
-] as const
-
 export const InviteBotMemberDialog = ({
   botId,
   availableRoles,
@@ -49,6 +34,21 @@ export const InviteBotMemberDialog = ({
   onInvited: () => void
   onLinkIssued: (link: Awaited<ReturnType<typeof issueBotInviteRequest>>) => void
 }) => {
+  const { t } = useTranslation()
+  const options = [
+    {
+      value: 'link',
+      label: t('settings:botLink'),
+      description: t('settings:botLinkHint'),
+      icon: Link2,
+    },
+    {
+      value: 'direct',
+      label: t('settings:byUsername'),
+      description: t('settings:byUsernameDescription'),
+      icon: UserPlus,
+    },
+  ] as const
   const [open, setOpen] = useState(false)
   const [mode, setMode] = useState<'link' | 'direct'>('link')
   const [pending, setPending] = useState(false)
@@ -95,18 +95,18 @@ export const InviteBotMemberDialog = ({
       <DialogTrigger asChild>
         <Button>
           <UserPlus aria-hidden="true" />
-          {strings.settings.inviteMember}
+          {t('settings:inviteMember')}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{strings.settings.inviteMember}</DialogTitle>
-          <DialogDescription>{strings.settings.inviteMemberDescription}</DialogDescription>
+          <DialogTitle>{t('settings:inviteMember')}</DialogTitle>
+          <DialogDescription>{t('settings:inviteMemberDescription')}</DialogDescription>
         </DialogHeader>
         {issued ? (
           <div className="grid gap-3">
             <label htmlFor="issued-link" className="text-sm font-medium">
-              {strings.settings.botLink}
+              {t('settings:botLink')}
             </label>
             <Input
               id="issued-link"
@@ -119,12 +119,12 @@ export const InviteBotMemberDialog = ({
                 className="text-xs text-muted-foreground"
                 dateTime={new Date(issued.expiresAt).toISOString()}
               >
-                {strings.settings.expires} {new Date(issued.expiresAt).toLocaleDateString('ru')}
+                {t('settings:expires')} {new Date(issued.expiresAt).toLocaleDateString('ru')}
               </time>
             ) : null}
             <DialogFooter>
               <DialogClose asChild>
-                <Button variant="outline">{strings.admin.close}</Button>
+                <Button variant="outline">{t('admin:close')}</Button>
               </DialogClose>
               <Button
                 onClick={async () => {
@@ -137,7 +137,7 @@ export const InviteBotMemberDialog = ({
                 }}
               >
                 <Copy aria-hidden="true" />
-                {copied ? strings.message.copied : strings.admin.copyLink}
+                {copied ? t('message:copied') : t('admin:copyLink')}
               </Button>
             </DialogFooter>
           </div>
@@ -145,7 +145,7 @@ export const InviteBotMemberDialog = ({
           <form className="grid gap-4" onSubmit={submit}>
             <ChoiceCards
               name="invite-mode"
-              label={strings.settings.inviteMethod}
+              label={t('settings:inviteMethod')}
               value={mode}
               onChange={setMode}
               options={options}
@@ -154,7 +154,7 @@ export const InviteBotMemberDialog = ({
             {mode === 'direct' ? (
               <div className="grid gap-2">
                 <label htmlFor="member-username" className="text-sm font-medium">
-                  {strings.auth.username}
+                  {t('auth:username')}
                 </label>
                 <Input
                   id="member-username"
@@ -171,11 +171,11 @@ export const InviteBotMemberDialog = ({
             <DialogFooter>
               <DialogClose asChild>
                 <Button type="button" variant="outline" disabled={pending}>
-                  {strings.chat.cancel}
+                  {t('chat:cancel')}
                 </Button>
               </DialogClose>
               <Button type="submit" disabled={pending}>
-                {mode === 'link' ? strings.settings.newBotLink : strings.settings.inviteMember}
+                {mode === 'link' ? t('settings:newBotLink') : t('settings:inviteMember')}
               </Button>
             </DialogFooter>
           </form>

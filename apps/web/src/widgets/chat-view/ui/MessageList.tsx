@@ -1,9 +1,10 @@
 import type { BotCommand, Button } from '@appercot/protocol'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { ArrowDown, MessageSquareText } from 'lucide-react'
+import { ArrowDown } from 'lucide-react'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { pressButtonRequest, useChatStore } from '@/entities/chat'
-import { BotMessage, SystemMessage, sendMessageRequest, UserMessage } from '@/entities/message'
+import { sendMessageRequest } from '@/entities/message'
 import {
   ChatCommandPalette,
   explicitButtonShortcuts,
@@ -11,21 +12,14 @@ import {
 } from '@/features/command-menu'
 import { sendChatMessage } from '@/features/send-message'
 import { showRequestError } from '@/shared/api'
-import { strings } from '@/shared/config'
 import { toast } from '@/shared/lib/toast'
 import type { ChatMessage } from '@/shared/model'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/shared/ui/alert-dialog'
 import { Button as UiButton } from '@/shared/ui/button'
+import { PagePlaceholder } from '@/shared/ui/page-placeholder'
 import { runButtonAction } from '../model/button-actions'
+import { EmptyChat } from './message-list/EmptyChat'
+import { ExternalLinkDialog } from './message-list/ExternalLinkDialog'
+import { MessageRow } from './message-list/MessageRow'
 
 interface MessageListProps {
   chatId: string
@@ -42,8 +36,6 @@ interface MessageListProps {
   blocked?: boolean
 }
 
-const dayFormat = new Intl.DateTimeFormat('ru', { dateStyle: 'long' })
-
 export const MessageList = ({
   chatId,
   messages,
@@ -58,6 +50,7 @@ export const MessageList = ({
   onPaletteOpen,
   blocked = false,
 }: MessageListProps) => {
+  const { t } = useTranslation()
   const viewport = useRef<HTMLDivElement>(null)
   const initialized = useRef(false)
   const [showLatest, setShowLatest] = useState(false)
@@ -163,46 +156,20 @@ export const MessageList = ({
         role="log"
         // biome-ignore lint/a11y/noNoninteractiveTabindex: The scrollable history needs a keyboard focus target.
         tabIndex={0}
-        aria-label={strings.chat.title}
+        aria-label={t('chat:title')}
         aria-busy={loading}
         data-chat-id={chatId}
         onScroll={() => setShowLatest(!virtualizer.isAtEnd(80))}
       >
         <div className="mx-auto flex min-h-full max-w-3xl flex-col">
           {messages.length === 0 && !loading && !historyError ? (
-            <div className="grid flex-1 place-items-center text-center">
-              <div
-                className={
-                  welcome
-                    ? 'max-w-md rounded-2xl border bg-card px-5 py-4'
-                    : 'grid justify-items-center gap-3'
-                }
-              >
-                {welcome ? (
-                  <BotMessage
-                    message={{
-                      id: 'welcome',
-                      chatId,
-                      seq: 1,
-                      sender: 'bot',
-                      content: { text: welcome },
-                      status: 'processed',
-                      createdAt: 0,
-                    }}
-                    commands={commands}
-                    onCommand={blocked ? undefined : sendCommand}
-                  />
-                ) : (
-                  <>
-                    <MessageSquareText
-                      aria-hidden="true"
-                      className="size-10 rounded-xl bg-accent p-2 text-primary"
-                    />
-                    <p className="text-sm text-muted-foreground">{strings.chat.noMessages}</p>
-                  </>
-                )}
-              </div>
-            </div>
+            <EmptyChat
+              chatId={chatId}
+              welcome={welcome}
+              commands={commands}
+              blocked={blocked}
+              onCommand={sendCommand}
+            />
           ) : (
             <ol className="relative" style={{ height: virtualizer.getTotalSize() }}>
               {hasMore ? (
@@ -214,65 +181,37 @@ export const MessageList = ({
                     onClick={onLoadEarlier}
                     disabled={loading}
                   >
-                    {loading ? strings.chat.loading : strings.chat.loadEarlier}
+                    {loading ? t('chat:loading') : t('chat:loadEarlier')}
                   </UiButton>
                 </li>
               ) : null}
               {rows.map((row) => {
-                const index = row.index
-                const message = messages[index]
+                const message = messages[row.index]
                 if (!message) return null
-                const style = { transform: `translateY(${row.start}px)` }
-                const date = new Date(message.createdAt)
-                const previous = messages[index - 1]
-                const newDay =
-                  !previous || date.toDateString() !== new Date(previous.createdAt).toDateString()
                 return (
-                  <li
+                  <MessageRow
                     key={row.key}
-                    data-index={row.index}
-                    ref={virtualizer.measureElement}
-                    className="absolute inset-x-0 top-0 min-w-0 pb-3"
-                    style={style}
-                  >
-                    {newDay ? (
-                      <p className="mb-4 text-center text-xs font-medium text-muted-foreground">
-                        {dayFormat.format(date)}
-                      </p>
-                    ) : null}
-                    {message.sender === 'user' ? (
-                      <UserMessage
-                        message={message}
-                        onRetry={onRetry}
-                        commands={commands}
-                        onCommand={blocked ? undefined : sendCommand}
-                      />
-                    ) : message.sender === 'system' ? (
-                      <SystemMessage text={message.content.text ?? ''} />
-                    ) : (
-                      <BotMessage
-                        message={message}
-                        commands={commands}
-                        onCommand={blocked ? undefined : sendCommand}
-                        buttonShortcuts={
-                          message.id === lastBotMessage?.id && !blocked
-                            ? buttonShortcuts
-                            : undefined
-                        }
-                        pendingButtonKey={pendingButtonKey}
-                        onButtonAction={(button, key) =>
-                          void handleButtonAction(message, button, key)
-                        }
-                      />
-                    )}
-                  </li>
+                    index={row.index}
+                    message={message}
+                    previous={messages[row.index - 1]}
+                    lastBotMessageId={lastBotMessage?.id}
+                    commands={commands}
+                    buttonShortcuts={buttonShortcuts}
+                    pendingButtonKey={pendingButtonKey}
+                    blocked={blocked}
+                    style={{ transform: `translateY(${row.start}px)` }}
+                    measureElement={virtualizer.measureElement}
+                    onRetry={onRetry}
+                    onCommand={sendCommand}
+                    onButtonAction={(target, button, key) =>
+                      void handleButtonAction(target, button, key)
+                    }
+                  />
                 )
               })}
             </ol>
           )}
-          {loading && messages.length === 0 ? (
-            <p className="py-4 text-center text-sm text-muted-foreground">{strings.chat.loading}</p>
-          ) : null}
+          {loading && messages.length === 0 ? <PagePlaceholder variant="messages" /> : null}
         </div>
       </div>
       {showLatest ? (
@@ -282,33 +221,10 @@ export const MessageList = ({
           onClick={() => virtualizer.scrollToEnd()}
         >
           <ArrowDown aria-hidden="true" />
-          {strings.chat.jumpToLatest}
+          {t('chat:jumpToLatest')}
         </UiButton>
       ) : null}
-      <AlertDialog
-        open={externalUrl !== null}
-        onOpenChange={(open) => !open && settleExternalUrl(false)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{strings.chat.externalLinkTitle}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {strings.chat.externalLinkDescription}
-              <span className="mt-2 block break-all font-medium text-foreground">
-                {externalUrl}
-              </span>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => settleExternalUrl(false)}>
-              {strings.chat.cancel}
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={() => settleExternalUrl(true)}>
-              {strings.chat.openLink}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ExternalLinkDialog url={externalUrl} onSettle={settleExternalUrl} />
     </div>
   )
 }

@@ -81,7 +81,7 @@ export const editBotInviteRequest = async (
     .editBotInvite
 export const updateBotProfileRequest = async (
   botId: string,
-  profile: { description: string; welcome: string; avatar?: string | null },
+  profile: { description: string; welcome: string; avatar?: string | null; tags?: string[] },
 ) => (await graphqlClient.request(UpdateBotProfileDocument, { botId, ...profile })).updateBotProfile
 export const setBotGuestAccessRequest = async (botId: string, enabled: boolean) =>
   (await graphqlClient.request(SetBotGuestAccessDocument, { botId, enabled })).setBotGuestAccess

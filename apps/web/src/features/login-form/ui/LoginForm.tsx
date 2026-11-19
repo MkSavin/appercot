@@ -1,10 +1,10 @@
 import { REGEXP_ONLY_DIGITS } from 'input-otp'
 import { Eye, EyeOff, LoaderCircle } from 'lucide-react'
 import { type ReactNode, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useChatStore } from '@/entities/chat'
 import { loginRequest } from '@/entities/session'
 import { getRequestErrorCode, getRequestErrorMessage } from '@/shared/api'
-import { strings } from '@/shared/config'
 import { AuthShell } from '@/shared/ui/auth-shell'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
@@ -17,6 +17,7 @@ export const LoginForm = ({
   onSuccess: () => void
   children?: ReactNode
 }) => {
+  const { t } = useTranslation()
   const setSession = useChatStore((state) => state.setSession)
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -45,12 +46,8 @@ export const LoginForm = ({
   if (requiresOtp)
     return (
       <AuthShell
-        title="Двухфакторная аутентификация"
-        subtitle={
-          recovery
-            ? 'Укажите резервный код аккаунта.'
-            : 'Используйте шестизначный код из приложения-аутентификатора.'
-        }
+        title={t('account:totp')}
+        subtitle={recovery ? t('account:loginRecoveryHint') : t('account:loginAppHint')}
         titleId="otp-title"
       >
         <form
@@ -67,7 +64,7 @@ export const LoginForm = ({
               maxLength={64}
               value={otp}
               onChange={(event) => setOtp(event.target.value)}
-              aria-label="Резервный код"
+              aria-label={t('account:recoveryCode')}
             />
           ) : (
             <InputOTP
@@ -76,7 +73,7 @@ export const LoginForm = ({
               autoComplete="one-time-code"
               maxLength={6}
               pattern={REGEXP_ONLY_DIGITS}
-              aria-label="Код двухфакторной аутентификации"
+              aria-label={t('account:totpAria')}
               value={otp}
               onChange={setOtp}
             >
@@ -98,7 +95,7 @@ export const LoginForm = ({
             className="h-12"
             disabled={submitting || (recovery ? !otp.trim() : otp.length !== 6)}
           >
-            Подтвердить
+            {t('chat:confirm')}
           </Button>
           <div className="flex flex-wrap justify-between gap-2">
             <Button
@@ -112,7 +109,7 @@ export const LoginForm = ({
                 setRecovery(!recovery)
               }}
             >
-              {recovery ? 'Код из приложения' : 'Резервный код'}
+              {recovery ? t('account:appCode') : t('account:recoveryCode')}
             </Button>
             <Button
               type="button"
@@ -129,7 +126,7 @@ export const LoginForm = ({
                 setShowPassword(false)
               }}
             >
-              Выйти
+              {t('chat:logout')}
             </Button>
           </div>
         </form>
@@ -137,8 +134,8 @@ export const LoginForm = ({
     )
   return (
     <AuthShell
-      title={strings.auth.signInTitle}
-      subtitle={strings.auth.signInSubtitle}
+      title={t('auth:signInTitle')}
+      subtitle={t('auth:signInSubtitle')}
       titleId="login-title"
     >
       <form
@@ -150,7 +147,7 @@ export const LoginForm = ({
       >
         <div className="grid gap-2">
           <label htmlFor="login-username" className="text-sm font-medium">
-            {strings.auth.username}
+            {t('auth:username')}
           </label>
           <Input
             id="login-username"
@@ -169,7 +166,7 @@ export const LoginForm = ({
         </div>
         <div className="grid gap-2">
           <label htmlFor="login-password" className="text-sm font-medium">
-            {strings.auth.password}
+            {t('auth:password')}
           </label>
           <div className="relative">
             <Input
@@ -188,7 +185,7 @@ export const LoginForm = ({
               variant="ghost"
               size="icon"
               className="absolute right-1 top-1 text-muted-foreground"
-              aria-label={showPassword ? strings.auth.hidePassword : strings.auth.showPassword}
+              aria-label={showPassword ? t('auth:hidePassword') : t('auth:showPassword')}
               aria-pressed={showPassword}
               onClick={() => setShowPassword((visible) => !visible)}
             >
@@ -203,7 +200,7 @@ export const LoginForm = ({
         ) : null}
         <Button type="submit" size="lg" className="h-12 w-full" disabled={submitting}>
           {submitting ? <LoaderCircle aria-hidden="true" className="animate-spin" /> : null}
-          {strings.auth.signIn}
+          {t('auth:signIn')}
         </Button>
       </form>
       {children}

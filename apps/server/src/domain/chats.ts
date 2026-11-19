@@ -1,3 +1,4 @@
+import type { Message } from '@appercot/protocol'
 import { and, asc, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { hashToken } from '../auth/tokens'
 import type { AppDatabase } from '../db/client'
@@ -19,6 +20,7 @@ import { toBotDto } from './bots'
 import { filterCommandsByRoles, listVisibleCommands, type VisibleCommand } from './commands'
 import { DomainError } from './errors'
 import { enqueueBotEvent, flushBotEvents } from './events'
+import { toMessageDto } from './message-dto'
 import { createSystemMessage } from './system-messages'
 import { pushUserUpdate } from './updates'
 
@@ -83,6 +85,7 @@ export const toConnectionDto = (
   bot: typeof bots.$inferSelect,
   hub: Hub,
   commands: VisibleCommand[] = [],
+  preview: Message | null = null,
 ) => ({
   id: chat.id,
   bot: toBotDto(bot, hub),
@@ -93,11 +96,22 @@ export const toConnectionDto = (
   createdAt: chat.createdAt,
   commands,
   notifications: chat.notifications,
+  preview,
 })
 
 export const toClientChatDto = (...args: Parameters<typeof toConnectionDto>) => {
-  const { id, bot, roles, blocked, unread, lastMessageAt, createdAt, commands, notifications } =
-    toConnectionDto(...args)
+  const {
+    id,
+    bot,
+    roles,
+    blocked,
+    unread,
+    lastMessageAt,
+    createdAt,
+    commands,
+    notifications,
+    preview,
+  } = toConnectionDto(...args)
   const { access: _access, guestAccess: _guestAccess, ...clientBot } = bot
   return {
     id,
@@ -109,6 +123,7 @@ export const toClientChatDto = (...args: Parameters<typeof toConnectionDto>) => 
     createdAt,
     commands: args[3] ? commands : undefined,
     notifications,
+    preview,
   }
 }
 
@@ -151,6 +166,28 @@ export const listUserChats = (db: AppDatabase, hub: Hub, userId: string) => {
     .where(and(eq(chats.userId, userId), isNull(chats.revokedAt), isNull(chats.hiddenAt)))
     .orderBy(desc(chats.lastMessageAt), desc(chats.createdAt))
     .all()
+  const previewRows = rows.length
+    ? db
+        .select()
+        .from(messages)
+        .where(
+          and(
+            inArray(
+              messages.chatId,
+              rows.map((row) => row.chat.id),
+            ),
+            isNull(messages.deletedAt),
+            sql`${messages.seq} = (
+              select max("preview_messages"."seq")
+              from "messages" as "preview_messages"
+              where "preview_messages"."chat_id" = ${messages.chatId}
+                and "preview_messages"."deleted_at" is null
+            )`,
+          ),
+        )
+        .all()
+    : []
+  const previews = new Map(previewRows.map((message) => [message.chatId, toMessageDto(message)]))
   const botIds = [...new Set(rows.map((row) => row.bot.id))]
   const commands = botIds.length
     ? db
@@ -169,6 +206,7 @@ export const listUserChats = (db: AppDatabase, hub: Hub, userId: string) => {
         commands.filter((command) => command.botId === row.bot.id),
         toChatRef(row.chat, row.bot).roles,
       ),
+      previews.get(row.chat.id) ?? null,
     ),
   )
 }
@@ -367,34 +405,6 @@ export const setChatBlocked = (
     })
     if (blocked) createSystemMessage(db, hub, chatId, 'Бот заблокирован')
   }
-  return true
-}
-
-export const clearChat = (db: AppDatabase, hub: Hub, userId: string, chatId: string) => {
-  const current = getChatForUser(db, chatId, userId)
-  db.transaction((transaction) => {
-    transaction.delete(botEvents).where(eq(botEvents.chatId, chatId)).run()
-    transaction.delete(messages).where(eq(messages.chatId, chatId)).run()
-    transaction
-      .update(files)
-      .set({ chatId: null, detachedAt: Date.now() })
-      .where(eq(files.chatId, chatId))
-      .run()
-  })
-  enqueueBotEvent(
-    db,
-    {
-      botId: current.bot.id,
-      chatId,
-      event: {
-        type: 'chat_cleared',
-        chat: toChatRef(current.chat, current.bot),
-        user: toUserRef(current.user),
-      },
-    },
-    hub,
-  )
-  pushUserUpdate(db, hub, userId, { type: 'chat.cleared', chatId })
   return true
 }
 

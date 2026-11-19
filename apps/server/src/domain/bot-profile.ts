@@ -30,6 +30,7 @@ const ProfileSchema = z.object({
   description: z.string().trim().max(1000),
   welcome: z.string().trim().max(2000),
   avatar: z.string().nullish(),
+  tags: z.array(z.string().trim().min(1).max(32)).max(12).optional(),
 })
 
 export const updateBotProfile = (
@@ -46,6 +47,7 @@ export const updateBotProfile = (
     ...bot,
     description: profile.description,
     welcome: profile.welcome,
+    tags: profile.tags ? [...new Set(profile.tags)] : bot.tags,
     avatar:
       profile.avatar === undefined
         ? bot.avatar
@@ -61,7 +63,12 @@ export const updateBotProfile = (
         .onConflictDoUpdate({ target: botAvatars.botId, set: { image: profile.avatar } })
         .run()
     tx.update(bots)
-      .set({ description: updated.description, welcome: updated.welcome, avatar: updated.avatar })
+      .set({
+        description: updated.description,
+        welcome: updated.welcome,
+        tags: updated.tags,
+        avatar: updated.avatar,
+      })
       .where(eq(bots.id, botId))
       .run()
   })

@@ -47,9 +47,15 @@ builder.mutationFields((f) => ({
       description: f.arg.string({ required: true }),
       welcome: f.arg.string({ required: true }),
       avatar: f.arg.string(),
+      tags: f.arg.stringList(),
     },
     resolve: (_, { botId, ...args }, ctx) =>
-      execute(() => updateBotProfile(ctx.db, ctx.hub, requireAdmin(ctx), String(botId), args)),
+      execute(() =>
+        updateBotProfile(ctx.db, ctx.hub, requireAdmin(ctx), String(botId), {
+          ...args,
+          tags: args.tags ?? undefined,
+        }),
+      ),
   }),
   deleteChat: f.boolean({
     args: { chatId: f.arg.id({ required: true }) },

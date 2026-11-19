@@ -1,6 +1,7 @@
 import { TEXT_MAX, type UserContent } from '@appercot/protocol'
 import { ArrowUp, File, LoaderCircle, Paperclip, Terminal, X } from 'lucide-react'
 import { useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useChatStore } from '@/entities/chat'
 import {
   fetchMediaLimit,
@@ -9,8 +10,7 @@ import {
   uploadChatAttachment,
 } from '@/entities/message'
 import { showRequestError } from '@/shared/api'
-import { strings } from '@/shared/config'
-import { displayShortcut } from '@/shared/lib/shortcuts'
+import { ariaShortcut, displayShortcut, Shortcut } from '@/shared/lib/shortcuts'
 import { Button } from '@/shared/ui/button'
 import { Kbd } from '@/shared/ui/kbd'
 import { Textarea } from '@/shared/ui/textarea'
@@ -23,6 +23,7 @@ interface ComposerProps {
 }
 
 export const Composer = ({ chatId, onOpenCommands }: ComposerProps) => {
+  const { t } = useTranslation()
   const text = useChatStore((state) => state.draftsByChat[chatId] ?? '')
   const setText = (value: string) => useChatStore.getState().setDraft(chatId, value)
   const [attachment, setAttachment] = useState<File | null>(null)
@@ -52,7 +53,7 @@ export const Composer = ({ chatId, onOpenCommands }: ComposerProps) => {
     setSubmitting(true)
     try {
       const limit = await fetchMediaLimit()
-      if (limit && file.size > limit) throw new Error('Размер вложения превышает лимит сервера.')
+      if (limit && file.size > limit) throw new Error(t('errors:uploadTooLarge'))
       const { fileId, mime } = await uploadChatAttachment(chatId, file)
       const caption = text.trim()
       setText('')
@@ -101,7 +102,7 @@ export const Composer = ({ chatId, onOpenCommands }: ComposerProps) => {
               variant="ghost"
               size="icon-sm"
               disabled={submitting}
-              aria-label={strings.chat.removeAttachment}
+              aria-label={t('chat:removeAttachment')}
               onClick={() => setAttachment(null)}
             >
               <X aria-hidden="true" />
@@ -123,7 +124,7 @@ export const Composer = ({ chatId, onOpenCommands }: ComposerProps) => {
           }}
         />
         <label htmlFor={`message-${chatId}`} className="sr-only">
-          {strings.chat.message}
+          {t('chat:message')}
         </label>
         <Textarea
           id={`message-${chatId}`}
@@ -137,7 +138,7 @@ export const Composer = ({ chatId, onOpenCommands }: ComposerProps) => {
             event.preventDefault()
             formRef.current?.requestSubmit()
           }}
-          placeholder={strings.chat.messagePlaceholder}
+          placeholder={t('chat:messagePlaceholder')}
           rows={1}
           readOnly={submitting}
           maxLength={TEXT_MAX}
@@ -150,8 +151,8 @@ export const Composer = ({ chatId, onOpenCommands }: ComposerProps) => {
             variant="ghost"
             size="icon-sm"
             className="shrink-0 rounded-lg text-muted-foreground"
-            aria-label={strings.chat.attach}
-            title={strings.chat.attach}
+            aria-label={t('chat:attach')}
+            title={t('chat:attach')}
             disabled={submitting}
             onClick={() => fileRef.current?.click()}
           >
@@ -163,15 +164,15 @@ export const Composer = ({ chatId, onOpenCommands }: ComposerProps) => {
               variant="ghost"
               className="shrink-0 text-muted-foreground"
               disabled={submitting}
-              aria-label={strings.chat.commandsTitle}
+              aria-label={t('chat:commandsTitle')}
               aria-haspopup="dialog"
-              aria-keyshortcuts="Control+J Meta+J"
-              title={`${strings.chat.commandsTitle} (${displayShortcut('Mod+J')})`}
+              aria-keyshortcuts={ariaShortcut(Shortcut.CommandPalette)}
+              title={`${t('chat:commandsTitle')} (${displayShortcut(Shortcut.CommandPalette)})`}
               onClick={onOpenCommands}
             >
               <Terminal aria-hidden="true" />
               <Kbd aria-hidden="true" className="hidden sm:inline-flex">
-                {displayShortcut('Mod+J')}
+                {displayShortcut(Shortcut.CommandPalette)}
               </Kbd>
             </Button>
           ) : null}
@@ -179,7 +180,7 @@ export const Composer = ({ chatId, onOpenCommands }: ComposerProps) => {
             type="submit"
             size="icon-sm"
             className="ml-auto rounded-full"
-            aria-label={strings.chat.send}
+            aria-label={t('chat:send')}
             disabled={(!text.trim() && !attachment) || submitting}
           >
             {submitting ? (

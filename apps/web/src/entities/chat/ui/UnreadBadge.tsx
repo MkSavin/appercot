@@ -1,11 +1,13 @@
+import { useTranslation } from 'react-i18next'
+
 export const UnreadBadge = ({ count }: { count: number }) => {
-  if (count <= 0) return null
-  const label = `Непрочитанных: ${count}`
+  const { t } = useTranslation()
+  if (!count) return null
   return (
     <span
-      className="ml-auto inline-flex min-w-5 items-center justify-center rounded-full bg-primary px-1.5 py-0.5 text-[11px] font-medium text-primary-foreground"
+      className="ml-2 inline-flex min-w-5 items-center justify-center rounded-full bg-primary px-1.5 py-0.5 text-[11px] font-semibold text-primary-foreground"
       role="img"
-      aria-label={label}
+      aria-label={t('chat:unread', { count })}
     >
       {count > 99 ? '99+' : count}
     </span>

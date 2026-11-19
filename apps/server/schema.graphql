@@ -16,6 +16,7 @@ type Bot {
   memberCount: Int!
   name: String!
   online: Boolean!
+  tags: [String!]!
   username: String!
   welcome: String!
 }
@@ -92,6 +93,7 @@ type Connection {
   id: ID!
   lastMessageAt: Float
   notifications: ChatNotifications!
+  preview: Message
   roles: [String!]!
   unread: Int!
 }
@@ -138,7 +140,6 @@ type Mutation {
   beginTotp(password: String!): String!
   blockBot(blocked: Boolean!, chatId: ID!): Boolean!
   changePassword(newPassword: String!, otp: String, password: String!): Boolean!
-  clearChat(chatId: ID!): Boolean!
   createBot(description: String!, name: String!, username: String!): BotToken!
   createInvite(expiresInDays: Int, maxUses: Int, role: InviteRole): Invite!
   deleteChat(chatId: ID!): Boolean!
@@ -173,7 +174,7 @@ type Mutation {
   subscribePush(subscription: JSON!): Boolean!
   unsubscribePush(endpoint: String!): Boolean!
   updateAdminUser(bio: String!, displayName: String!, userId: ID!, username: String!): User!
-  updateBotProfile(avatar: String, botId: ID!, description: String!, welcome: String!): Bot!
+  updateBotProfile(avatar: String, botId: ID!, description: String!, tags: [String!], welcome: String!): Bot!
   updateProfile(bio: String!, displayName: String!, username: String!): User!
 }
 

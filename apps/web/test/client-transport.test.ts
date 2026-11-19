@@ -1,3 +1,4 @@
+import '../src/shared/config/i18n'
 import { describe, expect, test } from 'bun:test'
 import type { ClientUpdateFrame } from '@appercot/protocol'
 import { createClientWebSocketTransport } from '../src/shared/api/ws/client-transport'

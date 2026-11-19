@@ -1,7 +1,7 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { blockBotRequest, useChatStore } from '@/entities/chat'
 import { showRequestError } from '@/shared/api'
-import { strings } from '@/shared/config'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,6 +21,7 @@ interface BlockBotDialogProps {
 }
 
 export const BlockBotDialog = ({ chatId, open, onOpenChange }: BlockBotDialogProps) => {
+  const { t } = useTranslation()
   const [submitting, setSubmitting] = useState(false)
 
   const block = async () => {
@@ -39,11 +40,11 @@ export const BlockBotDialog = ({ chatId, open, onOpenChange }: BlockBotDialogPro
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>{strings.chat.blockBotTitle}</AlertDialogTitle>
-          <AlertDialogDescription>{strings.chat.blockBotDescription}</AlertDialogDescription>
+          <AlertDialogTitle>{t('chat:blockBotTitle')}</AlertDialogTitle>
+          <AlertDialogDescription>{t('chat:blockBotDescription')}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={submitting}>{strings.chat.cancel}</AlertDialogCancel>
+          <AlertDialogCancel disabled={submitting}>{t('chat:cancel')}</AlertDialogCancel>
           <AlertDialogAction
             variant="destructive"
             disabled={submitting}
@@ -52,7 +53,7 @@ export const BlockBotDialog = ({ chatId, open, onOpenChange }: BlockBotDialogPro
               void block()
             }}
           >
-            {strings.chat.blockBot}
+            {t('chat:blockBot')}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

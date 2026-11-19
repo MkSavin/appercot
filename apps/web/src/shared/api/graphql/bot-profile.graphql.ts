@@ -12,9 +12,9 @@ export const ChatProfileDocument = graphql(`
   }
 `)
 export const UpdateBotProfileDocument = graphql(`
-  mutation UpdateBotProfile($botId: ID!, $description: String!, $welcome: String!, $avatar: String) {
-    updateBotProfile(botId: $botId, description: $description, welcome: $welcome, avatar: $avatar) {
-      id username name description online listed access avatar welcome
+  mutation UpdateBotProfile($botId: ID!, $description: String!, $welcome: String!, $avatar: String, $tags: [String!]) {
+    updateBotProfile(botId: $botId, description: $description, welcome: $welcome, avatar: $avatar, tags: $tags) {
+      id username name description online listed access avatar welcome tags
     }
   }
 `)

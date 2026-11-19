@@ -1,8 +1,6 @@
 import {
   allowsBotAction,
-  type Message,
   type MessageContent,
-  MessageSchema,
   type Params,
   UserContentSchema,
 } from '@appercot/protocol'
@@ -13,25 +11,14 @@ import type { Hub } from '../ws/hub'
 import { getChatForBot, getChatForUser, toChatRef, toClientChatDto, toUserRef } from './chats'
 import { DomainError } from './errors'
 import { enqueueBotEvent } from './events'
+import { toMessageDto } from './message-dto'
 import { RateLimiter } from './rate-limit'
 import { createSystemMessage } from './system-messages'
 import { pushUserUpdate } from './updates'
 
 const userMessageRateLimiter = new RateLimiter(5, 1000)
 
-export const toMessageDto = (message: typeof messages.$inferSelect): Message =>
-  MessageSchema.parse({
-    id: message.id,
-    chatId: message.chatId,
-    seq: message.seq,
-    sender: message.sender,
-    content: message.content,
-    status: message.status,
-    replyTo: message.replyTo ?? undefined,
-    createdAt: message.createdAt,
-    editedAt: message.editedAt ?? undefined,
-    ...(message.deletedAt !== null ? { deleted: true } : {}),
-  })
+export { toMessageDto } from './message-dto'
 
 interface InsertMessageInput {
   chatId: string

@@ -1,23 +1,13 @@
+import { ClientUpdateSchema, type Message, type UserContent } from '@appercot/protocol'
 import {
-  ClientUpdateSchema,
-  type Message,
-  MessageSchema,
-  type UserContent,
-} from '@appercot/protocol'
-import { graphqlClient, MessagesDocument, SendMessageDocument, SyncDocument } from '@/shared/api'
-import type { MessagesQuery } from '@/shared/api/graphql/generated/graphql'
+  graphqlClient,
+  MessagesDocument,
+  parseGraphqlMessage,
+  SendMessageDocument,
+  SyncDocument,
+} from '@/shared/api'
 
-export const parseGraphqlMessage = (
-  message: Omit<MessagesQuery['messages'][number], 'deleted'> & { deleted?: boolean },
-): Message => {
-  const { replyTo, editedAt, deleted, ...requiredFields } = message
-  return MessageSchema.parse({
-    ...requiredFields,
-    ...(replyTo === null ? {} : { replyTo }),
-    ...(editedAt === null ? {} : { editedAt }),
-    ...(deleted ? { deleted } : {}),
-  })
-}
+export { parseGraphqlMessage } from '@/shared/api'
 
 export const fetchMessages = async (chatId: string, before?: number, limit = 50) => {
   const result = await graphqlClient.request(MessagesDocument, { chatId, before, limit })

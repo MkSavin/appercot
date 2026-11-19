@@ -1,3 +1,4 @@
+import '../src/shared/config/i18n'
 import { expect, test } from 'bun:test'
 import { parseGraphqlMessage } from '../src/entities/message/api/message-api'
 

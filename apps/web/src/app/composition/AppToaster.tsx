@@ -1,14 +1,16 @@
 import { X } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { toast, useSonner } from '@/shared/lib/toast'
 
 export const AppToaster = () => {
+  const { t } = useTranslation()
   const { toasts } = useSonner()
   const visibleToasts = toasts.filter((item) => item.toasterId === 'appercot')
 
   return (
     <section
       className="pointer-events-none fixed inset-x-3 top-3 z-[100] mx-auto flex max-w-sm flex-col gap-2"
-      aria-label="Уведомления"
+      aria-label={t('bot:notifications')}
       aria-live="polite"
     >
       {visibleToasts.map((item) => (
@@ -32,7 +34,7 @@ export const AppToaster = () => {
           <button
             type="button"
             className="inline-flex min-h-6 min-w-6 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
-            aria-label="Закрыть уведомление"
+            aria-label={t('toaster:close')}
             onClick={() => toast.dismiss(item.id)}
           >
             <X aria-hidden="true" className="size-4" />

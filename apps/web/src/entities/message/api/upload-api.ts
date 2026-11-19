@@ -1,4 +1,7 @@
 import type { Media } from '@appercot/protocol'
+import { i18n } from '@/shared/config'
+
+const t = i18n.t.bind(i18n)
 
 type Fetch = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>
 
@@ -35,10 +38,10 @@ export const uploadChatAttachment = async (chatId: string, file: File, request: 
   if (!response.ok)
     throw new Error(
       response.status === 413
-        ? 'Размер вложения превышает лимит сервера.'
+        ? t('errors:uploadTooLarge')
         : response.status === 429
-          ? 'Слишком много загрузок. Попробуйте чуть позже.'
-          : 'Не удалось загрузить вложение.',
+          ? t('errors:uploadRateLimit')
+          : t('errors:uploadFailed'),
     )
   const result: unknown = await response.json()
   if (

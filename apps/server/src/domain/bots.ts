@@ -26,4 +26,5 @@ export const toBotDto = (bot: typeof bots.$inferSelect, hub: Hub) => ({
   access: bot.access,
   avatar: bot.avatar ? `/api/bots/${encodeURIComponent(bot.id)}/avatar?v=${bot.avatar}` : null,
   welcome: bot.welcome,
+  tags: bot.tags,
 })

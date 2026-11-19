@@ -1,6 +1,6 @@
 import type { Button } from '@appercot/protocol'
 import { LoaderCircle } from 'lucide-react'
-import { displayShortcut } from '@/shared/lib/shortcuts'
+import { displayShortcut, type ShortcutCombination } from '@/shared/lib/shortcuts'
 import { Button as UiButton } from '@/shared/ui/button'
 import { Kbd } from '@/shared/ui/kbd'
 
@@ -9,7 +9,7 @@ interface MessageKeyboardProps {
   onAction: (button: Button, key: string) => void
   pendingKey?: string | null
   messageId?: string
-  shortcuts?: Record<string, string | undefined>
+  shortcuts?: Record<string, ShortcutCombination | undefined>
 }
 
 export const MessageKeyboard = ({

@@ -1,10 +1,27 @@
-import { Bell, BellRing, LoaderCircle } from 'lucide-react'
+import { Bell, BellOff, BellRing, LoaderCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { fetchPushStatus, subscribePushRequest, unsubscribePushRequest } from '@/entities/session'
 import { showRequestError } from '@/shared/api'
-import { strings } from '@/shared/config'
+import { Alert, AlertDescription, AlertTitle } from '@/shared/ui/alert'
 import { Button } from '@/shared/ui/button'
 import { subscribeToPush } from '../model/subscribe'
+
+const NotificationAlert = ({
+  title,
+  description,
+  destructive = false,
+}: {
+  title: string
+  description: string
+  destructive?: boolean
+}) => (
+  <Alert variant={destructive ? 'destructive' : 'default'}>
+    <BellOff aria-hidden="true" />
+    <AlertTitle>{title}</AlertTitle>
+    <AlertDescription>{description}</AlertDescription>
+  </Alert>
+)
 
 export const PushSubscribeButton = ({
   vapidPublicKey,
@@ -13,15 +30,17 @@ export const PushSubscribeButton = ({
   vapidPublicKey: string | null
   settings?: boolean
 }) => {
+  const { t } = useTranslation()
   const [pending, setPending] = useState(false)
   const [enabled, setEnabled] = useState(false)
-  const [unavailable, setUnavailable] = useState(false)
+  const [unavailable, setUnavailable] = useState<'browser' | 'worker'>()
   const [blocked, setBlocked] = useState(false)
 
   useEffect(() => {
     if (!vapidPublicKey || !settings) return
+    setUnavailable(undefined)
     if (!('Notification' in window) || !('PushManager' in window) || !navigator.serviceWorker) {
-      setUnavailable(true)
+      setUnavailable('browser')
       return
     }
     setBlocked(Notification.permission === 'denied')
@@ -30,7 +49,7 @@ export const PushSubscribeButton = ({
       .getRegistration()
       .then(async (registration) => {
         if (!registration) {
-          if (active) setUnavailable(true)
+          if (active) setUnavailable('worker')
           return
         }
         const subscription = await registration.pushManager.getSubscription()
@@ -38,15 +57,32 @@ export const PushSubscribeButton = ({
         if (active) setEnabled(subscribed)
       })
       .catch(() => {
-        if (active) setUnavailable(true)
+        if (active) setUnavailable('worker')
       })
     return () => {
       active = false
     }
   }, [settings, vapidPublicKey])
 
-  if (!vapidPublicKey || unavailable) {
-    return settings ? <p className="text-sm">{strings.settings.notificationsUnavailable}</p> : null
+  if (!vapidPublicKey) {
+    return settings ? (
+      <NotificationAlert
+        title={t('settings:notificationsUnavailableTitle')}
+        description={t('settings:notificationsServerUnavailable')}
+      />
+    ) : null
+  }
+  if (unavailable) {
+    return settings ? (
+      <NotificationAlert
+        title={t('settings:notificationsUnavailableTitle')}
+        description={t(
+          unavailable === 'browser'
+            ? 'settings:notificationsBrowserUnavailable'
+            : 'settings:notificationsWorkerUnavailable',
+        )}
+      />
+    ) : null
   }
 
   const toggle = async () => {
@@ -73,14 +109,16 @@ export const PushSubscribeButton = ({
       setPending(false)
     }
   }
-  const action = enabled ? strings.push.disable : strings.push.enable
+  const action = enabled ? t('push:disable') : t('push:enable')
 
   return (
     <>
       {blocked ? (
-        <p role="status" className="text-sm">
-          {strings.settings.notificationsBlocked}
-        </p>
+        <NotificationAlert
+          destructive
+          title={t('settings:notificationsBlockedTitle')}
+          description={t('settings:notificationsBlocked')}
+        />
       ) : null}
       <Button
         type="button"

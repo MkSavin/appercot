@@ -1,4 +1,5 @@
 import { Children, useId } from 'react'
+import { useTranslation } from 'react-i18next'
 import ReactMarkdown, { type Components } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { CopyButton } from '@/shared/ui/copy-button'
@@ -25,6 +26,7 @@ export const MarkdownContent = ({
   commands,
   onCommand,
 }: CommandTextProps & { text: string }) => {
+  const { t } = useTranslation()
   const makeTag =
     (
       Tag:
@@ -81,7 +83,7 @@ export const MarkdownContent = ({
           ...textTags,
           code: Code,
           pre: ({ children }) => (
-            <section className="code-region" aria-label="Блок кода">
+            <section className="code-region" aria-label={t('message:codeBlock')}>
               <pre className="group/code">{children}</pre>
             </section>
           ),

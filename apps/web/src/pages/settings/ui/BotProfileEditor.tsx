@@ -1,4 +1,5 @@
 import { useId, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { BotAvatar, type fetchAdminBot, updateBotProfileRequest } from '@/entities/bot'
 import { showRequestError } from '@/shared/api'
 import { Button } from '@/shared/ui/button'
@@ -12,6 +13,7 @@ export const BotProfileEditor = ({
   bot: Awaited<ReturnType<typeof fetchAdminBot>>
   onSave: (profile: Awaited<ReturnType<typeof updateBotProfileRequest>>) => void
 }) => {
+  const { t } = useTranslation()
   const id = useId()
   const [avatar, setAvatar] = useState<string | null>()
   const [pending, setPending] = useState(false)
@@ -19,7 +21,7 @@ export const BotProfileEditor = ({
   const [feedback, setFeedback] = useState('')
   return (
     <section className="grid gap-3">
-      <h2 className="text-base font-semibold">О боте</h2>
+      <h2 className="text-base font-semibold">{t('bot:about')}</h2>
       <form
         className="settings-card grid gap-4"
         onSubmit={async (event) => {
@@ -33,10 +35,14 @@ export const BotProfileEditor = ({
                 avatar,
                 description: String(data.get('description') ?? ''),
                 welcome: String(data.get('welcome') ?? ''),
+                tags: String(data.get('tags') ?? '')
+                  .split(',')
+                  .map((tag) => tag.trim())
+                  .filter(Boolean),
               }),
             )
             setAvatar(undefined)
-            setFeedback('Профиль бота сохранён')
+            setFeedback(t('bot:profileSaved'))
           } catch (error) {
             showRequestError(error)
           } finally {
@@ -51,7 +57,7 @@ export const BotProfileEditor = ({
           />
           <div className="grid min-w-0 flex-1 gap-2">
             <label className="text-sm font-medium" htmlFor={`${id}-avatar`}>
-              Аватар
+              {t('bot:avatar')}
             </label>
             <Input
               id={`${id}-avatar`}
@@ -67,20 +73,20 @@ export const BotProfileEditor = ({
                   file.size > 512 * 1024 ||
                   !['image/png', 'image/jpeg', 'image/webp'].includes(file.type)
                 ) {
-                  setFeedback('Выберите PNG, JPEG или WebP размером до 512 КБ.')
+                  setFeedback(t('bot:avatarInvalid'))
                   return
                 }
                 const reader = new FileReader()
                 setFeedback('')
                 setReading(true)
                 reader.onload = () => setAvatar(String(reader.result))
-                reader.onerror = () => setFeedback('Не удалось прочитать изображение.')
+                reader.onerror = () => setFeedback(t('bot:avatarReadFailed'))
                 reader.onloadend = () => setReading(false)
                 reader.readAsDataURL(file)
               }}
             />
             <p id={`${id}-avatar-hint`} className="text-xs text-muted-foreground">
-              PNG, JPEG или WebP до 512 КБ
+              {t('bot:avatarHint')}
             </p>
           </div>
           {(avatar === undefined ? bot.avatar : avatar) ? (
@@ -90,13 +96,13 @@ export const BotProfileEditor = ({
               disabled={reading || pending}
               onClick={() => setAvatar(null)}
             >
-              Убрать аватар
+              {t('bot:removeAvatar')}
             </Button>
           ) : null}
         </div>
         <div className="grid gap-2">
           <label className="text-sm font-medium" htmlFor={`${id}-description`}>
-            Описание
+            {t('admin:botDescription')}
           </label>
           <Textarea
             id={`${id}-description`}
@@ -106,8 +112,22 @@ export const BotProfileEditor = ({
           />
         </div>
         <div className="grid gap-2">
+          <label className="text-sm font-medium" htmlFor={`${id}-tags`}>
+            {t('bot:tags')}
+          </label>
+          <Input
+            id={`${id}-tags`}
+            name="tags"
+            defaultValue={bot.tags.join(', ')}
+            aria-describedby={`${id}-tags-hint`}
+          />
+          <p id={`${id}-tags-hint`} className="text-xs text-muted-foreground">
+            {t('bot:tagsHint')}
+          </p>
+        </div>
+        <div className="grid gap-2">
           <label className="text-sm font-medium" htmlFor={`${id}-welcome`}>
-            Приветственное сообщение
+            {t('bot:welcome')}
           </label>
           <Textarea
             id={`${id}-welcome`}
@@ -115,13 +135,11 @@ export const BotProfileEditor = ({
             maxLength={2000}
             defaultValue={bot.welcome}
           />
-          <p className="text-xs text-muted-foreground">
-            Появится в центре чата до первого сообщения.
-          </p>
+          <p className="text-xs text-muted-foreground">{t('bot:welcomeHint')}</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <Button type="submit" disabled={pending || reading}>
-            Сохранить профиль бота
+            {t('bot:saveProfile')}
           </Button>
           {feedback ? (
             <p role="status" className="text-sm text-muted-foreground">

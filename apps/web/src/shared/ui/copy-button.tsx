@@ -1,6 +1,6 @@
 import { Check, Copy, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { strings } from '@/shared/config'
+import { useTranslation } from 'react-i18next'
 import { cn } from '@/shared/lib/cn'
 
 interface CopyButtonProps {
@@ -11,11 +11,9 @@ interface CopyButtonProps {
 
 type CopyStatus = 'idle' | 'copied' | 'failed'
 
-export const CopyButton = ({
-  text,
-  targetId,
-  label = strings.message.copyCode,
-}: CopyButtonProps) => {
+export const CopyButton = ({ text, targetId, label }: CopyButtonProps) => {
+  const { t } = useTranslation()
+  const accessibleLabel = label ?? t('message:copyCode')
   const [status, setStatus] = useState<CopyStatus>('idle')
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -46,7 +44,7 @@ export const CopyButton = ({
           'inline-flex min-h-6 min-w-6 items-center justify-center rounded-md border border-white/10 bg-zinc-800/90 p-1 text-zinc-300 opacity-100 transition-opacity hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white md:opacity-0 md:group-hover/code:opacity-100 md:focus-visible:opacity-100 md:group-focus-within/code:opacity-100',
           status !== 'idle' && 'md:opacity-100',
         )}
-        aria-label={label}
+        aria-label={accessibleLabel}
         onClick={copy}
         {...{ command: '--copy', commandfor: targetId }}
       >
@@ -54,9 +52,9 @@ export const CopyButton = ({
       </button>
       <span className="sr-only" role="status">
         {status === 'copied'
-          ? strings.message.copied
+          ? t('message:copied')
           : status === 'failed'
-            ? strings.message.copyFailed
+            ? t('message:copyFailed')
             : ''}
       </span>
     </span>

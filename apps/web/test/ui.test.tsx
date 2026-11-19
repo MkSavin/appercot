@@ -1,3 +1,4 @@
+import '../src/shared/config/i18n'
 import { describe, expect, test } from 'bun:test'
 import { renderToReadableStream, renderToStaticMarkup } from 'react-dom/server'
 import { Router } from 'wouter'

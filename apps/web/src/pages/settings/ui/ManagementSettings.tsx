@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { fetchAdminBots, type IssuedBotToken, type ManagedBot } from '@/entities/bot'
 import type { SessionUser } from '@/entities/chat'
 import { type AdminInvite, fetchAdminInvites, fetchAdminUsers } from '@/entities/user'
 import { BotTokenDialog } from '@/features/bot-token-manage'
-import { strings } from '@/shared/config'
 import { Button } from '@/shared/ui/button'
+import { PagePlaceholder } from '@/shared/ui/page-placeholder'
 import { AdminDashboard } from '@/widgets/admin-dashboard'
 
 export const ManagementSettings = ({ section }: { section: 'users' | 'invites' | 'bots' }) => {
+  const { t } = useTranslation()
   const [users, setUsers] = useState<SessionUser[]>([])
   const [invites, setInvites] = useState<AdminInvite[]>([])
   const [bots, setBots] = useState<ManagedBot[]>([])
@@ -40,18 +42,13 @@ export const ManagementSettings = ({ section }: { section: 'users' | 'invites' |
     }
   }, [section, status])
 
-  if (status === 'loading')
-    return (
-      <p role="status" className="text-sm text-muted-foreground">
-        {strings.admin.loading}
-      </p>
-    )
+  if (status === 'loading') return <PagePlaceholder variant="list" />
   if (status === 'failed')
     return (
       <div className="settings-card grid justify-items-start gap-3">
-        <p role="alert">{strings.admin.failed}</p>
+        <p role="alert">{t('admin:failed')}</p>
         <Button variant="outline" onClick={() => setStatus('loading')}>
-          {strings.chat.retry}
+          {t('chat:retry')}
         </Button>
       </div>
     )

@@ -1,8 +1,8 @@
 import { LoaderCircle, Plus } from 'lucide-react'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { createBotRequest, type IssuedBotToken } from '@/entities/bot'
 import { showRequestError } from '@/shared/api'
-import { strings } from '@/shared/config'
 import { Button } from '@/shared/ui/button'
 import {
   Dialog,
@@ -18,6 +18,7 @@ import { Input } from '@/shared/ui/input'
 import { Textarea } from '@/shared/ui/textarea'
 
 export const CreateBotDialog = ({ onCreated }: { onCreated: (issued: IssuedBotToken) => void }) => {
+  const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const [pending, setPending] = useState(false)
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -49,25 +50,25 @@ export const CreateBotDialog = ({ onCreated }: { onCreated: (issued: IssuedBotTo
       <DialogTrigger asChild>
         <Button>
           <Plus aria-hidden="true" />
-          {strings.admin.createBot}
+          {t('admin:createBot')}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{strings.admin.createBot}</DialogTitle>
-          <DialogDescription>{strings.settings.createBotDescription}</DialogDescription>
+          <DialogTitle>{t('admin:createBot')}</DialogTitle>
+          <DialogDescription>{t('settings:createBotDescription')}</DialogDescription>
         </DialogHeader>
         <form className="grid gap-4" onSubmit={submit}>
           <div className="grid items-start gap-4 sm:grid-cols-2">
             <div className="grid content-start gap-2">
               <label htmlFor="bot-name" className="text-sm font-medium">
-                {strings.admin.botName}
+                {t('admin:botName')}
               </label>
               <Input id="bot-name" name="name" required maxLength={100} />
             </div>
             <div className="grid content-start gap-2">
               <label htmlFor="bot-username" className="text-sm font-medium">
-                {strings.admin.botUsername}
+                {t('admin:botUsername')}
               </label>
               <Input
                 id="bot-username"
@@ -79,25 +80,25 @@ export const CreateBotDialog = ({ onCreated }: { onCreated: (issued: IssuedBotTo
                 aria-describedby="bot-username-help"
               />
               <p id="bot-username-help" className="text-xs text-muted-foreground">
-                {strings.admin.botUsernameHint}
+                {t('admin:botUsernameHint')}
               </p>
             </div>
           </div>
           <div className="grid gap-2">
             <label htmlFor="bot-description" className="text-sm font-medium">
-              {strings.admin.botDescription}
+              {t('admin:botDescription')}
             </label>
             <Textarea id="bot-description" name="description" maxLength={1000} />
           </div>
           <DialogFooter>
             <DialogClose asChild>
               <Button type="button" variant="outline" disabled={pending}>
-                {strings.chat.cancel}
+                {t('chat:cancel')}
               </Button>
             </DialogClose>
             <Button type="submit" disabled={pending}>
               {pending ? <LoaderCircle aria-hidden="true" className="animate-spin" /> : null}
-              {strings.admin.createBot}
+              {t('admin:createBot')}
             </Button>
           </DialogFooter>
         </form>

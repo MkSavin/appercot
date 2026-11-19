@@ -1,7 +1,8 @@
-import type { BotAccess } from '@appercot/protocol'
+import type { BotAccess, Message } from '@appercot/protocol'
 import type { UserDto } from '../../auth/session'
 import type { VisibleCommand } from '../../domain/commands'
 import { builder } from '../builder'
+import { MessageType } from './messaging'
 
 export interface BotDto {
   id: string
@@ -15,6 +16,7 @@ export interface BotDto {
   memberCount?: number
   avatar: string | null
   welcome: string
+  tags: string[]
 }
 
 export interface ConnectionDto {
@@ -27,6 +29,7 @@ export interface ConnectionDto {
   createdAt: number
   commands: VisibleCommand[]
   notifications: 'all' | 'silent' | 'off'
+  preview: Message | null
 }
 
 export interface SessionDto {
@@ -76,6 +79,7 @@ builder.objectType(BotType, {
     memberCount: field.int({ resolve: (bot) => bot.memberCount ?? 0 }),
     avatar: field.exposeString('avatar', { nullable: true }),
     welcome: field.exposeString('welcome'),
+    tags: field.exposeStringList('tags'),
   }),
 })
 
@@ -98,6 +102,7 @@ builder.objectType(ConnectionType, {
     createdAt: field.exposeFloat('createdAt'),
     commands: field.field({ type: [BotCommandType], resolve: (chat) => chat.commands }),
     notifications: field.expose('notifications', { type: ChatNotificationsType }),
+    preview: field.field({ type: MessageType, nullable: true, resolve: (chat) => chat.preview }),
   }),
 })
 

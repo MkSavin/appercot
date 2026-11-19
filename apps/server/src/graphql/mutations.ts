@@ -7,7 +7,7 @@ import {
   logoutUser,
   registerUser,
 } from '../auth/session'
-import { addBot, clearChat, listUserChats, markChatRead, setChatBlocked } from '../domain/chats'
+import { addBot, listUserChats, markChatRead, setChatBlocked } from '../domain/chats'
 import { sendUserMessage } from '../domain/messages'
 import { latestUserSequence } from '../domain/sync'
 import { builder } from './builder'
@@ -136,14 +136,6 @@ builder.mutationType({
         execute(() => {
           const user = requireUser(context)
           return markChatRead(context.db, context.hub, user.id, String(args.chatId), args.seq)
-        }),
-    }),
-    clearChat: field.boolean({
-      args: { chatId: field.arg.id({ required: true }) },
-      resolve: (_parent, args, context) =>
-        execute(() => {
-          const user = requireUser(context)
-          return clearChat(context.db, context.hub, user.id, String(args.chatId))
         }),
     }),
     blockBot: field.boolean({

@@ -83,7 +83,9 @@ builder.queryType({
             (bot) =>
               !query ||
               bot.name.toLowerCase().includes(query) ||
-              bot.username.toLowerCase().includes(query),
+              bot.username.toLowerCase().includes(query) ||
+              bot.description.toLowerCase().includes(query) ||
+              bot.tags.some((tag) => tag.toLowerCase().includes(query)),
           )
           .map((bot) => toBotDto(bot, context.hub))
       },

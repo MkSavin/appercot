@@ -1,3 +1,4 @@
+import '../src/shared/config/i18n'
 import { describe, expect, test } from 'bun:test'
 import type { ClientChat, Message } from '@appercot/protocol'
 import { createChatStore, type SessionPayload } from '../src/entities/chat/model/store'
@@ -45,6 +46,18 @@ const lastMessage = (store: ReturnType<typeof createChatStore>) =>
   store.getState().messagesByChat[chat.id]?.at(-1)
 
 describe('chat store', () => {
+  test('hydrates chat previews from the session before opening history', () => {
+    const store = createChatStore()
+    store.getState().setSession({
+      ...session,
+      chats: [{ ...chat, lastMessageAt: 1000, preview: message() }],
+    })
+
+    expect(lastMessage(store)).toMatchObject({ id: 'message-1', content: { text: 'Hello' } })
+    store.getState().replaceMessages(chat.id, [message(), message({ id: 'message-2', seq: 2 })])
+    expect(store.getState().messagesByChat[chat.id]).toHaveLength(2)
+  })
+
   // @anchor INV:chat-store/keeps-processed
   test('moves an optimistic message through accepted and processed without duplicates', () => {
     const store = createChatStore()
@@ -62,6 +75,7 @@ describe('chat store', () => {
     expect(store.getState().messagesByChat[chat.id]).toHaveLength(1)
     expect(lastMessage(store)).toMatchObject({ id: 'message-1', status: 'accepted' })
     expect(store.getState().pendingByChat[chat.id]).toEqual([])
+    expect(store.getState().chats[0]?.preview).toMatchObject({ id: 'message-1' })
 
     store.getState().applyUpdate(2, {
       type: 'message.status',
