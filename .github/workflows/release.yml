@@ -44,13 +44,33 @@ jobs:
           channel=latest
           if [[ "$version" == *-* ]]; then channel=beta; fi
           release=$(gh api --paginate "repos/$GITHUB_REPOSITORY/releases" \
-            --jq ".[] | select(.tag_name == \"$tag\") | [.draft, .target_commitish] | @tsv")
-          read -r draft target <<< "$release"
+            --jq ".[] | select(.tag_name == \"$tag\") | [.draft, .target_commitish, .id, (.assets | length)] | @tsv")
+          read -r draft target release_id asset_count <<< "$release"
           publish=true
           if [[ "$draft" == true ]]; then
             if [[ "$target" != "$GITHUB_SHA" ]]; then
-              echo "::error::Release $tag is in progress for $target. Rerun that release workflow."
-              exit 1
+              if [[ "$asset_count" != 0 || "$GITHUB_SHA" != "$(git rev-parse refs/remotes/origin/master)" ]] ||
+                 git show-ref --verify --quiet "refs/tags/$tag" ||
+                 ! git merge-base --is-ancestor "$target" "$GITHUB_SHA"; then
+                echo "::error::Release $tag is in progress for $target. Rerun that release workflow."
+                exit 1
+              fi
+              for package in protocol chat; do
+                status=$(curl --silent --show-error --max-time 15 --header 'Cache-Control: no-cache' \
+                  --output /dev/null --write-out '%{http_code}' \
+                  "https://registry.npmjs.org/@appercot%2f$package/$version")
+                if [[ "$status" != 404 ]]; then
+                  echo "::error::Cannot move draft $tag. npm returned HTTP $status for @appercot/$package@$version."
+                  exit 1
+                fi
+              done
+              updated_target=$(gh api --method PATCH "repos/$GITHUB_REPOSITORY/releases/$release_id" \
+                -f "target_commitish=$GITHUB_SHA" --jq '.target_commitish')
+              if [[ "$updated_target" != "$GITHUB_SHA" ]]; then
+                echo "::error::GitHub did not move draft $tag to $GITHUB_SHA."
+                exit 1
+              fi
+              echo "Moved unpublished draft $tag from $target to $GITHUB_SHA"
             fi
           elif [[ "$draft" == false ]] || git show-ref --verify --quiet "refs/tags/$tag"; then
             publish=false
@@ -69,19 +89,25 @@ jobs:
     needs: [verify, plan]
     if: needs.plan.outputs.publish == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v7
         with:
           node-version: "24"
-          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+      - name: Install npm with Trusted Publishing support
+        run: npm install --global --ignore-scripts --registry=https://registry.npmjs.org npm@11.21.3
       - uses: actions/download-artifact@v8
         with:
           name: release-build
           path: dist
       - name: Publish the SDK packages
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           RELEASE_VERSION: ${{ needs.plan.outputs.version }}
           RELEASE_CHANNEL: ${{ needs.plan.outputs.channel }}
         run: node scripts/publish-sdk.mjs "$RELEASE_VERSION" "$RELEASE_CHANNEL" dist/npm

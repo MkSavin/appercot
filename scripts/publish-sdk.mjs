@@ -7,7 +7,6 @@ const [version, tag, directory] = process.argv.slice(2)
 const registry = 'https://registry.npmjs.org'
 if (!version || !['beta', 'latest'].includes(tag) || !directory)
   throw new Error('Usage: node scripts/publish-sdk.mjs <version> <beta|latest> <directory>')
-if (!process.env.NODE_AUTH_TOKEN) throw new Error('Set the NPM_TOKEN GitHub Actions secret')
 
 for (const name of ['protocol', 'chat']) {
   const archive = join(directory, `appercot-${name}.tgz`)
