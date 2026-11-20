@@ -71,17 +71,17 @@ jobs:
                 exit 1
               fi
               runs=$(gh api --paginate --slurp \
-                "repos/$GITHUB_REPOSITORY/actions/workflows/release.yml/runs?branch=master&event=push&status=failure&head_sha=$target" \
-                --jq '.[].workflow_runs[].id')
+                "repos/$GITHUB_REPOSITORY/actions/workflows/release.yml/runs?branch=master&event=push&status=failure&head_sha=$target" |
+                jq -r '.[].workflow_runs[].id')
               for run_id in $runs; do
-                ready=$(gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/jobs" \
-                  --jq '[.[].jobs[]] |
+                ready=$(gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/jobs" |
+                  jq -r '[.[].jobs[]] |
                     any(.[]; .name == "npm" and .conclusion == "success") and
                     any(.[]; .name == "image" and .conclusion == "success") and
                     any(.[]; .name == "github-release" and .conclusion == "failure")')
                 if [[ "$ready" == true ]]; then
-                  artifact=$(gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/artifacts?name=release-build" \
-                    --jq 'any(.[].artifacts[]; .name == "release-build" and (.expired | not))')
+                  artifact=$(gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/artifacts?name=release-build" |
+                    jq -r 'any(.[].artifacts[]; .name == "release-build" and (.expired | not))')
                   if [[ "$artifact" == true ]]; then
                     recovery_run_id=$run_id
                     echo "Recovering release $tag from run $run_id at $target"
