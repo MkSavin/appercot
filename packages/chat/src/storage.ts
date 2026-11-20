@@ -1,5 +1,5 @@
 import { type JsonValue, JsonValueSchema } from '@appercot/protocol'
-import type { BotApi } from './api'
+import type { BotApi } from './api.js'
 
 export class BotStorage {
   private cache?: Record<string, JsonValue>

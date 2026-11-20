@@ -1,8 +1,8 @@
 import type { BotEvent, Message, MessageContent } from '@appercot/protocol'
-import type { BotApi } from './api'
-import type { CommandDefinition } from './command'
-import type { SendFileOptions, UploadSource } from './media'
-import { BotStorage } from './storage'
+import type { BotApi } from './api.js'
+import type { CommandDefinition } from './command.js'
+import type { SendFileOptions, UploadSource } from './media.js'
+import { BotStorage } from './storage.js'
 
 export class Context {
   readonly user: BotEvent['user']

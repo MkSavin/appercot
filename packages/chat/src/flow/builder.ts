@@ -1,7 +1,7 @@
 import type { MessageContent } from '@appercot/protocol'
-import type { Context } from '../context'
-import { FlowRuntime } from './runtime'
-import { validateFlow } from './validate'
+import type { Context } from '../context.js'
+import { FlowRuntime } from './runtime.js'
+import { validateFlow } from './validate.js'
 
 export interface FlowDirective {
   type: 'finish' | 'transition'

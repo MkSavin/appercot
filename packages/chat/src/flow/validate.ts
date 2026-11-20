@@ -1,4 +1,4 @@
-import type { FlowBuilder, FlowScreenDefinition } from './builder'
+import type { FlowBuilder, FlowScreenDefinition } from './builder.js'
 
 const validateId = (id: string, kind: string) => {
   if (!id || id.length > 24 || id.includes(':') || id.includes('/')) {

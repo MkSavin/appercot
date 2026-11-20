@@ -1,0 +1,17 @@
+{
+  "$schema": "https://context7.com/schema/context7.json",
+  "projectTitle": "Appercot",
+  "description": "Self-hosted bot messenger and PWA with a TypeScript SDK, GraphQL and WebSocket server, SQLite storage, and runner-agnostic integration testing.",
+  "folders": ["docs/guide"],
+  "excludeFolders": ["docs/superpowers"],
+  "rules": [
+    "Use @appercot/chat for bot applications and @appercot/test for integration tests.",
+    "Use environment variables for credentials; never hard-code owner passwords, bot tokens, or test control tokens.",
+    "Only the dedicated test CLI may enable fixture seeding and the destructive test control API; never enable them in production.",
+    "Use public package entry points and documented APIs rather than server internals or generated web modules.",
+    "With ackOnError set to false, make event side effects idempotent because failed events can be redelivered.",
+    "Back up SQLite and the corresponding local or S3 media together, including DATA_DIR/totp.key when two-factor authentication is used.",
+    "Use registered data-test-id selectors for browser tests instead of translated text or CSS layout selectors.",
+    "Treat docs/guide as current usage documentation and docs/superpowers as historical design material, not supported API contracts."
+  ]
+}

@@ -6,8 +6,8 @@ import {
   COMMAND_NAME_MAX,
   MEDIA_MAX,
   TEXT_MAX,
-} from './limits'
-import { ShortcutSchema } from './shortcuts'
+} from './limits.js'
+import { ShortcutSchema } from './shortcuts.js'
 
 const textEncoder = new TextEncoder()
 

@@ -24,8 +24,10 @@ test('logs in, opens a fixture chat and sends through visible controls', async (
   await page.locator(selector(testIds.auth.login.username)).fill(user.username)
   await page.locator(selector(testIds.auth.login.password)).fill(user.password)
   await page.locator(selector(testIds.auth.login.submit)).click()
-  await page.locator(selector(testIds.chats.item(chat.id))).click()
-  const baseline = chat.messages[0]
+  const item = page.locator(selector(testIds.chats.item(chat.id)))
+  const baseline = chat.messages.at(-1)
+  if (baseline?.content.text) await expect(item).toContainText(baseline.content.text)
+  await item.click()
   if (baseline)
     await expect(page.locator(selector(testIds.message.item(baseline.id)))).toBeVisible()
 

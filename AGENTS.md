@@ -1,9 +1,10 @@
 # Appercot
 
-Self-hosted bot messenger and PWA. Bun serves GraphQL, WebSocket, files and the Vite/React SPA from SQLite. Start at [server entry](apps/server/src/index.ts) or [web entry](apps/web/src/app/index.tsx). Use `ls` to discover project files.
+Self-hosted bot messenger and PWA. Bun serves GraphQL, WebSocket, files and the Vite/React SPA from SQLite. Start at [server](apps/server/src/index.ts) or [web](apps/web/src/app/index.tsx).
 
 | Task or symptom                                                                  | Read                                                   |
 | -------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| Build or test a bot, deploy, configure, or use Context7 | [Public guide](docs/guide/index.md) |
 | Blank screen, chat jumps, message stays pending or push opens the wrong chat     | [Web](.agents/web.md)                                  |
 | Session expires, roles or invitations fail, or a bot misses an event            | [Server](.agents/server.md)                            |
 | SDK will not reconnect or a wizard button stopped working                        | [Bot SDK](.agents/sdk.md)                              |
@@ -23,7 +24,7 @@ Self-hosted bot messenger and PWA. Bun serves GraphQL, WebSocket, files and the 
 
 ## UI changes
 
-- Reuse existing components before adding one. For browser tests, reuse fixtures and typed `shared/lib/test-ids.ts` selectors; shortcuts must be layout-independent.
+- Reuse components, fixtures and typed `shared/lib/test-ids.ts` selectors. Keep shortcuts layout-independent.
 - Keep one public component per file. Small private one-off components and shadcn component collections may stay together; split large files into widgets, entity parts or local partials.
 - Put interface text in namespaced JSON resources under `apps/web/src/shared/config/locales` and read it through `useTranslation` or the shared `i18n` instance outside React with keys such as `chat:online`.
 - Use page-shaped placeholders for loading layouts instead of page loaders.

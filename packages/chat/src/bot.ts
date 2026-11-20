@@ -6,12 +6,12 @@ import {
   type BotRole,
   type Params,
 } from '@appercot/protocol'
-import { BotApi } from './api'
-import { CommandDefinition } from './command'
-import { BotConnection } from './connection'
-import { Context } from './context'
-import { FlowBuilder } from './flow/builder'
-import type { UploadOptions, UploadSource } from './media'
+import { BotApi } from './api.js'
+import { CommandDefinition } from './command.js'
+import { BotConnection } from './connection.js'
+import { Context } from './context.js'
+import { FlowBuilder } from './flow/builder.js'
+import type { UploadOptions, UploadSource } from './media.js'
 
 type CallbackEvent = Extract<BotEvent, { type: 'callback' }>
 

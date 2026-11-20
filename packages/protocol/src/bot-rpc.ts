@@ -1,9 +1,9 @@
 import { z } from 'zod'
-import { BotEventSchema } from './bot-events'
-import { MessageContentSchema } from './content'
-import { BotCommandSchema, BotRefSchema, BotRoleSchema, MessageSchema } from './entities'
-import { ErrorCodeSchema } from './errors'
-import { KV_KEY_MAX } from './limits'
+import { BotEventSchema } from './bot-events.js'
+import { MessageContentSchema } from './content.js'
+import { BotCommandSchema, BotRefSchema, BotRoleSchema, MessageSchema } from './entities.js'
+import { ErrorCodeSchema } from './errors.js'
+import { KV_KEY_MAX } from './limits.js'
 
 const idSchema = z.string().min(1)
 const chatIdSchema = { chatId: idSchema }

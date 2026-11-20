@@ -46,16 +46,44 @@ const lastMessage = (store: ReturnType<typeof createChatStore>) =>
   store.getState().messagesByChat[chat.id]?.at(-1)
 
 describe('chat store', () => {
-  test('hydrates chat previews from the session before opening history', () => {
+  test('keeps session previews when the history cache is discarded', () => {
     const store = createChatStore()
     store.getState().setSession({
       ...session,
       chats: [{ ...chat, lastMessageAt: 1000, preview: message() }],
     })
 
-    expect(lastMessage(store)).toMatchObject({ id: 'message-1', content: { text: 'Hello' } })
-    store.getState().replaceMessages(chat.id, [message(), message({ id: 'message-2', seq: 2 })])
-    expect(store.getState().messagesByChat[chat.id]).toHaveLength(2)
+    store.getState().setActiveChat(null)
+    store.getState().discardCachedHistory()
+    expect(store.getState().chats[0]?.preview).toEqual(message())
+    expect(lastMessage(store)).toBeUndefined()
+  })
+
+  test('updates and clears previews for a chat without cached history', () => {
+    const store = createChatStore()
+    const first = message()
+    const latest = message({ id: 'message-2', seq: 2, createdAt: 2000 })
+    store.getState().setSession({ ...session, chats: [{ ...chat, preview: first }] })
+    store.getState().setActiveChat(null)
+    store.getState().applyUpdate(1, { type: 'message.new', message: latest })
+    store.getState().applyUpdate(2, { type: 'message.new', message: first })
+    expect(store.getState().chats[0]?.preview).toEqual(latest)
+
+    const edited = { ...latest, content: { text: 'Edited' }, editedAt: 3000 }
+    store.getState().applyUpdate(3, { type: 'message.edited', message: edited })
+    expect(store.getState().chats[0]?.preview).toEqual(edited)
+
+    store.getState().applyUpdate(4, {
+      type: 'message.deleted',
+      chatId: chat.id,
+      messageId: latest.id,
+    })
+    expect(store.getState().chats[0]?.preview).toBeNull()
+    store.getState().applyUpdate(5, { type: 'chat.updated', chat: { ...chat, preview: first } })
+    expect(store.getState().chats[0]?.preview).toEqual(first)
+
+    store.getState().applyUpdate(6, { type: 'chat.cleared', chatId: chat.id })
+    expect(store.getState().chats[0]?.preview).toBeNull()
   })
 
   // @anchor INV:chat-store/keeps-processed

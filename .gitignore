@@ -2,6 +2,7 @@ node_modules/
 dist/
 .data*/
 .test-data/
+/packages/test/test-results/
 backups/
 .env
 .env.local

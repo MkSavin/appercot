@@ -65,7 +65,10 @@ test('loads bot metadata and media and deletes a chat while keeping the membersh
         createdAt: Date.now(),
       })
       .run()
-    sendBotMessage(fixture.db, hub, botId, { chatId, content: { media: [media] } })
+    const attachment = sendBotMessage(fixture.db, hub, botId, {
+      chatId,
+      content: { media: [media] },
+    })
     const profile =
       'query($chat: ID!) { chatProfile(chatId: $chat) { bot { description welcome } media blocked notifications } }'
     expect((await call(profile, { chat: chatId })).data.chatProfile).toMatchObject({
@@ -77,9 +80,8 @@ test('loads bot metadata and media and deletes a chat while keeping the membersh
 
     const input = { chatId, clientId: 'wizard-reply', content: { text: 'Wizard answer' } }
     const message = sendUserMessage(fixture.db, hub, actor.id, input)
-    const sessionWithPreview = await call(
-      'query { session { chats { id preview { id content createdAt } } } }',
-    )
+    const sessionPreview = 'query { session { chats { id preview { id content createdAt } } } }'
+    const sessionWithPreview = await call(sessionPreview)
     expect(sessionWithPreview.errors).toBeUndefined()
     expect(sessionWithPreview.data.session).toMatchObject({
       chats: [{ id: chatId, preview: { id: message.id, content: { text: 'Wizard answer' } } }],
@@ -91,9 +93,18 @@ test('loads bot metadata and media and deletes a chat while keeping the membersh
     })
     const history = 'query($chat: ID!) { messages(chatId: $chat) { id } }'
     expect((await call(history, { chat: chatId })).data.messages).toHaveLength(1)
-    expect(
-      JSON.stringify((await call('query { sync(since: 0) { updates { payload } } }')).data),
-    ).not.toContain('Wizard answer')
+    const sync = (await call('query { sync(since: 0) { updates { payload } } }')).data.sync
+    expect(JSON.stringify(sync)).not.toContain('Wizard answer')
+    expect(sync).toMatchObject({
+      updates: expect.arrayContaining([
+        {
+          payload: { type: 'chat.updated', chat: expect.objectContaining({ preview: attachment }) },
+        },
+      ]),
+    })
+    expect((await call(sessionPreview)).data.session).toMatchObject({
+      chats: [{ id: chatId, preview: { id: attachment.id, content: { media: [media] } } }],
+    })
 
     expect(
       (

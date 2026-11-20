@@ -7,7 +7,7 @@ import {
   type Result,
   ServerToBotFrameSchema,
 } from '@appercot/protocol'
-import type { UploadOptions, UploadSource } from './media'
+import type { UploadOptions, UploadSource } from './media.js'
 
 export class BotApiError extends Error {
   constructor(

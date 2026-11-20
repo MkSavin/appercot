@@ -1,7 +1,7 @@
 import { z } from 'zod'
-import { MessageContentSchema } from './content'
-import { COMMAND_NAME_MAX } from './limits'
-import { ShortcutSchema } from './shortcuts'
+import { MessageContentSchema } from './content.js'
+import { COMMAND_NAME_MAX } from './limits.js'
+import { ShortcutSchema } from './shortcuts.js'
 
 const idSchema = z.string().min(1)
 const timestampSchema = z.int().nonnegative()

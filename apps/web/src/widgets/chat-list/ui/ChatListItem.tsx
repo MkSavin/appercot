@@ -20,7 +20,9 @@ const dateFormat = new Intl.DateTimeFormat('ru', { day: 'numeric', month: 'short
 
 export const ChatListItem = ({ chat, active, pinned, onPin }: ChatListItemProps) => {
   const { t } = useTranslation()
-  const content = useChatStore((state) => state.messagesByChat[chat.id]?.at(-1)?.content)
+  const cached = useChatStore((state) => state.messagesByChat[chat.id]?.at(-1))
+  const latest = cached && cached.seq > (chat.preview?.seq ?? 0) ? cached : chat.preview
+  const content = latest?.content
   const preview = content?.text || (content?.media?.length ? t('chat:attachment') : undefined)
   const date = chat.lastMessageAt ? new Date(chat.lastMessageAt) : null
   return (

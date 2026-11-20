@@ -1,7 +1,7 @@
 import { type BotEvent, JsonValueSchema, type MessageContent } from '@appercot/protocol'
-import type { Context } from '../context'
-import type { FlowActionContext, FlowBuilder } from './builder'
-import { resolveGroupTarget, resolveScreenTarget } from './validate'
+import type { Context } from '../context.js'
+import type { FlowActionContext, FlowBuilder } from './builder.js'
+import { resolveGroupTarget, resolveScreenTarget } from './validate.js'
 
 type CallbackEvent = Extract<BotEvent, { type: 'callback' }>
 

@@ -53,6 +53,13 @@ export const createTestControlApi = ({ token, operations, barrier, isReady }: Co
     barrier.runReset(async () => {
       await operation()
     })
+  const mutateFixture = async <Input, Result>(
+    request: Request,
+    operation: (input: Input) => Result | Promise<Result>,
+  ) => {
+    const input = await body(request)
+    return response(201, await barrier.run(() => operation(input)))
+  }
 
   return async (request: Request): Promise<Response> => {
     if (!authorized(request, token))
@@ -69,13 +76,13 @@ export const createTestControlApi = ({ token, operations, barrier, isReady }: Co
       if (pathname === '/_appercot/test/fixtures' && request.method === 'GET')
         return response(200, operations.fixtures())
       if (pathname === '/_appercot/test/users' && request.method === 'POST')
-        return response(201, await operations.createUser(await body(request)))
+        return await mutateFixture(request, operations.createUser)
       if (pathname === '/_appercot/test/bots' && request.method === 'POST')
-        return response(201, operations.createBot(await body(request)))
+        return await mutateFixture(request, operations.createBot)
       if (pathname === '/_appercot/test/chats' && request.method === 'POST')
-        return response(201, operations.createChat(await body(request)))
+        return await mutateFixture(request, operations.createChat)
       if (pathname === '/_appercot/test/messages' && request.method === 'POST')
-        return response(201, operations.sendMessage(await body(request)))
+        return await mutateFixture(request, operations.sendMessage)
       if (pathname === '/_appercot/test/state/flush' && request.method === 'POST') {
         await reset(() => operations.flushState())
         return response(204)

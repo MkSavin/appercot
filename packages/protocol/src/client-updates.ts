@@ -5,7 +5,7 @@ import {
   ChatRefSchema,
   MessageSchema,
   PlatformRoleSchema,
-} from './entities'
+} from './entities.js'
 
 const idSchema = z.string().min(1)
 

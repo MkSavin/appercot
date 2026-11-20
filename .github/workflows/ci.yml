@@ -21,12 +21,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.4.3
       - run: bun install --frozen-lockfile --ignore-scripts
       - run: bun run check
       - run: bun run build
+      - run: bun run build:sdk
+      - run: bun run test:sdk-package
+      - name: Archive the standalone Linux build
+        run: tar -C apps/server/dist -czf dist/appercot-linux-x64.tar.gz appercot public drizzle
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-build
+          path: |
+            dist/npm/*.tgz
+            dist/appercot-linux-x64.tar.gz
+          if-no-files-found: error
+          overwrite: true
 
   image:
     runs-on: ubuntu-latest

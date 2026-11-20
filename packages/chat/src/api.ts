@@ -1,11 +1,11 @@
 import type { BotMethod, Params, Result } from '@appercot/protocol'
-import type { BotConnection } from './connection'
+import type { BotConnection } from './connection.js'
 import {
   mediaKindForUpload,
   type SendFileOptions,
   type UploadOptions,
   type UploadSource,
-} from './media'
+} from './media.js'
 
 export class BotApi {
   constructor(private readonly connection: BotConnection) {}

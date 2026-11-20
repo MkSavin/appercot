@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { ChatRefSchema, MessageSchema, UserRefSchema } from './entities'
+import { ChatRefSchema, MessageSchema, UserRefSchema } from './entities.js'
 
 const sessionContextSchema = {
   chat: ChatRefSchema,

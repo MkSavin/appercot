@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { AppercotTestClient, AppercotTestServerError } from '../src/index'
+import { AppercotTestClient, AppercotTestClientError } from '../src/index'
 import type { FetchImplementation } from '../src/types'
 
 const json = (value: unknown, status = 200) =>
@@ -134,7 +134,7 @@ describe('AppercotTestClient', () => {
     )
 
     const error = await client.flushChat('chat-1').catch((cause: unknown) => cause)
-    expect(error).toBeInstanceOf(AppercotTestServerError)
+    expect(error).toBeInstanceOf(AppercotTestClientError)
     expect(error).toMatchObject({
       status: 409,
       code: 'TEST_FIXTURE_CONFLICT',
@@ -150,7 +150,7 @@ describe('AppercotTestClient', () => {
       }),
     )
     const error = await client.ready().catch((cause: unknown) => cause)
-    expect(error).toBeInstanceOf(AppercotTestServerError)
+    expect(error).toBeInstanceOf(AppercotTestClientError)
     expect(error).toMatchObject({ code: 'TEST_NETWORK_ERROR', status: undefined })
   })
 

@@ -135,7 +135,10 @@ const withChat = (chats: ChatConnection[], chat: ChatConnection) => {
   const merged = {
     ...chat,
     commands: chat.commands ?? previous?.commands,
-    preview: chat.preview ?? previous?.preview,
+    preview:
+      chat.preview && chat.preview.seq >= (previous?.preview?.seq ?? 0)
+        ? chat.preview
+        : (previous?.preview ?? chat.preview),
   }
   return [...chats.filter((current) => current.id !== chat.id), merged].sort(
     (left, right) =>
@@ -157,8 +160,18 @@ const applyClientUpdate = (
   switch (update.type) {
     case 'message.new': {
       const { chatId } = update.message
+      const currentChat = state.chats.find((chat) => chat.id === chatId)
+      const chats =
+        currentChat && update.message.seq >= (currentChat.preview?.seq ?? 0)
+          ? withChat(state.chats, {
+              ...currentChat,
+              preview: update.message,
+              lastMessageAt: update.message.createdAt,
+            })
+          : state.chats
       const cached = state.messagesByChat[chatId]
-      if (!cached && state.activeChatId !== undefined && state.activeChatId !== chatId) return {}
+      if (!cached && state.activeChatId !== undefined && state.activeChatId !== chatId)
+        return { chats }
       const current = cached ?? []
       const existing = current.some((message) => message.id === update.message.id)
       const pending = existing
@@ -180,15 +193,8 @@ const applyClientUpdate = (
         )
       }
       const messages = withMessage(withoutPending, update.message)
-      const currentChat = state.chats.find((chat) => chat.id === chatId)
       return {
-        chats: currentChat
-          ? withChat(state.chats, {
-              ...currentChat,
-              preview: update.message,
-              lastMessageAt: update.message.createdAt,
-            })
-          : state.chats,
+        chats,
         messagesByChat: {
           ...state.messagesByChat,
           [chatId]:
@@ -199,38 +205,48 @@ const applyClientUpdate = (
         pendingByChat,
       }
     }
-    case 'message.edited':
-      if (!state.messagesByChat[update.message.chatId]) return {}
+    case 'message.edited': {
+      const { chatId, id } = update.message
+      const cached = state.messagesByChat[chatId]
       return {
-        messagesByChat: {
-          ...state.messagesByChat,
-          [update.message.chatId]: (state.messagesByChat[update.message.chatId] ?? []).map(
-            (message) => (message.id === update.message.id ? update.message : message),
-          ),
-        },
+        chats: state.chats.map((chat) =>
+          chat.id === chatId && chat.preview?.id === id
+            ? { ...chat, preview: update.message }
+            : chat,
+        ),
+        ...(cached && {
+          messagesByChat: {
+            ...state.messagesByChat,
+            [chatId]: cached.map((message) => (message.id === id ? update.message : message)),
+          },
+        }),
       }
-    case 'message.deleted':
-      if (!state.messagesByChat[update.chatId]) return {}
+    }
+    case 'message.deleted': {
+      const { chatId, messageId, clientId } = update
+      const cached = state.messagesByChat[chatId]
       return {
-        messagesByChat: {
-          ...state.messagesByChat,
-          [update.chatId]: (state.messagesByChat[update.chatId] ?? []).filter(
-            (message) =>
-              message.id !== update.messageId &&
-              (update.clientId === undefined || message.clientId !== update.clientId),
-          ),
-        },
-        ...(update.clientId
+        chats: state.chats.map((chat) =>
+          chat.id === chatId && chat.preview?.id === messageId ? { ...chat, preview: null } : chat,
+        ),
+        ...(cached && {
+          messagesByChat: {
+            ...state.messagesByChat,
+            [chatId]: cached.filter(
+              (message) => message.id !== messageId && (!clientId || message.clientId !== clientId),
+            ),
+          },
+        }),
+        ...(clientId
           ? {
               pendingByChat: {
                 ...state.pendingByChat,
-                [update.chatId]: (state.pendingByChat[update.chatId] ?? []).filter(
-                  (clientId) => clientId !== update.clientId,
-                ),
+                [chatId]: (state.pendingByChat[chatId] ?? []).filter((id) => id !== clientId),
               },
             }
           : {}),
       }
+    }
     case 'message.status':
       if (!state.messagesByChat[update.chatId]) return {}
       return {
@@ -248,6 +264,9 @@ const applyClientUpdate = (
       return { chats: withChat(state.chats, update.chat) }
     case 'chat.cleared':
       return {
+        chats: state.chats.map((chat) =>
+          chat.id === update.chatId ? { ...chat, preview: null } : chat,
+        ),
         messagesByChat: { ...state.messagesByChat, [update.chatId]: [] },
         pendingByChat: { ...state.pendingByChat, [update.chatId]: [] },
       }
@@ -314,11 +333,6 @@ export const createChatStore = (options: ChatStoreOptions = {}) => {
         if (session.checkpoint !== undefined)
           writeCheckpoint(checkpointStorage, session.user.id, lastSeq)
       }
-      const messagesByChat = isSameUser ? { ...get().messagesByChat } : {}
-      for (const chat of session.chats) {
-        if (chat.preview)
-          messagesByChat[chat.id] = mergeMessages([chat.preview], messagesByChat[chat.id] ?? [])
-      }
       set({
         user: session.user,
         vapidPublicKey: session.vapidPublicKey,
@@ -327,7 +341,7 @@ export const createChatStore = (options: ChatStoreOptions = {}) => {
             (right.lastMessageAt ?? 0) - (left.lastMessageAt ?? 0) ||
             right.createdAt - left.createdAt,
         ),
-        messagesByChat,
+        messagesByChat: isSameUser ? get().messagesByChat : {},
         pendingByChat: isSameUser ? get().pendingByChat : {},
         draftsByChat: isSameUser ? get().draftsByChat : {},
         typingByChat: isSameUser ? get().typingByChat : {},

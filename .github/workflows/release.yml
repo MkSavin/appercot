@@ -3,9 +3,10 @@ name: Release
 on:
   push:
     branches: [master]
-    tags: ["v*"]
 
-concurrency: ${{ github.workflow }}-${{ github.ref }}
+concurrency:
+  group: release-master
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -14,8 +15,80 @@ jobs:
   verify:
     uses: ./.github/workflows/ci.yml
 
-  image:
+  plan:
     needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.release.outputs.version }}
+      tag: ${{ steps.release.outputs.tag }}
+      channel: ${{ steps.release.outputs.channel }}
+      publish: ${{ steps.release.outputs.publish }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          version=$(node -p "require('./package.json').version")
+          if ! [[ "$version" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[a-zA-Z0-9]+([.-][a-zA-Z0-9]+)*)?$ ]]; then
+            echo "::error::Invalid release version $version"
+            exit 1
+          fi
+          tag="v$version"
+          channel=latest
+          if [[ "$version" == *-* ]]; then channel=beta; fi
+          release=$(gh api --paginate "repos/$GITHUB_REPOSITORY/releases" \
+            --jq ".[] | select(.tag_name == \"$tag\") | [.draft, .target_commitish] | @tsv")
+          read -r draft target <<< "$release"
+          publish=true
+          if [[ "$draft" == true ]]; then
+            if [[ "$target" != "$GITHUB_SHA" ]]; then
+              echo "::error::Release $tag is in progress for $target. Rerun that release workflow."
+              exit 1
+            fi
+          elif [[ "$draft" == false ]] || git show-ref --verify --quiet "refs/tags/$tag"; then
+            publish=false
+          else
+            gh release create "$tag" --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" --generate-notes --draft
+          fi
+          {
+            echo "version=$version"
+            echo "tag=$tag"
+            echo "channel=$channel"
+            echo "publish=$publish"
+          } >> "$GITHUB_OUTPUT"
+
+  npm:
+    needs: [verify, plan]
+    if: needs.plan.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          registry-url: https://registry.npmjs.org
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-build
+          path: dist
+      - name: Publish the SDK packages
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          RELEASE_VERSION: ${{ needs.plan.outputs.version }}
+          RELEASE_CHANNEL: ${{ needs.plan.outputs.channel }}
+        run: node scripts/publish-sdk.mjs "$RELEASE_VERSION" "$RELEASE_CHANNEL" dist/npm
+
+  image:
+    needs: [verify, plan, npm]
+    if: ${{ !cancelled() && needs.verify.result == 'success' && needs.plan.result == 'success' && (needs.npm.result == 'success' || needs.npm.result == 'skipped') }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -36,10 +109,10 @@ jobs:
           images: ${{ steps.image.outputs.name }}
           flavor: latest=false
           tags: |
-            type=raw,value=master,enable=${{ github.ref_type == 'branch' }}
-            type=sha,format=short,prefix=sha-,enable=${{ github.ref_type == 'branch' }}
-            type=raw,value=latest,enable=${{ github.ref_type == 'tag' }}
-            type=raw,value=${{ github.ref_name }},enable=${{ github.ref_type == 'tag' }}
+            type=raw,value=master
+            type=sha,format=short,prefix=sha-
+            type=raw,value=latest,enable=${{ needs.plan.outputs.publish == 'true' && needs.plan.outputs.channel == 'latest' }}
+            type=raw,value=${{ needs.plan.outputs.tag }},enable=${{ needs.plan.outputs.publish == 'true' }}
       - uses: docker/build-push-action@v7
         with:
           context: .
@@ -49,3 +122,26 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  github-release:
+    needs: [plan, npm, image]
+    if: needs.plan.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-build
+          path: dist
+      - name: Create the GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ needs.plan.outputs.tag }}
+          RELEASE_CHANNEL: ${{ needs.plan.outputs.channel }}
+        shell: bash
+        run: |
+          args=(--latest)
+          if [[ "$RELEASE_CHANNEL" == beta ]]; then args=(--prerelease --latest=false); fi
+          gh release upload "$RELEASE_TAG" dist/appercot-linux-x64.tar.gz --repo "$GITHUB_REPOSITORY" --clobber
+          gh release edit "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --draft=false "${args[@]}"

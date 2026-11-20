@@ -136,15 +136,31 @@ describe('test control API', () => {
       expect(response.status).toBe(503)
       expect(await response.json()).toMatchObject({ error: { code: 'TEST_RESET_IN_PROGRESS' } })
     }
+    await expect(
+      client.createUser({
+        username: 'while_paused',
+        displayName: 'While paused',
+        password: 'test-password',
+      }),
+    ).rejects.toMatchObject({ status: 503, code: 'TEST_RESET_IN_PROGRESS' })
     release()
     await resetting
   })
 
   test('maps missing fixtures and unknown control paths to machine-readable errors', async () => {
+    const lifecycle: string[] = []
+    barrier.onBeforeDrain(() => {
+      lifecycle.push('paused')
+    })
+    barrier.onAfterReset(() => {
+      lifecycle.push('resumed')
+    })
     await expect(client.deleteChat('missing')).rejects.toMatchObject({
       status: 404,
       code: 'TEST_FIXTURE_NOT_FOUND',
     })
+    expect(lifecycle).toEqual(['paused', 'resumed'])
+    await client.ready()
     const response = await fetch(`http://127.0.0.1:${server.port}/_appercot/test/unknown`, {
       headers: { authorization: 'Bearer control-secret' },
     })

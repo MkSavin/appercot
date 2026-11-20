@@ -48,17 +48,18 @@ export class OperationBarrier {
     this.pendingResets += 1
     for (const controller of this.active) controller.abort()
     const result = this.tail.then(async () => {
-      await this.options.beforeDrain?.()
-      for (const handler of this.beforeDrainHandlers) await handler()
-      for (const controller of this.active) controller.abort()
-      while (this.active.size) {
-        await new Promise<void>((resolve) => this.waiters.add(resolve))
-      }
       try {
-        const value = await operation()
-        await this.options.afterReset?.()
-        for (const handler of this.afterResetHandlers) await handler()
-        return value
+        try {
+          await this.options.beforeDrain?.()
+          for (const handler of this.beforeDrainHandlers) await handler()
+          while (this.active.size) {
+            await new Promise<void>((resolve) => this.waiters.add(resolve))
+          }
+          return await operation()
+        } finally {
+          await this.options.afterReset?.()
+          for (const handler of this.afterResetHandlers) await handler()
+        }
       } finally {
         this.pendingResets -= 1
         if (!this.pendingResets) this.paused = false

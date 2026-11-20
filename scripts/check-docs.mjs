@@ -137,6 +137,57 @@ for (const path of sourcePaths) {
   }
 }
 
+const guidePaths = scan('docs/guide')
+  .filter((path) => path.endsWith('.md'))
+  .sort()
+const publicDocs = new Map()
+for (const path of ['README.md', ...guidePaths]) {
+  const body = await read(path)
+  publicDocs.set(path, body)
+  if (/\p{Script=Cyrillic}/u.test(body)) fail(path, 'Write public documentation in English')
+  for (const [, target] of body.matchAll(/\]\(([^\s)]+)\)/g)) {
+    const relative = target.split('#')[0]
+    if (!relative || /^[\w+-]+:/.test(target)) continue
+    const resolved = posix.join(posix.dirname(path), relative)
+    if (!existsSync(new URL(resolved, root))) fail(path, `Broken link: ${target}`)
+  }
+}
+
+for (const directory of new Set(guidePaths.map((path) => posix.dirname(path)))) {
+  const index = posix.join(directory, 'index.md')
+  if (!publicDocs.has(index)) fail(index, 'Every public guide folder needs an index.md')
+}
+
+try {
+  const context7 = JSON.parse(await read('context7.json'))
+  if (context7.$schema !== 'https://context7.com/schema/context7.json') {
+    fail('context7.json', 'Use the official Context7 schema URL')
+  }
+  if (typeof context7.projectTitle !== 'string' || !context7.projectTitle.trim()) {
+    fail('context7.json', 'Set a non-empty projectTitle')
+  }
+  if (typeof context7.description !== 'string' || context7.description.length < 10) {
+    fail('context7.json', 'Set a useful description')
+  }
+  if (!Array.isArray(context7.folders) || !context7.folders.includes('docs/guide')) {
+    fail('context7.json', 'Index docs/guide as the public documentation folder')
+  }
+  if (
+    !Array.isArray(context7.excludeFolders) ||
+    !context7.excludeFolders.includes('docs/superpowers')
+  ) {
+    fail('context7.json', 'Exclude historical design documents from Context7')
+  }
+  if (
+    !Array.isArray(context7.rules) ||
+    context7.rules.some((rule) => typeof rule !== 'string' || !rule.trim() || rule.length > 255)
+  ) {
+    fail('context7.json', 'Rules must be non-empty strings of at most 255 characters')
+  }
+} catch (error) {
+  fail('context7.json', error instanceof Error ? error.message : String(error))
+}
+
 const cited = new Set()
 const rows = []
 const documentedWorkarounds = new Set()

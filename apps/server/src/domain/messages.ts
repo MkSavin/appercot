@@ -48,14 +48,19 @@ const insertMessage = (db: AppDatabase, input: InsertMessageInput) => {
   const messageId = Bun.randomUUIDv7()
   return db.transaction((transaction) => {
     attachMedia(transaction, input.chatId, input.content)
+    const previous = transaction
+      .select({ hiddenAt: chats.hiddenAt })
+      .from(chats)
+      .where(eq(chats.id, input.chatId))
+      .get()
     const chat = transaction
       .update(chats)
       .set({ nextSeq: sql`${chats.nextSeq} + 1`, lastMessageAt: now, hiddenAt: null })
       .where(eq(chats.id, input.chatId))
-      .returning({ nextSeq: chats.nextSeq })
+      .returning({ nextSeq: chats.nextSeq, userId: chats.userId, guest: chats.guest })
       .get()
     if (!chat) throw new DomainError('NOT_FOUND', 'Chat was not found')
-    return transaction
+    const inserted = transaction
       .insert(messages)
       .values({
         id: messageId,
@@ -70,21 +75,21 @@ const insertMessage = (db: AppDatabase, input: InsertMessageInput) => {
       })
       .returning()
       .get()
+    if (!inserted) throw new DomainError('INTERNAL', 'Message was not persisted')
+    return { inserted, chat, reopened: previous?.hiddenAt != null }
   })
 }
 
 export const createMessage = (db: AppDatabase, hub: Hub, input: InsertMessageInput) => {
-  const inserted = insertMessage(db, input)
-  if (!inserted) throw new DomainError('INTERNAL', 'Message was not persisted')
+  const { inserted, chat, reopened } = insertMessage(db, input)
   const message = toMessageDto(inserted)
-  const chat = db.select().from(chats).where(eq(chats.id, input.chatId)).get()
-  if (chat && !chat.guest) {
+  if (!chat.guest) {
     pushUserUpdate(db, hub, chat.userId, { type: 'message.new', message })
     if (message.sender === 'bot') hub.notifyBotMessage(chat.userId, input.chatId, message)
     const updated = getChatForUser(db, input.chatId, chat.userId)
     pushUserUpdate(db, hub, chat.userId, {
       type: 'chat.updated',
-      chat: toClientChatDto(updated.chat, updated.bot, hub),
+      chat: toClientChatDto(updated.chat, updated.bot, hub, undefined, reopened ? message : null),
     })
   }
   return message
@@ -208,14 +213,14 @@ export const deleteBotMessage = (
   botId: string,
   params: Params<'deleteMessage'>,
 ) => {
-  const { chat } = getChatForBot(db, params.chatId, botId)
+  const { chat, bot } = getChatForBot(db, params.chatId, botId)
   const existing = db.select().from(messages).where(eq(messages.id, params.messageId)).get()
   if (!existing || existing.chatId !== params.chatId) {
     throw new DomainError('NOT_FOUND', 'Message was not found')
   }
   if (existing.deletedAt !== null) return { ok: true } as const
-  if (existing.sender === 'user' && existing.clientId) {
-    db.transaction((tx) => {
+  const preview = db.transaction((tx) => {
+    if (existing.sender === 'user' && existing.clientId) {
       tx.update(messages)
         .set({ deletedAt: Date.now(), content: { text: '…' }, status: 'processed' })
         .where(eq(messages.id, params.messageId))
@@ -228,16 +233,38 @@ export const deleteBotMessage = (
           ),
         )
         .run()
-    })
-  } else {
-    db.delete(messages).where(eq(messages.id, params.messageId)).run()
-  }
+    } else {
+      tx.delete(messages).where(eq(messages.id, params.messageId)).run()
+    }
+    tx.update(userUpdates)
+      .set({ payload: sql`json_remove(${userUpdates.payload}, '$.chat.preview')` })
+      .where(
+        and(
+          eq(userUpdates.userId, chat.userId),
+          sql`json_extract(${userUpdates.payload}, '$.chat.preview.id') = ${params.messageId}`,
+        ),
+      )
+      .run()
+    if (chat.guest || chat.hiddenAt !== null) return
+    return tx
+      .select()
+      .from(messages)
+      .where(and(eq(messages.chatId, chat.id), isNull(messages.deletedAt)))
+      .orderBy(desc(messages.seq))
+      .get()
+  })
   pushUserUpdate(db, hub, chat.userId, {
     type: 'message.deleted',
     chatId: params.chatId,
     messageId: params.messageId,
     ...(existing.clientId ? { clientId: existing.clientId } : {}),
   })
+  if (preview && preview.seq < existing.seq) {
+    pushUserUpdate(db, hub, chat.userId, {
+      type: 'chat.updated',
+      chat: toClientChatDto(chat, bot, hub, undefined, toMessageDto(preview)),
+    })
+  }
   return { ok: true } as const
 }
 

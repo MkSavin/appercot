@@ -6,6 +6,7 @@
       "!AGENTS.md",
       "!apps/server/schema.graphql",
       "!apps/web/src/shared/api/graphql/generated",
+      "!packages/test/test-results",
       "!**/dist",
       "!**/.data*",
       "!**/.test-data"

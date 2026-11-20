@@ -1,31 +1,144 @@
+<div align="center">
+
+<img src="apps/web/public/icons/icon-512.png" width="112" alt="Appercot logo">
+
 # Appercot
 
-Self-hosted PWA-платформа для бот-приложений без оплаты и подписок. Сейчас поддерживаются общие чаты, каталог и Web Push. Веб-приложения внутри оболочки — следующий режим. Сервер использует Bun, SQLite, GraphQL и WebSocket.
+**An independent home for bots and conversations.**
 
-Документация по устройству проекта и проверяемым инвариантам начинается с [AGENTS.md](AGENTS.md).
+A self-hosted bot messenger and installable PWA. Run the server on your own hardware,
+own the data and bot accounts, and build integrations with a TypeScript SDK.
+No messenger platform or Appercot subscription sits between you and your deployment.
 
-## Быстрый старт для разработки
+[![Bun 1.4.3](https://img.shields.io/badge/Bun-1.4.3-000000?logo=bun)](https://bun.sh)
+[![TypeScript](https://img.shields.io/badge/TypeScript-7-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![React 19](https://img.shields.io/badge/React-19-149eca?logo=react&logoColor=white)](https://react.dev/)
+[![SQLite](https://img.shields.io/badge/SQLite-Drizzle-003b57?logo=sqlite&logoColor=white)](https://orm.drizzle.team/)
+[![Docker Compose](https://img.shields.io/badge/Docker-Compose-2496ed?logo=docker&logoColor=white)](https://docs.docker.com/compose/)
+[![Context7](https://img.shields.io/badge/Docs-Context7-6e56cf)](docs/guide/ai/context7.md)
 
-Требуется Bun 1.4.3.
+[Install](#install-in-five-minutes) · [Why Appercot](#why-appercot) · [Documentation](docs/guide/index.md) · [Architecture](#how-it-works) · [AI setup](docs/guide/ai/context7.md)
+
+</div>
+
+---
+
+## Why Appercot
+
+**The primary goal is an independent service.** Telegram is a hosted messenger with a global network; Appercot is a service you operate yourself. That makes it a better fit when ownership of the platform, data, and bot runtime is the requirement.
+
+|                                                         | Telegram |                **Appercot**                |
+| ------------------------------------------------------- | :------: | :----------------------------------------: |
+| You operate the service                                 |    No    |                  **Yes**                   |
+| Accounts, conversations, and files stay in your storage |    No    |                  **Yes**                   |
+| Bot tokens come from your own server                    |    No    |                  **Yes**                   |
+| Server behavior and upgrade timing are yours to control |    No    |                  **Yes**                   |
+| Backup, retention, and deletion policies are yours      | Limited  |                  **Yes**                   |
+| Existing global user network and mature native clients  | **Yes**  |                     No                     |
+| Subscription charged by Appercot                        |   None   | **None — you pay for your infrastructure** |
+
+Telegram remains the better choice when immediate reach and managed delivery matter most. Appercot is for private communities, products, and integrations that must not depend on another messenger's accounts, API policy, or availability decisions.
+
+Read the full [independence rationale and trade-offs](docs/guide/concepts/independence.md).
+
+## What you get
+
+**In the browser.** An installable React PWA with shared chats, a bot catalog, invitations, roles, message history, keyboards, Markdown, media, and Web Push. Desktop and mobile layouts use the same server and account model.
+
+**For bot developers.** `@appercot/chat` provides typed RPC, automatic reconnects, durable event acknowledgement, commands, callbacks, shortcuts, per-chat JSON storage, validated multi-step flows, and file uploads.
+
+```ts
+import { createBot } from '@appercot/chat'
+
+const bot = createBot({
+  url: process.env.BOT_URL ?? 'ws://localhost:3000/api/bot/ws',
+  token: process.env.BOT_TOKEN!,
+})
+
+const start = bot.command('start', 'Start', (context) => context.reply('Ready')).roles('all')
+
+bot.on('chat_started', (context) => context.replyWithCommand(start, 'Use %s to begin.'))
+
+await bot.start({ commands: [start] })
+```
+
+**For integration tests.** `@appercot/test` starts the real GraphQL, WebSocket, SQLite, media, and SPA stack. Its `AppercotTestClient` works with Bun, Vitest, Jest, and Playwright without a mock server or runner-specific client.
+
+**For operators.** One Bun application, SQLite, local disk or S3-compatible media, automatic HTTPS through Caddy, a pinned MinIO Compose stack, and documented backup and recovery.
+
+## Install in five minutes
+
+You need Docker with Compose, a domain pointing to your server, and ports 80 and 443 open. Clone this repository and enter its directory, then:
 
 ```bash
 cp .env.example .env
-# Задайте ADMIN_PASSWORD в .env (минимум 8 символов).
+# Set DOMAIN, ADMIN_PASSWORD, and a separate MINIO_ROOT_PASSWORD in .env.
+docker compose up --build -d
+```
+
+Caddy obtains and renews TLS automatically. Open `https://DOMAIN`, sign in as the initial owner, and create your first bot under **Settings → Bots**.
+
+```bash
+docker compose ps
+docker compose logs app minio minio-init caddy
+docker compose up --build -d   # rebuild after pulling an update
+```
+
+See the [Docker deployment guide](docs/guide/deployment/docker.md) for DNS, credentials, volumes, and updates. For a standalone binary, see [local development and build](docs/guide/getting-started/local-development.md).
+
+## Local development
+
+Bun 1.4.3 is required:
+
+```bash
+cp .env.example .env
+# Set ADMIN_PASSWORD in .env (minimum eight characters).
 bun install --frozen-lockfile
 bun run dev
 ```
 
-Веб-клиент открывается на `http://localhost:5173`, API — на `http://localhost:3000`. При первом запуске создаётся владелец `admin` с паролем из `ADMIN_PASSWORD`.
-
-Создайте бота в настройках на вкладке «Боты», скопируйте его токен и запустите пример.
+The web client opens at `http://localhost:5173`; the API listens at `http://localhost:3000`. Run the included bot after copying a token from bot settings:
 
 ```bash
-BOT_TOKEN='<botId>:<token>' BOT_URL='ws://localhost:3000/api/bot/ws' bun examples/echo-bot/index.ts
+BOT_TOKEN='<botId>:<token>' \
+BOT_URL='ws://localhost:3000/api/bot/ws' \
+bun examples/echo-bot/index.ts
 ```
 
-## Тестовое окружение для разработчиков ботов
+Continue with [your first bot](docs/guide/getting-started/first-bot.md), the [echo example](examples/echo-bot/index.ts), or the [wizard example](examples/wizard-bot/index.ts).
 
-`@appercot/test` запускает настоящие GraphQL, WebSocket, SQLite, файловое хранилище и SPA без mock-сервера. Соберите SPA, задайте тестовые credentials и запустите CLI отдельным процессом:
+## How it works
+
+The server, protocol, SDK, PWA, and test environment live in one repository so a deployment can be inspected and changed as a whole.
+
+```mermaid
+flowchart LR
+    Browser["React PWA"] <-- "GraphQL + user WebSocket" --> Server["Bun server"]
+    Bot["Your bot + @appercot/chat"] <-- "RPC + events + ACK" --> Server
+    Server --> SQLite[("SQLite")]
+    Server --> Media["Local disk or S3"]
+    Browser <-- "Web Push" --> Server
+```
+
+What that provides in practice:
+
+- **Bot events are not removed before acknowledgement.** The server persists an outbox entry, the SDK handles events serially per chat, and `ackOnError: false` leaves failed events available for redelivery.
+- **Repeated user sends are idempotent.** The same chat and client ID return the existing message rather than creating a duplicate.
+- **Media is not public by default.** Original and byte-range requests authorize the caller against the owning chat.
+- **Tests exercise real behavior.** Reset revokes affected sessions and sockets, restores baseline fixtures, and preserves global sequence monotonicity.
+
+See [architecture](docs/guide/concepts/architecture.md), [security](docs/guide/concepts/security.md), and [bot lifecycle](docs/guide/bots/connection.md).
+
+## Tests
+
+```bash
+bun test              # unit and integration tests
+bun run test:minio    # disk and MinIO media tests with Docker
+bun run check         # docs, lint, layers, GraphQL, types, and tests
+bun run build         # production SPA and standalone server
+```
+
+Build the SPA and start the real test environment in a separate process:
 
 ```bash
 bun run --filter '@appercot/web' build
@@ -33,12 +146,10 @@ export ADMIN_PASSWORD='test-admin-password'
 export ALICE_PASSWORD='test-alice-password'
 export ECHO_BOT_TOKEN='bot-echo:test-secret'
 export BOT_APPERCOT_TEST_TOKEN='test-control-token'
-bun packages/test/src/cli.ts --config examples/appercot.test.json
+bun --no-env-file packages/test/src/cli.ts --config examples/appercot.test.json
 ```
 
-`--config` имеет приоритет над `APPERCOT_CONFIG`. Для отдельного env-файла используйте опцию Bun до пути скрипта: `bun --env-file=.env.test packages/test/src/cli.ts --config examples/appercot.test.json`. После migrations, seed и listen CLI печатает в stdout одну строку `{"endpoint":"http://127.0.0.1:…"}`; диагностика идёт в stderr. Остановить процесс можно SIGINT/SIGTERM либо закрытием его stdin. SQLite и артефакты остаются для диагностики, lock снимается. При повторном запуске маркированного каталога CLI восстанавливает `baseline.json` с прежними ID/credentials. Этот файл содержит тестовые секреты: используйте только одноразовые credentials и не публикуйте dataDir.
-
-В runner передаются `BOT_APPERCOT_TEST_ENDPOINT` и `BOT_APPERCOT_TEST_TOKEN`. Control token остаётся в тестовом процессе; браузеру нужен только endpoint. Клиент не импортирует API runner или Bun:
+The CLI prints `{"endpoint":"http://127.0.0.1:…"}` to stdout. Pass that endpoint and the control token to a runner:
 
 ```ts
 import { AppercotTestClient } from '@appercot/test'
@@ -46,7 +157,6 @@ import { AppercotTestClient } from '@appercot/test'
 const appercot = new AppercotTestClient({
   endpoint: process.env.BOT_APPERCOT_TEST_ENDPOINT!,
   token: process.env.BOT_APPERCOT_TEST_TOKEN!,
-  timeoutMs: 10_000,
 })
 
 beforeAll(() => appercot.ready())
@@ -54,141 +164,63 @@ beforeEach(() => appercot.flushState())
 afterAll(() => bot.stop())
 ```
 
-`fixtures()` возвращает неизменяемый baseline с исходными ID, паролями и bot tokens. `createUser`, `createBot`, `createChat` возвращают fixture и credentials; `sendMessage` использует обычный путь выбранной стороны чата, поэтому пользовательский `clientId` нужно повторять при retry. HTTP и validation errors представлены `AppercotTestClientError`; сетевые ошибки и timeout имеют отдельные коды без HTTP status.
-
-Семантика очистки:
-
-- `flushState()` отзывает все сессии и восстанавливает исходные ID, credentials, чаты и историю. Глобальные номера updates/outbox не используются повторно.
-- `flushUser(id)` сохраняет профиль, credentials и созданные боты, но удаляет сессии, push subscriptions, чаты и связанные messages/KV/events/files. Baseline-чаты не пересоздаются.
-- `deleteUser(id)` также удаляет учётную запись; владельцем её ботов становится `null` по обычному FK-правилу.
-- `flushChat(id)` восстанавливает baseline membership/settings/history либо очищает runtime-чат с сохранением текущего membership. Несовместимые роли дают `409 TEST_FIXTURE_CONFLICT`.
-- `deleteChat(id)` физически удаляет только этот чат и связанные данные. Отсутствующий ID даёт `404 TEST_FIXTURE_NOT_FOUND`.
-- Удаляются только зарегистрированные окружением файлы/S3-ключи. Ошибку I/O можно повторить следующей очисткой: pending deletion сохраняется в SQLite.
-
-Reset/delete сериализуются: новые state-запросы во время сброса получают `503 TEST_RESET_IN_PROGRESS`, затронутые сокеты переподключаются, SPA получает полный refresh через обычную синхронизацию. Независимые параллельные suites должны использовать отдельные endpoint и dataDir.
-
-Один сценарий Bun/Vitest/Jest с командой, callback и reconnect запускается вместе с отдельным CLI командой:
+Run all included compatibility scenarios, including headless Chromium:
 
 ```bash
-bun run --filter '@appercot/test' test:compatibility
+bun packages/test/scripts/run-compatibility.ts --with-browser
 ```
 
-Playwright-пример использует внешний endpoint и только стабильные `data-test-id`:
+The control API is enabled only by the test CLI. Never expose it or its token in production. Full fixture and cleanup semantics are in the [testing guide](docs/guide/testing/index.md).
 
-```bash
-bun run --filter '@appercot/test' test:browser
-bun run --filter '@appercot/test' test:browser -- --headed
+## Development
+
+```text
+apps/server          Bun, GraphQL, domain, WebSockets, SQLite, media
+apps/web             React PWA and Feature-Sliced frontend
+packages/protocol    Shared Zod wire schemas
+packages/chat        Bot SDK
+packages/test        Real test environment and runner-agnostic client
+examples             Runnable echo and wizard bots
+docs/guide           Current English user and developer documentation
+.agents              Source-level invariants and troubleshooting
 ```
 
-Обычный сервер тоже читает `APPERCOT_CONFIG`, но принимает только launch-секции; `users`, `bots`, `chats` и `test` разрешены исключительно тестовому CLI. Наличие `BOT_APPERCOT_TEST_TOKEN` не включает control API в production.
+Start with [project structure](docs/guide/development/project-structure.md) and [verification workflow](docs/guide/development/workflow.md). Coding agents and maintainers must also read [AGENTS.md](AGENTS.md) before changing code.
 
-## Проверка и production-сборка
+## Documentation and AI
 
-```bash
-bun run check
-bun run build
+The [documentation index](docs/guide/index.md) divides current instructions into small pages for setup, bot development, testing, deployment, operations, and contributions.
+
+Appercot includes [`context7.json`](context7.json) so [Context7](https://context7.com) can index the public English guide and provide it to coding assistants. After a maintainer submits the public repository, use the exact library ID shown by Context7:
+
+```text
+Create an Appercot bot with a command, a flow, and a Vitest integration test.
+Use library /OWNER/appercot.
 ```
 
-Сборка создаёт `apps/server/dist/appercot` (на Windows — `appercot.exe`), `public/` и `drizzle/`. Эти три элемента должны оставаться рядом:
+Replace `OWNER` with the real repository owner; adding the configuration file alone does not register the library. See [Context7 setup](docs/guide/ai/context7.md) and [effective prompts](docs/guide/ai/prompting.md).
 
-```bash
-DATA_DIR=.data NODE_ENV=production ADMIN_USERNAME=admin ADMIN_PASSWORD='change-me' ./apps/server/dist/appercot
-```
+## Current scope and roadmap
 
-Сервер раздаёт SPA, GraphQL, файлы и оба WebSocket-эндпоинта на `PORT`.
+- [x] Self-hosted accounts, bot catalog, chats, roles, invitations, and Web Push
+- [x] Commands, callbacks, layout-independent shortcuts, and multi-step flows
+- [x] Local and S3-compatible media with access-controlled delivery
+- [x] Real test server with fixtures and Bun, Vitest, Jest, and Playwright scenarios
+- [ ] Web applications inside the bot shell
+- [ ] Durable browser outbox across reloads
+- [ ] Bounded synchronization catch-up and broader interactive browser coverage
+- [ ] Crash-injection coverage across message, update, and outbox commit boundaries
 
-## Docker Compose с HTTPS
+The detailed technical gaps are tracked in [open gaps](.agents/todo.md). Current documentation does not claim end-to-end encryption or multi-node active-active SQLite deployment.
 
-1. Направьте DNS A/AAAA-запись домена на сервер и откройте порты 80 и 443.
-2. Скопируйте `.env.example` в `.env` и задайте `DOMAIN`, `ADMIN_PASSWORD` и отдельный стойкий `MINIO_ROOT_PASSWORD`.
-3. Запустите:
+---
 
-```bash
-docker compose up --build -d
-```
+<div align="center">
 
-Caddy автоматически получает и обновляет TLS-сертификат. Приложение доступно по `https://DOMAIN`. SQLite и ранее загруженные локальные файлы остаются в `appercot-data`. Новые вложения и миниатюры хранятся в `appercot-media`. Compose собирает закреплённый релиз MinIO из исходников и создаёт бакет при запуске. Проверить состояние можно через `docker compose ps` и `docker compose logs app minio minio-init`.
+Appercot is self-hosted and built on the assumption that you run the service yourself.
 
-Для обновления локальной сборки:
+**Own the server. Own the bots. Own the data.**
 
-```bash
-git pull
-docker compose up --build -d
-```
+[Start with the guide](docs/guide/index.md) · [Deploy with Docker](docs/guide/deployment/docker.md) · [Build a bot](docs/guide/bots/index.md)
 
-CI проверяет код, production-сборку и Docker image. После успешных проверок ветки `master` и тегов `v*` workflow Release публикует образ в `ghcr.io/<owner>/appercot`.
-
-## Переменные окружения
-
-| Переменная                                  | По умолчанию                         | Назначение                                                                                        |
-| ------------------------------------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------- |
-| `PORT`                                      | `3000`                               | Порт HTTP и WebSocket                                                                             |
-| `DATA_DIR`                                  | `.data`; `/data` в Docker            | SQLite и загруженные файлы                                                                        |
-| `PUBLIC_URL`                                | `http://localhost:3000`              | Публичный origin для инвайтов и push                                                              |
-| `DOMAIN`                                    | —                                    | Домен для Compose и Caddy                                                                         |
-| `ADMIN_USERNAME`                            | `admin`                              | Логин первого владельца                                                                           |
-| `ADMIN_PASSWORD`                            | —                                    | Пароль первого владельца, минимум 8 символов                                                      |
-| `BOOTSTRAP_INVITE`                          | —                                    | Необязательный инвайт для первой регистрации                                                      |
-| `ALLOW_REGISTRATION`                        | `true`                               | При `false` отключает регистрацию                                                                 |
-| `ALLOW_USER_INVITES`                        | `true`                               | При `false` отключает создание и редактирование приглашений на платформу                          |
-| `MEDIA_MAX_BYTES`                           | `2147483648`                         | Лимит одного вложения в байтах. `0` снимает лимит приложения                                      |
-| `MEDIA_UPLOADS_PER_ACTOR`                   | `3`                                  | Одновременные загрузки на пользователя или бота                                                   |
-| `MEDIA_ORIGINALS_PER_USER`                  | `4`                                  | Одновременные запросы оригиналов на пользователя                                                  |
-| `MEDIA_TRUSTED_HOSTS`                       | —                                    | Точные имена внутренних хостов импорта через запятую, с портом, если он указан в URL              |
-| `MEDIA_FFMPEG`                              | `ffmpeg` из PATH                     | Путь к FFmpeg для миниатюр                                                                        |
-| `S3_ENDPOINT`                               | —                                    | S3-совместимый endpoint для бинарной установки. При пустом значении используется `DATA_DIR/files` |
-| `S3_BUCKET` / `S3_REGION`                   | `appercot` / `us-east-1`             | Существующий бакет и его регион для бинарной установки                                            |
-| `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY` | —                                    | Пара учётных данных S3 для бинарной установки                                                     |
-| `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD`   | `appercot` / —                       | Учётные данные MinIO в Compose                                                                    |
-| `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY`    | —                                    | Пара ключей Web Push; задаются только вместе                                                      |
-| `NODE_ENV`                                  | `development`; `production` в Docker | Отключает GraphQL Playground в production                                                         |
-
-Сгенерировать VAPID-ключи:
-
-```bash
-bun -e "import { generateVAPIDKeys } from 'web-push'; console.log(generateVAPIDKeys())"
-```
-
-Пустые необязательные переменные считаются незаданными. Не публикуйте `.env` и токены ботов.
-
-Для миниатюр в бинарной установке установите FFmpeg. Он уже входит в контейнер приложения. Просмотр видео зависит от поддержки кодека браузером. API отправки ботом и схема хранения описаны в [документации медиа](.agents/server/media.md).
-
-## Бэкап и восстановление
-
-Сохраняйте `DATA_DIR/totp.key` вместе с резервной копией БД, если кто-либо включил 2FA. При восстановлении верните ключ в `DATA_DIR` до запуска сервера. Ограничьте доступ к ключу и копии БД.
-
-Для бинарной установки остановите запись новых файлов или делайте копию в период низкой активности. SQLite `.backup` создаёт консистентную копию работающей БД:
-
-```bash
-mkdir -p backups/files
-sqlite3 .data/appercot.sqlite ".backup 'backups/appercot.sqlite'"
-cp -a .data/files/. backups/files/
-```
-
-При настроенном S3 включайте бакет в ту же резервную копию, что и SQLite. Сохраняйте объекты с исходными ключами. В Compose копируйте том `appercot-media` при остановленном MinIO либо экспортируйте бакет средствами S3. Перед запуском приложения после восстановления верните и SQLite, и соответствующий бакет.
-
-Для Docker:
-
-```bash
-mkdir -p backups
-docker compose exec app sqlite3 /data/appercot.sqlite ".backup '/data/appercot-backup.sqlite'"
-docker compose cp app:/data/appercot-backup.sqlite backups/appercot.sqlite
-docker compose cp app:/data/files/. backups/files/
-docker compose exec app rm /data/appercot-backup.sqlite
-```
-
-Восстановление в Docker выполняется на остановленном приложении:
-
-```bash
-docker compose stop caddy app
-docker compose cp backups/appercot.sqlite app:/data/appercot.sqlite
-docker compose cp backups/files/. app:/data/files/
-docker compose run --rm --user root --entrypoint chown app -R 10001:10001 /data
-docker compose start app caddy
-```
-
-После восстановления проверьте вход владельца, историю сообщений и доступность файлов.
-
-## Очистка данных
-
-Фоновая задача каждый час очищает обновления старше 30 дней, outbox старше 7 дней и файлы, которые больше суток не привязаны к сообщению. При очистке чата срок для его файлов отсчитывается с момента удаления истории. Обновление образа сохраняет данные в томах.
+</div>

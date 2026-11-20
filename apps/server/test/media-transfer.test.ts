@@ -6,6 +6,7 @@ import { createBot } from '../../../packages/chat/src'
 import { createMediaStorage } from '../src/domain/media-storage'
 import { loadEnv } from '../src/env'
 import { createServerFixture, graphqlRequest } from './helpers'
+import { minioTestConfig } from './minio-config'
 
 const sourceMedia = async () => {
   const ffmpeg = Bun.which('ffmpeg')
@@ -130,10 +131,8 @@ test(
 
 const endpoint = process.env.APPERCOT_TEST_S3_ENDPOINT
 const minio = {
+  ...minioTestConfig,
   S3_ENDPOINT: endpoint,
-  S3_BUCKET: 'appercot-test',
-  S3_ACCESS_KEY_ID: 'appercot-test',
-  S3_SECRET_ACCESS_KEY: 'local-testing-password',
 }
 test.skipIf(!endpoint)(
   'performs the same media round trip with MinIO',
