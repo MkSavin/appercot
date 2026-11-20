@@ -19,12 +19,16 @@ jobs:
     needs: verify
     runs-on: ubuntu-latest
     permissions:
+      actions: read
       contents: write
     outputs:
       version: ${{ steps.release.outputs.version }}
       tag: ${{ steps.release.outputs.tag }}
       channel: ${{ steps.release.outputs.channel }}
       publish: ${{ steps.release.outputs.publish }}
+      release_id: ${{ steps.release.outputs.release_id }}
+      release_target: ${{ steps.release.outputs.release_target }}
+      recovery_run_id: ${{ steps.release.outputs.recovery_run_id }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -43,51 +47,93 @@ jobs:
           tag="v$version"
           channel=latest
           if [[ "$version" == *-* ]]; then channel=beta; fi
-          release=$(gh api --paginate "repos/$GITHUB_REPOSITORY/releases" \
-            --jq ".[] | select(.tag_name == \"$tag\") | [.draft, .target_commitish, .id, (.assets | length)] | @tsv")
+          matches=$(gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/releases" |
+            jq --arg tag "$tag" '[.[][] | select(.tag_name == $tag or
+              (.draft and .name == $tag and (.tag_name | startswith("untagged-"))))]')
+          if [[ "$(jq 'length' <<< "$matches")" -gt 1 ]]; then
+            echo "::error::Multiple releases match $tag."
+            exit 1
+          fi
+          release=$(jq -r '.[] | [.draft, .target_commitish, .id, (.assets | length)] | @tsv' <<< "$matches")
           read -r draft target release_id asset_count <<< "$release"
+          recovery_run_id=''
           publish=true
           if [[ "$draft" == true ]]; then
+            if tag_target=$(git rev-parse --verify --quiet "refs/tags/$tag^{commit}") &&
+               [[ "$tag_target" != "$target" ]]; then
+              echo "::error::Tag $tag points to $tag_target, but the draft targets $target."
+              exit 1
+            fi
             if [[ "$target" != "$GITHUB_SHA" ]]; then
-              if [[ "$asset_count" != 0 || "$GITHUB_SHA" != "$(git rev-parse refs/remotes/origin/master)" ]] ||
-                 git show-ref --verify --quiet "refs/tags/$tag" ||
+              if [[ "$GITHUB_SHA" != "$(git rev-parse refs/remotes/origin/master)" ]] ||
                  ! git merge-base --is-ancestor "$target" "$GITHUB_SHA"; then
                 echo "::error::Release $tag is in progress for $target. Rerun that release workflow."
                 exit 1
               fi
-              for package in protocol chat; do
-                status=$(curl --silent --show-error --max-time 15 --header 'Cache-Control: no-cache' \
-                  --output /dev/null --write-out '%{http_code}' \
-                  "https://registry.npmjs.org/@appercot%2f$package/$version")
-                if [[ "$status" != 404 ]]; then
-                  echo "::error::Cannot move draft $tag. npm returned HTTP $status for @appercot/$package@$version."
-                  exit 1
+              runs=$(gh api --paginate --slurp \
+                "repos/$GITHUB_REPOSITORY/actions/workflows/release.yml/runs?branch=master&event=push&status=failure&head_sha=$target" \
+                --jq '.[].workflow_runs[].id')
+              for run_id in $runs; do
+                ready=$(gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/jobs" \
+                  --jq '[.[].jobs[]] |
+                    any(.[]; .name == "npm" and .conclusion == "success") and
+                    any(.[]; .name == "image" and .conclusion == "success") and
+                    any(.[]; .name == "github-release" and .conclusion == "failure")')
+                if [[ "$ready" == true ]]; then
+                  artifact=$(gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/artifacts?name=release-build" \
+                    --jq 'any(.[].artifacts[]; .name == "release-build" and (.expired | not))')
+                  if [[ "$artifact" == true ]]; then
+                    recovery_run_id=$run_id
+                    echo "Recovering release $tag from run $run_id at $target"
+                    break
+                  fi
                 fi
               done
-              updated_target=$(gh api --method PATCH "repos/$GITHUB_REPOSITORY/releases/$release_id" \
-                -f "target_commitish=$GITHUB_SHA" --jq '.target_commitish')
-              if [[ "$updated_target" != "$GITHUB_SHA" ]]; then
-                echo "::error::GitHub did not move draft $tag to $GITHUB_SHA."
-                exit 1
+              if [[ -z "$recovery_run_id" ]]; then
+                if [[ "$asset_count" != 0 || -n "$tag_target" ]]; then
+                  echo "::error::Cannot move draft $tag with existing assets or a Git tag."
+                  exit 1
+                fi
+                for package in protocol chat; do
+                  status=$(curl --silent --show-error --max-time 15 --header 'Cache-Control: no-cache' \
+                    --output /dev/null --write-out '%{http_code}' \
+                    "https://registry.npmjs.org/@appercot%2f$package/$version")
+                  if [[ "$status" != 404 ]]; then
+                    echo "::error::Cannot move draft $tag. npm returned HTTP $status for @appercot/$package@$version."
+                    exit 1
+                  fi
+                done
+                updated_target=$(gh api --method PATCH "repos/$GITHUB_REPOSITORY/releases/$release_id" \
+                  -f "tag_name=$tag" -f "target_commitish=$GITHUB_SHA" --jq '.target_commitish')
+                if [[ "$updated_target" != "$GITHUB_SHA" ]]; then
+                  echo "::error::GitHub did not move draft $tag to $GITHUB_SHA."
+                  exit 1
+                fi
+                echo "Moved unpublished draft $tag from $target to $GITHUB_SHA"
+                target=$updated_target
               fi
-              echo "Moved unpublished draft $tag from $target to $GITHUB_SHA"
             fi
           elif [[ "$draft" == false ]] || git show-ref --verify --quiet "refs/tags/$tag"; then
             publish=false
           else
-            gh release create "$tag" --repo "$GITHUB_REPOSITORY" \
-              --target "$GITHUB_SHA" --generate-notes --draft
+            target=$GITHUB_SHA
+            release_id=$(gh api --method POST "repos/$GITHUB_REPOSITORY/releases" \
+              -f "tag_name=$tag" -f "name=$tag" -f "target_commitish=$target" \
+              -F generate_release_notes=true -F draft=true --jq '.id')
           fi
           {
             echo "version=$version"
             echo "tag=$tag"
             echo "channel=$channel"
             echo "publish=$publish"
+            echo "release_id=$release_id"
+            echo "release_target=$target"
+            echo "recovery_run_id=$recovery_run_id"
           } >> "$GITHUB_OUTPUT"
 
   npm:
     needs: [verify, plan]
-    if: needs.plan.outputs.publish == 'true'
+    if: needs.plan.outputs.publish == 'true' && needs.plan.outputs.recovery_run_id == ''
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -114,7 +160,7 @@ jobs:
 
   image:
     needs: [verify, plan, npm]
-    if: ${{ !cancelled() && needs.verify.result == 'success' && needs.plan.result == 'success' && (needs.npm.result == 'success' || needs.npm.result == 'skipped') }}
+    if: ${{ !cancelled() && needs.verify.result == 'success' && needs.plan.result == 'success' && needs.plan.outputs.recovery_run_id == '' && (needs.npm.result == 'success' || needs.npm.result == 'skipped') }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -151,23 +197,78 @@ jobs:
 
   github-release:
     needs: [plan, npm, image]
-    if: needs.plan.outputs.publish == 'true'
+    if: >-
+      ${{ !cancelled() && needs.plan.result == 'success' && needs.plan.outputs.publish == 'true' &&
+          ((needs.npm.result == 'success' && needs.image.result == 'success') ||
+           (needs.plan.outputs.recovery_run_id != '' && needs.npm.result == 'skipped' && needs.image.result == 'skipped')) }}
     runs-on: ubuntu-latest
     permissions:
+      actions: read
       contents: write
     steps:
       - uses: actions/download-artifact@v8
+        if: needs.plan.outputs.recovery_run_id == ''
         with:
           name: release-build
           path: dist
-      - name: Create the GitHub release
+      - uses: actions/download-artifact@v8
+        if: needs.plan.outputs.recovery_run_id != ''
+        with:
+          name: release-build
+          path: dist
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ needs.plan.outputs.recovery_run_id }}
+      - name: Finalize the GitHub release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ needs.plan.outputs.tag }}
           RELEASE_CHANNEL: ${{ needs.plan.outputs.channel }}
+          RELEASE_ID: ${{ needs.plan.outputs.release_id }}
+          RELEASE_TARGET: ${{ needs.plan.outputs.release_target }}
         shell: bash
         run: |
-          args=(--latest)
-          if [[ "$RELEASE_CHANNEL" == beta ]]; then args=(--prerelease --latest=false); fi
-          gh release upload "$RELEASE_TAG" dist/appercot-linux-x64.tar.gz --repo "$GITHUB_REPOSITORY" --clobber
-          gh release edit "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --draft=false "${args[@]}"
+          if ! [[ "$RELEASE_ID" =~ ^[1-9][0-9]*$ ]]; then
+            echo "::error::Invalid GitHub release ID."
+            exit 1
+          fi
+          release_path="repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID"
+          release=$(gh api "$release_path")
+          jq -e --arg target "$RELEASE_TARGET" --arg tag "$RELEASE_TAG" '
+            .target_commitish == $target and
+            (.tag_name == $tag or (.draft and .name == $tag and (.tag_name | startswith("untagged-"))))
+          ' <<< "$release" >/dev/null
+          draft=$(jq -r '.draft' <<< "$release")
+          name=appercot-linux-x64.tar.gz
+          archive="dist/$name"
+          checksum=$(sha256sum "$archive")
+          digest="sha256:${checksum%% *}"
+          asset=$(jq -c --arg name "$name" '.assets[] | select(.name == $name)' <<< "$release")
+          if [[ -z "$asset" ]]; then
+            if [[ "$draft" != true ]]; then
+              echo "::error::Published release $RELEASE_TAG is missing $name."
+              exit 1
+            fi
+            upload_url=$(jq -r '.upload_url | split("{")[0]' <<< "$release")
+            expected_url="https://uploads.github.com/$release_path/assets"
+            if [[ "$upload_url" != "$expected_url" ]]; then
+              echo "::error::Unexpected GitHub asset upload URL."
+              exit 1
+            fi
+            asset=$(curl --fail-with-body --silent --show-error \
+              --header "Authorization: Bearer $GH_TOKEN" --header 'Content-Type: application/gzip' \
+              --data-binary "@$archive" "$upload_url?name=$name")
+          fi
+          if ! jq -e --arg digest "$digest" '.state == "uploaded" and .digest == $digest' <<< "$asset" >/dev/null; then
+            echo "::error::Release asset $name does not match the verified archive."
+            exit 1
+          fi
+          if [[ "$draft" != true ]]; then
+            jq -r '.html_url' <<< "$release"
+            exit 0
+          fi
+          prerelease=false
+          latest=true
+          if [[ "$RELEASE_CHANNEL" == beta ]]; then prerelease=true; latest=false; fi
+          gh api --method PATCH "$release_path" -f "tag_name=$RELEASE_TAG" \
+            -f "target_commitish=$RELEASE_TARGET" -F draft=false \
+            -F "prerelease=$prerelease" -f "make_latest=$latest" --jq '.html_url'
