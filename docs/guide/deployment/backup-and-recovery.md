@@ -33,12 +33,12 @@ The `files` copy preserves legacy local attachments. New Compose media lives in 
 Stop the application and TLS proxy before replacing database state:
 
 ```bash
-docker compose stop caddy app garage
+docker compose stop app garage
 docker compose cp backups/appercot.sqlite app:/data/appercot.sqlite
 docker compose cp backups/files/. app:/data/files/
 # Restore backups/totp.key to app:/data/totp.key when applicable.
 docker compose run --rm --user root --entrypoint chown app -R 10001:10001 /data
-docker compose start garage app caddy
+docker compose start garage app
 ```
 
 Restore the matching Garage metadata and data before declaring recovery complete. Starting with a newer database and older objects leaves attachments missing even when message history looks intact.

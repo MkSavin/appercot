@@ -35,7 +35,7 @@ export const SessionList = ({ onSignOut }: { onSignOut: () => void }) => {
     )
   if (!rows) return <PagePlaceholder variant="list" />
   return (
-    <ul className="divide-y">
+    <ul className="divide-y [&>:not(:last-child)]:mb-3 [&>:not(:last-child)]:pb-3">
       {rows.map((row) => (
         <li key={row.id} className="flex flex-wrap items-center gap-3">
           {sessionDeviceType(row.userAgent) === 'mobile' ? (

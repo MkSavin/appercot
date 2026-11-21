@@ -64,24 +64,24 @@ await bot.start({ commands: [start] })
 
 **For integration tests.** `@appercot/test` starts the real GraphQL, WebSocket, SQLite, media, and SPA stack. Its `AppercotTestClient` works with Bun, Vitest, Jest, and Playwright without a mock server or runner-specific client.
 
-**For operators.** One Bun application, SQLite, local disk or S3-compatible media, automatic HTTPS through Caddy, a pinned Garage Compose stack, and documented backup and recovery.
+**For operators.** One Bun application, SQLite, local disk or S3-compatible media through Garage, a configurable host port for an existing reverse proxy, and documented backup and recovery.
 
 ## Install in five minutes
 
-You need Docker with Compose, a domain pointing to your server, and ports 80 and 443 open. Clone this repository and enter its directory, then:
+You need Docker with Compose and OpenSSL. Clone this repository and enter its directory, then:
 
 ```bash
 cp .env.example .env
-# Set APPERCOT_VERSION, DOMAIN, ADMIN_PASSWORD, S3 credentials, and GARAGE_RPC_SECRET in .env.
+# Generate ADMIN_PASSWORD, S3_SECRET_ACCESS_KEY, and GARAGE_RPC_SECRET as shown in the deployment guide.
 docker compose pull
 docker compose up -d
 ```
 
-If the GHCR package is private, run `docker login ghcr.io` before pulling. Caddy obtains and renews TLS automatically. Open `https://DOMAIN`, sign in as the initial owner, and create your first bot under **Settings → Bots**.
+If the GHCR package is private, run `docker login ghcr.io` before pulling. Open `http://localhost:3000`, sign in as the initial owner, and create your first bot under **Settings → Bots**. When using a reverse proxy or public domain, set `PUBLIC_URL` to that external HTTP(S) origin in `.env` first.
 
 ```bash
 docker compose ps
-docker compose logs app garage caddy
+docker compose logs app garage
 # Set a new APPERCOT_VERSION in .env before updating.
 docker compose pull
 docker compose up -d

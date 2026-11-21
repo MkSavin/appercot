@@ -6,7 +6,6 @@
 docker compose ps
 docker compose logs app
 docker compose logs garage
-docker compose logs caddy
 ```
 
 Check certificate issuance, free disk space, database growth, media bucket growth, and failing bot reconnects. Avoid logging full bot WebSocket URLs because the SDK places its token in the connection query string.
