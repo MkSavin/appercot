@@ -19,12 +19,11 @@ Empty optional environment variables are treated as unset. Never publish `.env` 
 | `MEDIA_TRUSTED_HOSTS`      | —                                     | Comma-separated exact internal URL-import hosts, including ports when present |
 | `MEDIA_FFMPEG`             | `ffmpeg` from `PATH`                  | FFmpeg executable for thumbnails                                              |
 | `S3_ENDPOINT`              | —                                     | S3-compatible endpoint for a standalone binary; empty selects local disk      |
-| `S3_BUCKET`                | `appercot`                            | Existing bucket for standalone S3 storage                                     |
-| `S3_REGION`                | `us-east-1`                           | Bucket region                                                                 |
-| `S3_ACCESS_KEY_ID`         | —                                     | Standalone S3 access key                                                      |
-| `S3_SECRET_ACCESS_KEY`     | —                                     | Standalone S3 secret key                                                      |
-| `MINIO_ROOT_USER`          | `appercot`                            | Compose MinIO root user                                                       |
-| `MINIO_ROOT_PASSWORD`      | —                                     | Required Compose MinIO root password                                          |
+| `S3_BUCKET`                | `appercot`                            | S3 bucket; Compose initializes it in Garage                                   |
+| `S3_REGION`                | `us-east-1`; `garage` in Compose      | Bucket region                                                                 |
+| `S3_ACCESS_KEY_ID`         | —                                     | S3 access key; Compose uses it to initialize Garage                           |
+| `S3_SECRET_ACCESS_KEY`     | —                                     | S3 secret key; Compose uses it to initialize Garage                           |
+| `GARAGE_RPC_SECRET`        | —                                     | Required 32-byte hexadecimal Garage cluster secret in Compose                 |
 | `VAPID_PUBLIC_KEY`         | —                                     | Web Push public key; configure both keys together                             |
 | `VAPID_PRIVATE_KEY`        | —                                     | Web Push private key; configure both keys together                            |
 | `NODE_ENV`                 | `development`; `production` in Docker | Disables GraphQL Playground in production                                     |

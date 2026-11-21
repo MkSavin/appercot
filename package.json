@@ -10,7 +10,7 @@
   ],
   "scripts": {
     "dev": "bun run --filter '@appercot/server' --filter '@appercot/web' dev",
-    "test:minio": "bun --no-env-file apps/server/scripts/test-minio.ts",
+    "test:garage": "bun --no-env-file apps/server/scripts/test-garage.ts",
     "build": "bun run graphql:schema && bun run --filter '@appercot/web' build && bun run --filter '@appercot/server' build",
     "build:sdk": "bun --no-env-file scripts/build-sdk.ts",
     "test:sdk-package": "bun --no-env-file scripts/test-sdk-package.ts",

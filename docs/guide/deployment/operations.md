@@ -5,7 +5,7 @@
 ```bash
 docker compose ps
 docker compose logs app
-docker compose logs minio minio-init
+docker compose logs garage
 docker compose logs caddy
 ```
 
@@ -33,7 +33,7 @@ The root [package.json](../../../package.json) defines the release version. When
 
 Change the root version through a normal pull request to start the next release. Subsequent pushes at the same released version publish the development image tags `master` and `sha-<commit>`. If a release fails after publication starts, rerun the failed GitHub Actions run. Published npm archives are reused only when their integrity matches the archives from that run. If neither npm version exists and the draft has no Git tag or assets, a new push to `master` can move the draft forward to include a workflow fix.
 
-If npm and GHCR succeeded and only GitHub release finalization failed, an updated workflow on `master` can finish the draft using the standalone archive from the original run. The draft stays on the original commit. The workflow uploads and finalizes it by release ID, even when GitHub assigns the draft an `untagged-*` name. If GitHub denies tag creation on the older commit, a maintainer with workflow write access can create the version tag at that exact commit and rerun the failed finalization job.
+If npm and GHCR succeeded and only GitHub release finalization failed, an updated workflow on `master` can finish the draft using the standalone archive from the original run. The draft stays on the original commit. The workflow uploads and finalizes it by release ID, even when GitHub assigns the draft an `untagged-*` name. GitHub can deny the final update when workflow files at that commit differ from the default branch. A maintainer with workflow write access can publish the existing draft at its original commit after verifying that the archive was uploaded. [GitHub release update permissions](https://docs.github.com/en/rest/releases/releases#update-a-release)
 
 Pin and review an image before production rollout rather than automatically following a moving tag. Keep a rollback image and a compatible backup. Database migrations can make an older application incompatible with newer data.
 

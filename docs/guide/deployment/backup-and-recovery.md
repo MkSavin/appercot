@@ -26,21 +26,21 @@ docker compose cp app:/data/files/. backups/files/
 docker compose exec app rm /data/appercot-backup.sqlite
 ```
 
-The `files` copy preserves legacy local attachments. New Compose media lives in the `appercot-media` volume. Back up that volume with MinIO stopped, or export the bucket with S3-compatible tooling while preserving object keys. Include `/data/totp.key` when present.
+The `files` copy preserves legacy local attachments. New Compose media lives in the `garage-data` volume. For a consistent Garage backup, stop Garage and preserve both `/var/lib/garage/meta` and `/var/lib/garage/data`; object blocks without metadata are not a complete backup. Include `/data/totp.key` when present.
 
 ## Restore in Docker
 
 Stop the application and TLS proxy before replacing database state:
 
 ```bash
-docker compose stop caddy app
+docker compose stop caddy app garage
 docker compose cp backups/appercot.sqlite app:/data/appercot.sqlite
 docker compose cp backups/files/. app:/data/files/
 # Restore backups/totp.key to app:/data/totp.key when applicable.
 docker compose run --rm --user root --entrypoint chown app -R 10001:10001 /data
-docker compose start app caddy
+docker compose start garage app caddy
 ```
 
-Restore the matching S3 objects or media volume before declaring recovery complete. Starting with a newer database and older objects leaves attachments missing even when message history looks intact.
+Restore the matching Garage metadata and data before declaring recovery complete. Starting with a newer database and older objects leaves attachments missing even when message history looks intact.
 
 After restoration, verify owner login, ordinary user sessions as appropriate, message history, bot connectivity, file downloads, and 2FA accounts. A backup is useful only after its restore procedure has been exercised.

@@ -5,8 +5,8 @@ import { join } from 'node:path'
 import { createBot } from '../../../packages/chat/src'
 import { createMediaStorage } from '../src/domain/media-storage'
 import { loadEnv } from '../src/env'
+import { garageTestConfig } from './garage-config'
 import { createServerFixture, graphqlRequest } from './helpers'
-import { minioTestConfig } from './minio-config'
 
 const sourceMedia = async () => {
   const ffmpeg = Bun.which('ffmpeg')
@@ -130,15 +130,15 @@ test(
 )
 
 const endpoint = process.env.APPERCOT_TEST_S3_ENDPOINT
-const minio = {
-  ...minioTestConfig,
+const garage = {
+  ...garageTestConfig,
   S3_ENDPOINT: endpoint,
 }
 test.skipIf(!endpoint)(
-  'performs the same media round trip with MinIO',
+  'performs the same media round trip with Garage',
   async () => {
     if (!endpoint) return
-    await roundTrip({ ...minio, S3_ENDPOINT: endpoint })
+    await roundTrip({ ...garage, S3_ENDPOINT: endpoint })
   },
   25_000,
 )
@@ -146,7 +146,7 @@ test.skipIf(!endpoint)(
 test.skipIf(!endpoint)(
   'streams multiple S3 parts and reads across a part boundary',
   async () => {
-    const storage = createMediaStorage(loadEnv(minio))
+    const storage = createMediaStorage(loadEnv(garage))
     const id = Bun.randomUUIDv7()
     const chunkSize = 1024 * 1024
     let index = 0
@@ -163,8 +163,14 @@ test.skipIf(!endpoint)(
       await storage.write('s3', id, body, 'application/octet-stream')
       const object = storage.blob('s3', id)
       const boundary = 16 * chunkSize
+      const expectedBoundaryBytes = new Uint8Array([15, 15, 16, 16])
+      const signed = await fetch(storage.source('s3', id), {
+        headers: { range: `bytes=${boundary - 2}-${boundary + 1}` },
+      })
+      expect(signed.status).toBe(206)
+      expect(await signed.bytes()).toEqual(expectedBoundaryBytes)
       const bytes = await new Response(object.slice(boundary - 2, boundary + 2).stream()).bytes()
-      expect(bytes).toEqual(new Uint8Array([15, 15, 16, 16]))
+      expect(bytes).toEqual(expectedBoundaryBytes)
     } finally {
       await storage.remove('s3', id)
     }

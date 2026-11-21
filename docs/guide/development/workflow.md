@@ -31,15 +31,15 @@ This covers Bun, Vitest, Jest, and headless Chromium against the real environmen
 
 ## S3 media tests
 
-With Docker running, execute the disk and MinIO media tests from the repository root.
+With Docker running, execute the disk and Garage media tests from the repository root.
 
 ```bash
-bun run test:minio
+bun run test:garage
 ```
 
-The runner builds the project's pinned MinIO image, starts a temporary container on a loopback port selected by Docker, creates a test bucket, and removes the container and its data when the tests end. The first build downloads the base images and Go dependencies. With FFmpeg available on the host, the tests also verify thumbnail generation.
+The runner pulls the pinned Garage image, starts a temporary container on a loopback port selected by Docker, initializes a test bucket, and removes the container and its anonymous volume when the tests end. The tests cover multipart uploads, ranged reads, and presigned downloads. With FFmpeg available on the host, they also verify thumbnail generation.
 
-To use an existing test instance instead, set `APPERCOT_TEST_S3_ENDPOINT` and run `bun test apps/server/test/media-transfer.test.ts`. That instance must have the bucket and disposable credentials from [the MinIO test configuration](../../../apps/server/test/minio-config.ts).
+To use an existing test instance instead, set `APPERCOT_TEST_S3_ENDPOINT` and run `bun test apps/server/test/media-transfer.test.ts`. That instance must have the bucket, region, and disposable credentials from [the Garage test configuration](../../../apps/server/test/garage-config.ts).
 
 ## Documentation changes
 

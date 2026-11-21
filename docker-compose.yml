@@ -1,10 +1,10 @@
 services:
   app:
-    build: .
+    image: ghcr.io/mksavin/appercot:${APPERCOT_VERSION:?Set APPERCOT_VERSION in .env}
     restart: unless-stopped
     depends_on:
-      minio-init:
-        condition: service_completed_successfully
+      garage:
+        condition: service_healthy
     environment:
       NODE_ENV: production
       DATA_DIR: /data
@@ -20,50 +20,34 @@ services:
       MEDIA_UPLOADS_PER_ACTOR: ${MEDIA_UPLOADS_PER_ACTOR:-3}
       MEDIA_ORIGINALS_PER_USER: ${MEDIA_ORIGINALS_PER_USER:-4}
       MEDIA_TRUSTED_HOSTS: ${MEDIA_TRUSTED_HOSTS:-}
-      S3_ENDPOINT: http://minio:9000
+      S3_ENDPOINT: http://garage:3900
       S3_BUCKET: ${S3_BUCKET:-appercot}
-      S3_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-appercot}
-      S3_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD in .env}
+      S3_REGION: garage
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:?Set S3_ACCESS_KEY_ID in .env}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:?Set S3_SECRET_ACCESS_KEY in .env}
     volumes:
       - appercot-data:/data
     expose:
       - "3000"
 
-  minio:
-    image: appercot-minio:community
-    build:
-      context: .
-      dockerfile: Dockerfile.minio
-    command: server /data
+  garage:
+    image: dxflrs/garage:v2.5.0
+    command: /garage server --single-node --default-bucket
     restart: unless-stopped
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-appercot}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD in .env}
-      MINIO_BROWSER: "off"
+      GARAGE_RPC_SECRET: ${GARAGE_RPC_SECRET:?Set GARAGE_RPC_SECRET in .env}
+      GARAGE_DEFAULT_ACCESS_KEY: ${S3_ACCESS_KEY_ID:?Set S3_ACCESS_KEY_ID in .env}
+      GARAGE_DEFAULT_SECRET_KEY: ${S3_SECRET_ACCESS_KEY:?Set S3_SECRET_ACCESS_KEY in .env}
+      GARAGE_DEFAULT_BUCKET: ${S3_BUCKET:-appercot}
     volumes:
-      - appercot-media:/data
-
-  minio-init:
-    image: appercot-minio:community
-    pull_policy: never
-    depends_on:
-      - minio
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-appercot}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD in .env}
-      S3_BUCKET: ${S3_BUCKET:-appercot}
-    entrypoint:
-      - /bin/sh
-      - -ec
-      - |
-        for attempt in $$(seq 1 30); do
-          if mc alias set local http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD" >/dev/null 2>&1 &&
-             mc mb --ignore-existing "local/$$S3_BUCKET"; then
-            exit 0
-          fi
-          sleep 2
-        done
-        exit 1
+      - ./garage.toml:/etc/garage.toml:ro
+      - garage-data:/var/lib/garage
+    healthcheck:
+      test: ["CMD", "/garage", "status"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
 
   caddy:
     image: caddy:2.10.2-alpine
@@ -84,6 +68,6 @@ services:
 
 volumes:
   appercot-data:
-  appercot-media:
+  garage-data:
   caddy-data:
   caddy-config:

@@ -24,4 +24,4 @@ await context.replyWithFile(signedClipUrl, {
 - FFmpeg extracts still images and thumbnails. The original stays byte-for-byte intact. Playback and seeking depend on the browser's support for the original format and codec.
 - SQLite tracks attachment state. Orphaned files and files detached by chat deletion or clearing are eligible for background cleanup after 24 hours. Back up both SQLite and the corresponding media objects.
 
-[Bun S3 API](https://bun.com/docs/runtime/s3) · [MinIO source release](https://github.com/minio/minio/releases/tag/RELEASE.2025-10-15T17-29-55Z)
+[Bun S3 API](https://bun.com/docs/runtime/s3) · [Garage quick start](https://garagehq.deuxfleurs.fr/documentation/quick-start/) · [Garage S3 compatibility](https://garagehq.deuxfleurs.fr/documentation/reference-manual/s3-compatibility/)

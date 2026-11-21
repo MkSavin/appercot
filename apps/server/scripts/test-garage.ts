@@ -1,40 +1,43 @@
 import { resolve } from 'node:path'
 import { $ } from 'bun'
-import { minioTestConfig } from '../test/minio-config'
+import { garageTestConfig } from '../test/garage-config'
 
 const workspace = resolve(import.meta.dir, '../../..')
-const image = 'appercot-minio:test'
-const { S3_BUCKET, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY } = minioTestConfig
+const configPath = resolve(workspace, 'garage.toml').replaceAll('\\', '/')
+const image = 'dxflrs/garage:v2.5.0'
+const { S3_BUCKET, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY } = garageTestConfig
 
-const waitUntilReady = async (endpoint: string) => {
+const waitUntilReady = async (container: string) => {
   const deadline = Date.now() + 30_000
   while (Date.now() < deadline) {
-    const ready = await fetch(`${endpoint}/minio/health/ready`, {
-      signal: AbortSignal.timeout(1000),
-    }).then(
-      (response) => response.ok,
-      () => false,
-    )
-    if (ready) return
+    const ready = await $`docker exec ${container} /garage status`.nothrow().quiet()
+    if (ready.exitCode === 0) return
     await Bun.sleep(250)
   }
-  throw new Error('MinIO did not become ready within 30 seconds')
+  throw new Error('Garage did not become ready within 30 seconds')
 }
 
-await $`docker build --file Dockerfile.minio --tag ${image} .`.cwd(workspace)
 const containerOptions = [
   '--detach',
   '--rm',
   '--publish',
-  '127.0.0.1::9000',
+  '127.0.0.1::3900',
+  '--volume',
+  `${configPath}:/etc/garage.toml:ro`,
+  '--volume',
+  '/var/lib/garage',
   '--env',
-  `MINIO_ROOT_USER=${S3_ACCESS_KEY_ID}`,
+  `GARAGE_RPC_SECRET=${'1'.repeat(64)}`,
   '--env',
-  `MINIO_ROOT_PASSWORD=${S3_SECRET_ACCESS_KEY}`,
+  `GARAGE_DEFAULT_ACCESS_KEY=${S3_ACCESS_KEY_ID}`,
   '--env',
-  'MINIO_BROWSER=off',
+  `GARAGE_DEFAULT_SECRET_KEY=${S3_SECRET_ACCESS_KEY}`,
+  '--env',
+  `GARAGE_DEFAULT_BUCKET=${S3_BUCKET}`,
 ]
-const container = (await $`docker run ${containerOptions} ${image} server /data`.text()).trim()
+const container = (
+  await $`docker run ${containerOptions} ${image} /garage server --single-node --default-bucket`.text()
+).trim()
 
 let stopping: Promise<void> | undefined
 const stop = () =>
@@ -53,11 +56,9 @@ process.once('SIGINT', interrupt)
 process.once('SIGTERM', terminate)
 
 try {
-  const address = (await $`docker port ${container} 9000/tcp`.text()).trim()
+  await waitUntilReady(container)
+  const address = (await $`docker port ${container} 3900/tcp`.text()).trim()
   const endpoint = `http://${address}`
-  await waitUntilReady(endpoint)
-  await $`docker exec ${container} mc alias set local http://127.0.0.1:9000 ${S3_ACCESS_KEY_ID} ${S3_SECRET_ACCESS_KEY}`
-  await $`docker exec ${container} mc mb local/${S3_BUCKET}`
   await $`${process.execPath} --no-env-file test apps/server/test/media-transfer.test.ts`
     .cwd(workspace)
     .env({ ...process.env, APPERCOT_TEST_S3_ENDPOINT: endpoint })

@@ -30,7 +30,7 @@ and stop the bot afterward. Explain which endpoint and token the runner needs.
 
 ```text
 Using current Appercot documentation, give me a Docker Compose deployment checklist
-for a domain with automatic TLS and MinIO. Include backup and restore verification.
+for a domain with automatic TLS and Garage. Include backup and restore verification.
 Do not expose test control APIs or invent high-availability support.
 ```
 

@@ -64,7 +64,7 @@ await bot.start({ commands: [start] })
 
 **For integration tests.** `@appercot/test` starts the real GraphQL, WebSocket, SQLite, media, and SPA stack. Its `AppercotTestClient` works with Bun, Vitest, Jest, and Playwright without a mock server or runner-specific client.
 
-**For operators.** One Bun application, SQLite, local disk or S3-compatible media, automatic HTTPS through Caddy, a pinned MinIO Compose stack, and documented backup and recovery.
+**For operators.** One Bun application, SQLite, local disk or S3-compatible media, automatic HTTPS through Caddy, a pinned Garage Compose stack, and documented backup and recovery.
 
 ## Install in five minutes
 
@@ -72,16 +72,19 @@ You need Docker with Compose, a domain pointing to your server, and ports 80 and
 
 ```bash
 cp .env.example .env
-# Set DOMAIN, ADMIN_PASSWORD, and a separate MINIO_ROOT_PASSWORD in .env.
-docker compose up --build -d
+# Set APPERCOT_VERSION, DOMAIN, ADMIN_PASSWORD, S3 credentials, and GARAGE_RPC_SECRET in .env.
+docker compose pull
+docker compose up -d
 ```
 
-Caddy obtains and renews TLS automatically. Open `https://DOMAIN`, sign in as the initial owner, and create your first bot under **Settings → Bots**.
+If the GHCR package is private, run `docker login ghcr.io` before pulling. Caddy obtains and renews TLS automatically. Open `https://DOMAIN`, sign in as the initial owner, and create your first bot under **Settings → Bots**.
 
 ```bash
 docker compose ps
-docker compose logs app minio minio-init caddy
-docker compose up --build -d   # rebuild after pulling an update
+docker compose logs app garage caddy
+# Set a new APPERCOT_VERSION in .env before updating.
+docker compose pull
+docker compose up -d
 ```
 
 See the [Docker deployment guide](docs/guide/deployment/docker.md) for DNS, credentials, volumes, and updates. For a standalone binary, see [local development and build](docs/guide/getting-started/local-development.md).
@@ -133,7 +136,7 @@ See [architecture](docs/guide/concepts/architecture.md), [security](docs/guide/c
 
 ```bash
 bun test              # unit and integration tests
-bun run test:minio    # disk and MinIO media tests with Docker
+bun run test:garage   # disk and Garage media tests with Docker
 bun run check         # docs, lint, layers, GraphQL, types, and tests
 bun run build         # production SPA and standalone server
 ```
