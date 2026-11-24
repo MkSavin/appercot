@@ -1,6 +1,6 @@
 services:
   app:
-    image: ghcr.io/mksavin/appercot:${APPERCOT_VERSION:-latest}
+    image: ghcr.io/mksavin/appercot:${APPERCOT_VERSION:-next}
     restart: unless-stopped
     depends_on:
       garage:

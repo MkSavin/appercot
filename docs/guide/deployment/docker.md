@@ -10,7 +10,7 @@ Install Docker with Compose and OpenSSL, clone this repository, and enter its di
 cp .env.example .env
 ```
 
-`APPERCOT_VERSION=latest`, `PORT=3000`, `ADMIN_USERNAME=admin`, the Garage bucket, limits, and registration settings are already filled in. The non-secret Garage access key ID also has a valid default. The only required values without defaults are the owner password and two independent secrets.
+`APPERCOT_VERSION=next`, `PORT=3000`, `ADMIN_USERNAME=admin`, the Garage bucket, limits, and registration settings are already filled in. The non-secret Garage access key ID also has a valid default. The only required values without defaults are the owner password and two independent secrets.
 
 ## 2. Generate and insert credentials
 
@@ -50,7 +50,7 @@ PUBLIC_URL=https://appercot.example.com
 
 Use only one of these examples. A reverse proxy must forward HTTP and WebSocket requests to `http://127.0.0.1:3000` on the Docker host. TLS is configured in that proxy, not in this Compose stack. `PUBLIC_URL` is used for invitation links, Web Push, and the `Secure` cookie flag; leaving it as localhost on a remote installation produces incorrect links and cookie behavior.
 
-`APPERCOT_VERSION=latest` follows stable GHCR releases. To make upgrades and rollbacks explicit, replace it with a published tag such as `v0.1.0-beta.1`. Prereleases and development commits do not update `latest`.
+`APPERCOT_VERSION=next` follows the most recently published GHCR release, including prereleases, while `latest` follows only stable releases. To make upgrades and rollbacks explicit, replace it with a published tag such as `v0.1.0-beta.1`. Development commits update neither moving release tag.
 
 The GHCR package must be publicly readable. If it is private, authenticate with a GitHub account that can read it before pulling:
 
@@ -81,7 +81,7 @@ Replace `3000` with the configured `PORT`. Sign in with `ADMIN_USERNAME` and `AD
 
 ## Update a production deployment
 
-Back up first. If you pin releases, set the new `APPERCOT_VERSION` in `.env`; `latest` needs no edit. Then run:
+Back up first. If you pin releases, set the new `APPERCOT_VERSION` in `.env`; `next` and `latest` need no edit. Then run:
 
 ```bash
 docker compose pull

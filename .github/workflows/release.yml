@@ -183,6 +183,7 @@ jobs:
           tags: |
             type=raw,value=master
             type=sha,format=short,prefix=sha-
+            type=raw,value=next,enable=${{ needs.plan.outputs.publish == 'true' }}
             type=raw,value=latest,enable=${{ needs.plan.outputs.publish == 'true' && needs.plan.outputs.channel == 'latest' }}
             type=raw,value=${{ needs.plan.outputs.tag }},enable=${{ needs.plan.outputs.publish == 'true' }}
       - uses: docker/build-push-action@v7
