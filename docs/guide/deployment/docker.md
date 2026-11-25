@@ -48,7 +48,7 @@ PUBLIC_URL=http://appercot.example.com:3000
 PUBLIC_URL=https://appercot.example.com
 ```
 
-Use only one of these examples. A reverse proxy must forward HTTP and WebSocket requests to `http://127.0.0.1:3000` on the Docker host. TLS is configured in that proxy, not in this Compose stack. `PUBLIC_URL` is used for invitation links, Web Push, and the `Secure` cookie flag; leaving it as localhost on a remote installation produces incorrect links and cookie behavior.
+Use only one of these examples. A reverse proxy must forward HTTP and WebSocket requests to `http://127.0.0.1:3000` on the Docker host. TLS is configured in that proxy, not in this Compose stack. `PUBLIC_URL` is used for invitation links, the bot setup `BOT_URL`, Web Push, and the `Secure` cookie flag; leaving it as localhost on a remote installation produces incorrect links, SDK configuration, and cookie behavior. The setup dialog derives `wss://` from HTTPS and `ws://` from HTTP and appends `/api/bot/ws`.
 
 `APPERCOT_VERSION=next` follows the most recently published GHCR release, including prereleases, while `latest` follows only stable releases. To make upgrades and rollbacks explicit, replace it with a published tag such as `v0.1.0-beta.1`. Development commits update neither moving release tag.
 

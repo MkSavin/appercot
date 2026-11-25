@@ -1,3 +1,13 @@
+type AdminBotDiagnostics {
+  connectedAt: Float
+  disconnectedAt: Float
+  lastActivityAt: Float
+  lastErrorAt: Float
+  lastErrorCode: String
+  online: Boolean!
+  pendingEvents: Int!
+}
+
 type AuthSession {
   createdAt: Float!
   current: Boolean!
@@ -186,6 +196,7 @@ enum PlatformRole {
 
 type Query {
   adminBot(botId: ID!): Bot!
+  adminBotDiagnostics(botId: ID!): AdminBotDiagnostics!
   adminBots: [Bot!]!
   adminInvites: [Invite!]!
   adminUser(userId: ID!): User!
@@ -215,6 +226,7 @@ input SendMessageInput {
 }
 
 type Session {
+  botWebSocketUrl: String!
   chats: [Connection!]!
   checkpoint: Int!
   user: User!

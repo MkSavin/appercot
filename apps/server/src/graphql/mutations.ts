@@ -7,6 +7,7 @@ import {
   logoutUser,
   registerUser,
 } from '../auth/session'
+import { createBotWebSocketUrl } from '../domain/bot-connection'
 import { addBot, listUserChats, markChatRead, setChatBlocked } from '../domain/chats'
 import { sendUserMessage } from '../domain/messages'
 import { latestUserSequence } from '../domain/sync'
@@ -20,6 +21,7 @@ const createSessionPayload = (user: UserDto, context: GraphQLContext): SessionDt
   user,
   chats: listUserChats(context.db, context.hub, user.id),
   vapidPublicKey: context.env.VAPID_PUBLIC_KEY ?? null,
+  botWebSocketUrl: createBotWebSocketUrl(context.env.PUBLIC_URL),
   checkpoint: latestUserSequence(context.db, user.id),
 })
 

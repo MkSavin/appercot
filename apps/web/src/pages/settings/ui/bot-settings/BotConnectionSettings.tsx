@@ -8,6 +8,7 @@ import {
   resetBotTokenRequest,
   setBotOwnerRequest,
 } from '@/entities/bot'
+import { BotConnectionGuide } from '@/features/bot-onboarding'
 import { testId, testIds } from '@/shared/lib/test-ids'
 import {
   AlertDialog,
@@ -79,6 +80,7 @@ export const BotConnectionSettings = ({
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+        <BotConnectionGuide />
         {isOwner ? (
           <form
             className="grid w-full items-start gap-2 border-t pt-4 sm:grid-cols-[minmax(0,1fr)_auto]"

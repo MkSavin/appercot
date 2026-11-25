@@ -100,6 +100,26 @@ describe('administration', () => {
       expect((await call(managerCookie, 'query { adminBots { id } }')).data.adminBots).toEqual([
         { id: botId },
       ])
+      const diagnostics =
+        'query($bot: ID!) { adminBotDiagnostics(botId: $bot) { online connectedAt disconnectedAt lastActivityAt lastErrorCode lastErrorAt pendingEvents } }'
+      expect(
+        (await call(managerCookie, diagnostics, { bot: botId })).data.adminBotDiagnostics,
+      ).toEqual({
+        online: false,
+        connectedAt: null,
+        disconnectedAt: null,
+        lastActivityAt: null,
+        lastErrorCode: null,
+        lastErrorAt: null,
+        pendingEvents: 0,
+      })
+      expect(
+        (await call(managerCookie, diagnostics, { bot: foreign.bot.id })).errors?.[0]?.extensions
+          ?.code,
+      ).toBe('FORBIDDEN')
+      expect(
+        (await call(memberCookie, diagnostics, { bot: botId })).errors?.[0]?.extensions?.code,
+      ).toBe('FORBIDDEN')
       const access = 'mutation($bot: ID!) { setBotAccess(botId: $bot, access: by_link) { access } }'
       expect(
         (await call(managerCookie, access, { bot: foreign.bot.id })).errors?.[0]?.extensions?.code,

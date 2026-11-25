@@ -1,5 +1,6 @@
 import type { BotAccess } from '@appercot/protocol'
 import {
+  AdminBotDiagnosticsDocument,
   AdminBotDocument,
   AdminBotsDocument,
   BotInvitationsDocument,
@@ -27,6 +28,11 @@ export const fetchAdminBots = async () => {
 export const fetchAdminBot = async (botId: string) => {
   const result = await graphqlClient.request(AdminBotDocument, { botId })
   return result.adminBot
+}
+
+export const fetchAdminBotDiagnostics = async (botId: string) => {
+  const result = await graphqlClient.request(AdminBotDiagnosticsDocument, { botId })
+  return result.adminBotDiagnostics
 }
 
 export const createBotRequest = async (variables: {

@@ -5,11 +5,14 @@ The included Playwright scenario drives the built SPA through visible controls a
 ```bash
 export BOT_APPERCOT_TEST_ENDPOINT='http://127.0.0.1:12345'
 export BOT_APPERCOT_TEST_TOKEN='test-control-token'
+export ADMIN_PASSWORD='password123'
 bun run --filter '@appercot/test' test:browser
 bun run --filter '@appercot/test' test:browser -- --headed
 ```
 
-Chromium is headless by default. Install its Playwright browser binary if the local installation has not done so already.
+Chromium is headless by default. Install its Playwright browser binary with `bunx playwright install chromium` if the local installation has not done so already. `ADMIN_PASSWORD` must match the test-server owner password.
+
+The onboarding scenarios run the real echo SDK on desktop and mobile viewports. They cover token copying and clipboard fallback, live presence, focus restoration, polling cleanup, opening the chat, and a real `/start` reply.
 
 ## Reset before each scenario
 

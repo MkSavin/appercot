@@ -2,9 +2,11 @@
 
 ## 1. Create the bot
 
-Start the [local server](local-development.md), sign in as the owner, and open **Settings → Bots**. Create a bot and copy its token in the form `<botId>:<token>`.
+Start the [local server](local-development.md), sign in as the owner, and open **Settings → Bots**. The first-bot checklist is optional and can be hidden or restored per account.
 
-The token authenticates one bot. Anyone who obtains it can act as that bot within its chats, so pass it through an environment variable.
+Create a bot. The same dialog then shows `BOT_TOKEN`, `BOT_URL`, and a ready-to-copy echo-bot command. Copy the token or command and confirm that it is saved before closing. The token is shown only once; closing without confirmation asks whether to discard it. The bot settings contain the URL and launch instructions later, but a lost token can only be replaced with **Reset token**.
+
+The token authenticates one bot. Anyone who obtains it can act as that bot within its chats, so pass it through an environment variable. It is kept only in the open dialog's memory, never in browser storage or the page URL.
 
 ## 2. Connect the SDK
 
@@ -31,7 +33,7 @@ await bot.start({ commands: [start] })
 console.log('Bot connected')
 ```
 
-Run it from this repository with the echo example:
+Run the command copied from the dialog from the repository root. It uses the echo example and has this form:
 
 ```bash
 BOT_TOKEN='<botId>:<token>' \
@@ -39,7 +41,9 @@ BOT_URL='ws://localhost:3000/api/bot/ws' \
 bun examples/echo-bot/index.ts
 ```
 
-For a remote TLS deployment, use `wss://your-domain.example/api/bot/ws`.
+The WebSocket URL is derived from `PUBLIC_URL`: HTTP becomes `ws://`, HTTPS becomes `wss://`, and the path is `/api/bot/ws`. Set the exact external origin, including a nonstandard port, when running behind a reverse proxy.
+
+While the setup step is open, Appercot checks server presence and safe connection diagnostics. The checklist shows only online state, timestamps, stable error codes, and the number of pending events — never the token or event payload. Once the bot is online, open its chat and send `/start` to verify the real reply.
 
 ## 3. Understand startup and shutdown
 

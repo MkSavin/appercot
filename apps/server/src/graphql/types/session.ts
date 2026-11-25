@@ -36,6 +36,7 @@ export interface SessionDto {
   user: UserDto
   chats: ConnectionDto[]
   vapidPublicKey: string | null
+  botWebSocketUrl: string
   checkpoint: number
 }
 
@@ -114,6 +115,7 @@ builder.objectType(SessionType, {
       resolve: (session) => session.chats,
     }),
     vapidPublicKey: field.exposeString('vapidPublicKey', { nullable: true }),
+    botWebSocketUrl: field.exposeString('botWebSocketUrl'),
     checkpoint: field.exposeInt('checkpoint'),
   }),
 })

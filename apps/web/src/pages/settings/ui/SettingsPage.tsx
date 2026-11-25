@@ -109,7 +109,7 @@ export const SettingsPage = () => {
             <NotificationSettings vapidPublicKey={vapidPublicKey} />
           ) : null}
           {showBot ? (
-            <BotSettings key={showBot} botId={showBot} isOwner={isOwner} />
+            <BotSettings key={`${user.id}:${showBot}`} botId={showBot} isOwner={isOwner} />
           ) : showUser ? (
             <AdminAccountSettings key={showUser} userId={showUser} />
           ) : active.id === 'bots' || active.id === 'users' || active.id === 'invites' ? (

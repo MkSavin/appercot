@@ -2,7 +2,7 @@ import '../src/shared/config/i18n'
 import { describe, expect, test } from 'bun:test'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { Router } from 'wouter'
-import { BotTokenDialog } from '../src/features/bot-token-manage'
+import { BotConnectionSnippet } from '../src/features/bot-onboarding'
 import { authHref, readAuthReturn } from '../src/shared/lib/auth-return'
 import { BotCatalog } from '../src/widgets/bot-catalog'
 
@@ -45,13 +45,19 @@ describe('catalog and administration', () => {
     expect(added).not.toContain('type="button"')
   })
 
-  test('renders a revealed bot token in a copyable read-only field', () => {
+  test('renders the token, WebSocket URL and launch command as copyable values', () => {
     const markup = renderToStaticMarkup(
-      <BotTokenDialog open token="bot-1:secret" botName="Example" onClose={() => {}} />,
+      <BotConnectionSnippet
+        token="bot-1:secret"
+        webSocketUrl="ws://localhost:3000/api/bot/ws"
+        onTokenSaved={() => {}}
+      />,
     )
     expect(markup).toContain('bot-1:secret')
     expect(markup).toContain('readOnly=""')
-    expect(markup).toContain('Копировать токен')
-    expect(markup).toContain('больше не будет показан')
+    expect(markup).toContain('Копировать BOT_TOKEN')
+    expect(markup).toContain('Копировать BOT_URL')
+    expect(markup).toContain('Копировать команду')
+    expect(markup).toContain('bun examples/echo-bot/index.ts')
   })
 })

@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { requireUser } from '../auth/context'
 import { bots } from '../db/schema'
+import { createBotWebSocketUrl } from '../domain/bot-connection'
 import { toBotDto } from '../domain/bots'
 import { listUserChats } from '../domain/chats'
 import { listMessages } from '../domain/messages'
@@ -37,6 +38,7 @@ builder.queryType({
           user,
           chats: listUserChats(context.db, context.hub, user.id),
           vapidPublicKey: context.env.VAPID_PUBLIC_KEY ?? null,
+          botWebSocketUrl: createBotWebSocketUrl(context.env.PUBLIC_URL),
           checkpoint: latestUserSequence(context.db, user.id),
         }
       },

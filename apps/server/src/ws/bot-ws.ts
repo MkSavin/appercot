@@ -98,6 +98,7 @@ export const createBotWebSocketHandlers = (
     if (socket.data.kind !== 'bot') return
     const botId = socket.data.botId
     if (!botId || hub.getBotConnection(botId)?.socket !== socket) return
+    hub.recordBotActivity(botId, socket)
     const parsed = parseBotFrame(frame)
     if (!parsed.success) {
       const requestId = getFrameRequestId(frame)
@@ -133,6 +134,7 @@ export const createBotWebSocketHandlers = (
     } catch (error) {
       const domainError =
         error instanceof DomainError ? error : new DomainError('INTERNAL', 'Internal server error')
+      hub.recordBotError(botId, socket, domainError.code)
       socket.send(
         JSON.stringify({
           t: 'res',

@@ -25,6 +25,7 @@ import {
   updateAdminInvite,
   updateBotInvite,
 } from '../domain/admin'
+import { getAdminBotDiagnostics } from '../domain/bot-connection'
 import { toBotDto } from '../domain/bots'
 import { DomainError } from '../domain/errors'
 import { builder } from './builder'
@@ -73,6 +74,20 @@ builder.objectType(BotMembershipsType, {
   }),
 })
 
+const BotDiagnosticsType =
+  builder.objectRef<ReturnType<typeof getAdminBotDiagnostics>>('AdminBotDiagnostics')
+builder.objectType(BotDiagnosticsType, {
+  fields: (field) => ({
+    online: field.exposeBoolean('online'),
+    connectedAt: field.exposeFloat('connectedAt', { nullable: true }),
+    disconnectedAt: field.exposeFloat('disconnectedAt', { nullable: true }),
+    lastActivityAt: field.exposeFloat('lastActivityAt', { nullable: true }),
+    lastErrorCode: field.exposeString('lastErrorCode', { nullable: true }),
+    lastErrorAt: field.exposeFloat('lastErrorAt', { nullable: true }),
+    pendingEvents: field.exposeInt('pendingEvents'),
+  }),
+})
+
 const execute = <Result>(operation: () => Result) => {
   try {
     return operation()
@@ -88,6 +103,14 @@ builder.queryFields((field) => ({
     resolve: (_, args, ctx) =>
       execute(() =>
         listBotInvites(ctx.db, requireAdmin(ctx), String(args.botId), ctx.env.PUBLIC_URL),
+      ),
+  }),
+  adminBotDiagnostics: field.field({
+    type: BotDiagnosticsType,
+    args: { botId: field.arg.id({ required: true }) },
+    resolve: (_parent, args, context) =>
+      execute(() =>
+        getAdminBotDiagnostics(context.db, context.hub, requireAdmin(context), String(args.botId)),
       ),
   }),
   adminBot: field.field({

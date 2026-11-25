@@ -1,5 +1,6 @@
 import i18next from 'i18next'
 import { initReactI18next } from 'react-i18next'
+import englishOnboarding from './locales/en/onboarding.json'
 import account from './locales/ru/account.json'
 import admin from './locales/ru/admin.json'
 import auth from './locales/ru/auth.json'
@@ -14,6 +15,7 @@ import guest from './locales/ru/guest.json'
 import invitation from './locales/ru/invitation.json'
 import message from './locales/ru/message.json'
 import notFound from './locales/ru/notFound.json'
+import onboarding from './locales/ru/onboarding.json'
 import push from './locales/ru/push.json'
 import registration from './locales/ru/registration.json'
 import settings from './locales/ru/settings.json'
@@ -34,6 +36,7 @@ const resources = {
   invitation,
   message,
   notFound,
+  onboarding,
   push,
   registration,
   settings,
@@ -43,7 +46,7 @@ const resources = {
 export const i18n = i18next.createInstance()
 
 void i18n.use(initReactI18next).init({
-  resources: { ru: resources },
+  resources: { ru: resources, en: { onboarding: englishOnboarding } },
   ns: Object.keys(resources),
   defaultNS: 'global',
   fallbackNS: 'global',

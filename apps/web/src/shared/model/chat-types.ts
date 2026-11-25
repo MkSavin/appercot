@@ -8,6 +8,7 @@ export type SessionPayload = Readonly<{
   user: SessionUser
   chats: ChatConnection[]
   vapidPublicKey: string | null
+  botWebSocketUrl: string
   checkpoint?: number
 }>
 export type MessageDeliveryStatus = Message['status'] | 'pending' | 'failed'

@@ -11,9 +11,18 @@ export interface BotConnection {
   readyForEvents: boolean
 }
 
+export interface BotDiagnostics {
+  connectedAt: number | null
+  disconnectedAt: number | null
+  lastActivityAt: number | null
+  lastErrorCode: string | null
+  lastErrorAt: number | null
+}
+
 /** @anchor DOC:server */
 export class Hub {
   private readonly botConnections = new Map<string, BotConnection>()
+  private readonly botDiagnostics = new Map<string, BotDiagnostics>()
   private readonly userSockets = new Map<string, Set<SocketLike>>()
   private readonly focusedChats = new Map<SocketLike, string | null>()
   private readonly sessionBySocket = new Map<SocketLike, { id: string; expiresAt: number }>()
@@ -24,6 +33,13 @@ export class Hub {
     previous?.socket.close(4001, 'replaced')
     const connection: BotConnection = { socket, inFlight: new Set(), readyForEvents }
     this.botConnections.set(botId, connection)
+    this.botDiagnostics.set(botId, {
+      connectedAt: Date.now(),
+      disconnectedAt: null,
+      lastActivityAt: null,
+      lastErrorCode: null,
+      lastErrorAt: null,
+    })
     return { connection, replaced: previous !== undefined }
   }
 
@@ -31,7 +47,27 @@ export class Hub {
     const current = this.botConnections.get(botId)
     if (current?.socket !== socket) return false
     this.botConnections.delete(botId)
+    const diagnostics = this.botDiagnostics.get(botId)
+    if (diagnostics) diagnostics.disconnectedAt = Date.now()
     return true
+  }
+
+  recordBotActivity(botId: string, socket: SocketLike) {
+    if (this.botConnections.get(botId)?.socket !== socket) return
+    const diagnostics = this.botDiagnostics.get(botId)
+    if (diagnostics) diagnostics.lastActivityAt = Date.now()
+  }
+
+  recordBotError(botId: string, socket: SocketLike, code: string) {
+    if (this.botConnections.get(botId)?.socket !== socket) return
+    const diagnostics = this.botDiagnostics.get(botId)
+    if (!diagnostics) return
+    diagnostics.lastErrorCode = code
+    diagnostics.lastErrorAt = Date.now()
+  }
+
+  getBotDiagnostics(botId: string): Readonly<BotDiagnostics> | undefined {
+    return this.botDiagnostics.get(botId)
   }
 
   getBotConnection(botId: string) {
@@ -89,6 +125,7 @@ export class Hub {
     const bots = [...this.botConnections.values()]
     const users = [...this.userSockets.values()].flatMap((sockets) => [...sockets])
     this.botConnections.clear()
+    this.botDiagnostics.clear()
     this.userSockets.clear()
     this.focusedChats.clear()
     this.sessionBySocket.clear()

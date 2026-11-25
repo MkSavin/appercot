@@ -48,6 +48,7 @@ export const SessionDocument = graphql(`
         }
       }
       vapidPublicKey
+      botWebSocketUrl
       checkpoint
     }
   }
@@ -101,6 +102,7 @@ export const LoginDocument = graphql(`
         }
       }
       vapidPublicKey
+      botWebSocketUrl
       checkpoint
     }
   }
@@ -164,6 +166,7 @@ export const RegisterDocument = graphql(`
         }
       }
       vapidPublicKey
+      botWebSocketUrl
       checkpoint
     }
   }

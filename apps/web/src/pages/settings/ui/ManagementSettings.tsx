@@ -1,19 +1,18 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { fetchAdminBots, type IssuedBotToken, type ManagedBot } from '@/entities/bot'
-import type { SessionUser } from '@/entities/chat'
+import { fetchAdminBots, type ManagedBot } from '@/entities/bot'
+import { type SessionUser, useChatStore } from '@/entities/chat'
 import { type AdminInvite, fetchAdminInvites, fetchAdminUsers } from '@/entities/user'
-import { BotTokenDialog } from '@/features/bot-token-manage'
 import { Button } from '@/shared/ui/button'
 import { PagePlaceholder } from '@/shared/ui/page-placeholder'
 import { AdminDashboard } from '@/widgets/admin-dashboard'
 
 export const ManagementSettings = ({ section }: { section: 'users' | 'invites' | 'bots' }) => {
   const { t } = useTranslation()
+  const userId = useChatStore((state) => state.user?.id)
   const [users, setUsers] = useState<SessionUser[]>([])
   const [invites, setInvites] = useState<AdminInvite[]>([])
   const [bots, setBots] = useState<ManagedBot[]>([])
-  const [issuedToken, setIssuedToken] = useState<IssuedBotToken>()
   const [status, setStatus] = useState<'loading' | 'ready' | 'failed'>('loading')
 
   useEffect(() => {
@@ -54,32 +53,22 @@ export const ManagementSettings = ({ section }: { section: 'users' | 'invites' |
     )
 
   return (
-    <>
-      <AdminDashboard
-        section={section}
-        users={users}
-        invites={invites}
-        bots={bots}
-        onInviteCreated={(invite) =>
-          setInvites((current) =>
-            current.some((item) => item.code === invite.code)
-              ? current.map((item) => (item.code === invite.code ? invite : item))
-              : [invite, ...current],
-          )
-        }
-        onToken={(issued) => {
-          setBots((current) => [{ ...issued.bot, access: 'public', memberCount: 0 }, ...current])
-          setIssuedToken(issued)
-        }}
-      />
-      {issuedToken ? (
-        <BotTokenDialog
-          open
-          token={issuedToken.token}
-          botName={issuedToken.bot.name}
-          onClose={() => setIssuedToken(undefined)}
-        />
-      ) : null}
-    </>
+    <AdminDashboard
+      key={userId}
+      section={section}
+      users={users}
+      invites={invites}
+      bots={bots}
+      onInviteCreated={(invite) =>
+        setInvites((current) =>
+          current.some((item) => item.code === invite.code)
+            ? current.map((item) => (item.code === invite.code ? invite : item))
+            : [invite, ...current],
+        )
+      }
+      onToken={(issued) => {
+        setBots((current) => [{ ...issued.bot, access: 'public', memberCount: 0 }, ...current])
+      }}
+    />
   )
 }

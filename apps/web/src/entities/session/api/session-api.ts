@@ -33,6 +33,7 @@ const toSessionPayload = (session: SessionQuery['session']): SessionPayload => {
       }
     }),
     vapidPublicKey: session.vapidPublicKey,
+    botWebSocketUrl: session.botWebSocketUrl,
     checkpoint: session.checkpoint,
   }
 }

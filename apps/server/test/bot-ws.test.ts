@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm'
 import { createBotToken } from '../src/auth/bot-token'
 import { botCommands, botEvents, bots, chats, users, userUpdates } from '../src/db/schema'
 import { enqueueBotEvent } from '../src/domain/events'
-import { connectBot, createServerFixture, waitFor } from './helpers'
+import { connectBot, createServerFixture, graphqlRequest, waitFor } from './helpers'
 
 const seedBotChat = async (fixture: ReturnType<typeof createServerFixture>) => {
   const userId = Bun.randomUUIDv7()
@@ -128,6 +128,61 @@ describe('bot WebSocket', () => {
       await waitFor(() => fixture.db.select().from(botEvents).all().length === 0)
       expect(fixture.db.select().from(botEvents).all()).toHaveLength(0)
       client.socket.close()
+    } finally {
+      fixture.stop()
+    }
+  })
+
+  test('tracks safe connection diagnostics without token or payload data', async () => {
+    const fixture = createServerFixture()
+    try {
+      const seeded = await seedBotChat(fixture)
+      enqueueBotEvent(fixture.db, {
+        botId: seeded.botId,
+        chatId: seeded.chatId,
+        event: {
+          type: 'chat_started',
+          chat: { id: seeded.chatId, roles: [], blocked: false, createdAt: 1 },
+          user: { id: seeded.userId, username: 'alice', displayName: 'Alice' },
+        },
+      })
+      const login = await graphqlRequest(
+        fixture.baseUrl,
+        'mutation { login(username: "admin", password: "password123") { user { id } } }',
+      )
+      const cookie = login.response.headers.get('set-cookie')
+      if (!cookie) throw new Error('Session cookie is missing')
+      const query =
+        'query($botId: ID!) { adminBotDiagnostics(botId: $botId) { online connectedAt disconnectedAt lastActivityAt lastErrorCode lastErrorAt pendingEvents } }'
+      const read = async () =>
+        (await graphqlRequest(fixture.baseUrl, query, { botId: seeded.botId }, cookie)).body.data
+          .adminBotDiagnostics as Record<string, unknown>
+
+      const client = await connectBot(fixture.baseUrl, seeded.token)
+      await client.next()
+      await client.call('bad-chat', 'sendMessage', {
+        chatId: 'missing-chat',
+        content: { text: 'not exposed in diagnostics' },
+      })
+      const connected = await read()
+      expect(connected).toMatchObject({
+        online: true,
+        disconnectedAt: null,
+        lastErrorCode: 'NOT_FOUND',
+        pendingEvents: 1,
+      })
+      expect(connected.connectedAt).toBeNumber()
+      expect(connected.lastActivityAt).toBeNumber()
+      expect(connected.lastErrorAt).toBeNumber()
+      expect(JSON.stringify(connected)).not.toContain(seeded.token)
+      expect(JSON.stringify(connected)).not.toContain('not exposed in diagnostics')
+
+      client.socket.close()
+      await waitFor(() => !fixture.hub.isBotOnline(seeded.botId))
+      expect(await read()).toMatchObject({ online: false })
+      expect((await read()).disconnectedAt).toBeNumber()
+      fixture.hub.closeAll()
+      expect(fixture.hub.getBotDiagnostics(seeded.botId)).toBeUndefined()
     } finally {
       fixture.stop()
     }

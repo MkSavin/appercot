@@ -2,31 +2,31 @@
 
 Empty optional environment variables are treated as unset. Never publish `.env` or bot tokens.
 
-| Variable                   | Default                               | Purpose                                                                                    |
-| -------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `PORT`                     | `3000`                                | HTTP and WebSocket port; Compose publishes `${PORT}:3000`                                  |
-| `DATA_DIR`                 | `.data`; `/data` in Docker            | SQLite, local files, and the TOTP key                                                      |
-| `PUBLIC_URL`               | `http://localhost:3000`               | External origin for invitations, push, and secure cookies; required behind a reverse proxy |
-| `ADMIN_USERNAME`           | `admin`                               | Initial owner username                                                                     |
-| `ADMIN_PASSWORD`           | —                                     | Initial owner password, minimum eight characters                                           |
-| `BOOTSTRAP_INVITE`         | —                                     | Optional invitation for first registration                                                 |
-| `ALLOW_REGISTRATION`       | `true`                                | Set `false` to disable registration                                                        |
-| `ALLOW_USER_INVITES`       | `true`                                | Set `false` to disable registration-invite creation and editing                            |
-| `MEDIA_MAX_BYTES`          | `2147483648`                          | Per-upload application limit; `0` removes it                                               |
-| `MEDIA_UPLOADS_PER_ACTOR`  | `3`                                   | Concurrent uploads per user or bot                                                         |
-| `MEDIA_ORIGINALS_PER_USER` | `4`                                   | Concurrent original-file requests per user                                                 |
-| `MEDIA_TRUSTED_HOSTS`      | —                                     | Comma-separated exact internal URL-import hosts, including ports when present              |
-| `MEDIA_FFMPEG`             | `ffmpeg` from `PATH`                  | FFmpeg executable for thumbnails                                                           |
-| `S3_ENDPOINT`              | —                                     | S3-compatible endpoint for a standalone binary; empty selects local disk                   |
-| `S3_BUCKET`                | `appercot`                            | S3 bucket; Compose initializes it in Garage                                                |
-| `S3_REGION`                | `us-east-1`; `garage` in Compose      | Bucket region                                                                              |
-| `S3_ACCESS_KEY_ID`         | —                                     | S3 access key; Compose uses it to initialize Garage                                        |
-| `S3_SECRET_ACCESS_KEY`     | —                                     | S3 secret key; Compose uses it to initialize Garage                                        |
-| `GARAGE_RPC_SECRET`        | —                                     | Required 32-byte hexadecimal Garage cluster secret in Compose                              |
-| `VAPID_PUBLIC_KEY`         | —                                     | Web Push public key; configure both keys together                                          |
-| `VAPID_PRIVATE_KEY`        | —                                     | Web Push private key; configure both keys together                                         |
-| `NODE_ENV`                 | `development`; `production` in Docker | Disables GraphQL Playground in production                                                  |
-| `APPERCOT_CONFIG`          | —                                     | Optional JSON launch configuration path                                                    |
+| Variable                   | Default                               | Purpose                                                                                |
+| -------------------------- | ------------------------------------- | -------------------------------------------------------------------------------------- |
+| `PORT`                     | `3000`                                | HTTP and WebSocket port; Compose publishes `${PORT}:3000`                              |
+| `DATA_DIR`                 | `.data`; `/data` in Docker            | SQLite, local files, and the TOTP key                                                  |
+| `PUBLIC_URL`               | `http://localhost:3000`               | External origin for invitations, bot WebSocket configuration, push, and secure cookies |
+| `ADMIN_USERNAME`           | `admin`                               | Initial owner username                                                                 |
+| `ADMIN_PASSWORD`           | —                                     | Initial owner password, minimum eight characters                                       |
+| `BOOTSTRAP_INVITE`         | —                                     | Optional invitation for first registration                                             |
+| `ALLOW_REGISTRATION`       | `true`                                | Set `false` to disable registration                                                    |
+| `ALLOW_USER_INVITES`       | `true`                                | Set `false` to disable registration-invite creation and editing                        |
+| `MEDIA_MAX_BYTES`          | `2147483648`                          | Per-upload application limit; `0` removes it                                           |
+| `MEDIA_UPLOADS_PER_ACTOR`  | `3`                                   | Concurrent uploads per user or bot                                                     |
+| `MEDIA_ORIGINALS_PER_USER` | `4`                                   | Concurrent original-file requests per user                                             |
+| `MEDIA_TRUSTED_HOSTS`      | —                                     | Comma-separated exact internal URL-import hosts, including ports when present          |
+| `MEDIA_FFMPEG`             | `ffmpeg` from `PATH`                  | FFmpeg executable for thumbnails                                                       |
+| `S3_ENDPOINT`              | —                                     | S3-compatible endpoint for a standalone binary; empty selects local disk               |
+| `S3_BUCKET`                | `appercot`                            | S3 bucket; Compose initializes it in Garage                                            |
+| `S3_REGION`                | `us-east-1`; `garage` in Compose      | Bucket region                                                                          |
+| `S3_ACCESS_KEY_ID`         | —                                     | S3 access key; Compose uses it to initialize Garage                                    |
+| `S3_SECRET_ACCESS_KEY`     | —                                     | S3 secret key; Compose uses it to initialize Garage                                    |
+| `GARAGE_RPC_SECRET`        | —                                     | Required 32-byte hexadecimal Garage cluster secret in Compose                          |
+| `VAPID_PUBLIC_KEY`         | —                                     | Web Push public key; configure both keys together                                      |
+| `VAPID_PRIVATE_KEY`        | —                                     | Web Push private key; configure both keys together                                     |
+| `NODE_ENV`                 | `development`; `production` in Docker | Disables GraphQL Playground in production                                              |
+| `APPERCOT_CONFIG`          | —                                     | Optional JSON launch configuration path                                                |
 
 Generate VAPID keys:
 

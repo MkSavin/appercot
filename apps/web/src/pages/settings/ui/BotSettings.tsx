@@ -7,7 +7,8 @@ import {
   fetchBotMemberships,
   type IssuedBotToken,
 } from '@/entities/bot'
-import { BotMembersPanel, BotTokenDialog, InviteBotMemberDialog } from '@/features/bot-token-manage'
+import { BotSetupDialog } from '@/features/bot-onboarding'
+import { BotMembersPanel, InviteBotMemberDialog } from '@/features/bot-token-manage'
 import { showRequestError } from '@/shared/api'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
@@ -117,12 +118,7 @@ export const BotSettings = ({ botId, isOwner }: { botId: string; isOwner: boolea
         onIssued={setIssued}
       />
       {issued ? (
-        <BotTokenDialog
-          open
-          token={issued.token}
-          botName={issued.bot.name}
-          onClose={() => setIssued(undefined)}
-        />
+        <BotSetupDialog key={issued.token} issued={issued} onClose={() => setIssued(undefined)} />
       ) : null}
     </div>
   )

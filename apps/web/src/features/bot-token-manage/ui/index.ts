@@ -1,2 +1,1 @@
-export * from './BotTokenDialog'
-export * from './CreateBotDialog'
+export * from './InviteBotMemberDialog'

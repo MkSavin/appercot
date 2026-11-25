@@ -32,6 +32,7 @@ interface ChatStoreOptions {
 interface ChatState {
   user: SessionUser | null
   vapidPublicKey: string | null
+  botWebSocketUrl: string | null
   chats: ChatConnection[]
   messagesByChat: Record<string, ChatMessage[]>
   pendingByChat: Record<string, string[]>
@@ -313,6 +314,7 @@ export const createChatStore = (options: ChatStoreOptions = {}) => {
   return create<ChatStore>()((set, get) => ({
     user: null,
     vapidPublicKey: null,
+    botWebSocketUrl: null,
     chats: [],
     messagesByChat: {},
     pendingByChat: {},
@@ -336,6 +338,7 @@ export const createChatStore = (options: ChatStoreOptions = {}) => {
       set({
         user: session.user,
         vapidPublicKey: session.vapidPublicKey,
+        botWebSocketUrl: session.botWebSocketUrl,
         chats: [...session.chats].sort(
           (left, right) =>
             (right.lastMessageAt ?? 0) - (left.lastMessageAt ?? 0) ||

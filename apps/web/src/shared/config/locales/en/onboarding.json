@@ -1,0 +1,60 @@
+{
+  "title": "Launch your first bot",
+  "description": "Create a bot, save its token, and run the example on your computer.",
+  "show": "Show the launch guide",
+  "existingTokenHint": "The existing token cannot be shown again. If it is lost, reset the token above and use the new one in the command.",
+  "dismiss": "Hide the guide",
+  "createFirst": "Create your first bot",
+  "setupTitle": "Launch {{name}}",
+  "setupDescription": "Save the token, run the command from the Appercot repository root, and wait for the connection.",
+  "tokenWarning": "The token is shown only now. It cannot be recovered after closing — issue a new one in the bot settings.",
+  "tokenSavedConfirmation": "I have saved the token in a secure place",
+  "closeWarning": "The token is not marked as saved. Closing this window will remove it from the page.",
+  "keepEditing": "Return to the token",
+  "discardToken": "Close and discard the token",
+  "commandLabel": "Echo bot launch command",
+  "commandHint": "Run this from the Appercot repository root. For a standalone SDK project, use the full guide.",
+  "fullGuide": "Full first-bot guide",
+  "troubleshooting": "Connection troubleshooting",
+  "openSettings": "Open settings",
+  "openChat": "Open chat",
+  "saveTokenFirst": "Confirm that you have saved the token first.",
+  "checkAgain": "Check again",
+  "copied": "Copied",
+  "copyManually": "Copy manually",
+  "copyFailed": "The browser did not allow clipboard access. Select the value above and copy it manually.",
+  "copy": {
+    "token": "Copy BOT_TOKEN",
+    "url": "Copy BOT_URL",
+    "command": "Copy command"
+  },
+  "steps": {
+    "create": "Bot created",
+    "connect": "SDK connected",
+    "chat": "Open the chat and send /start"
+  },
+  "stepState": {
+    "done": "completed",
+    "current": "current step",
+    "upcoming": "upcoming step"
+  },
+  "connection": {
+    "online": "Bot is online",
+    "waiting": "Waiting for a connection",
+    "failed": "Could not check the status",
+    "failedDescription": "Check your connection and try again. The bot token does not change.",
+    "offlineDescription": "Run the command above. Checks continue automatically while this step is open.",
+    "noData": "No connection data yet.",
+    "ready": "Now open the chat and send /start. The reply will appear in the message history.",
+    "pendingEvents": "Events awaiting acknowledgement: {{count}}"
+  },
+  "errors": {
+    "generic": "Connection error: {{code}}",
+    "BAD_REQUEST": "The SDK sent an invalid request. Check the SDK version and configuration.",
+    "FORBIDDEN": "The bot is not allowed to perform this action. Check access and roles.",
+    "NOT_FOUND": "The chat or requested object was not found. Check the identifiers in the bot code.",
+    "RATE_LIMIT": "The SDK is sending too many requests. Reduce the call rate.",
+    "BOT_BLOCKED": "The user has blocked the bot in this chat.",
+    "INTERNAL": "Internal server error. Check the server log."
+  }
+}

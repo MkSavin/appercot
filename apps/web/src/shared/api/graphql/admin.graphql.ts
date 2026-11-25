@@ -117,6 +117,20 @@ export const IssueBotInviteDocument = graphql(`
   }
 `)
 
+export const AdminBotDiagnosticsDocument = graphql(`
+  query AdminBotDiagnostics($botId: ID!) {
+    adminBotDiagnostics(botId: $botId) {
+      online
+      connectedAt
+      disconnectedAt
+      lastActivityAt
+      lastErrorCode
+      lastErrorAt
+      pendingEvents
+    }
+  }
+`)
+
 export const AdminBotDocument = graphql(`
   query AdminBot($botId: ID!) {
     adminBot(botId: $botId) { id username name description online listed access memberCount avatar welcome guestAccess tags }

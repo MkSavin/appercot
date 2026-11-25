@@ -2,6 +2,7 @@ import { bootstrapAuth } from '../src/auth/password'
 import { createDatabase } from '../src/db/client'
 import { loadEnv } from '../src/env'
 import { startServer } from '../src/index'
+import { Hub } from '../src/ws/hub'
 
 export const createServerFixture = (
   dataDir?: string,
@@ -18,13 +19,15 @@ export const createServerFixture = (
     ...environment,
   })
   bootstrapAuth(database.db, env)
-  const server = startServer({ database, env, port: 0, publicDir })
+  const hub = new Hub()
+  const server = startServer({ database, env, port: 0, publicDir, hub })
   const baseUrl = `http://127.0.0.1:${server.port}`
 
   return {
     ...database,
     env,
     server,
+    hub,
     baseUrl,
     stop: () => {
       server.stop()

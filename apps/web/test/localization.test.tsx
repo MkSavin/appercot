@@ -17,3 +17,14 @@ test('loads Russian JSON namespaces through react-i18next', () => {
   expect(i18n.hasResourceBundle('ru', 'common')).toBe(true)
   expect(renderToStaticMarkup(<Translated />)).toBe('<h1>Чаты</h1>')
 })
+
+test('loads the English onboarding namespace with Russian fallback for the rest', async () => {
+  await i18n.changeLanguage('en')
+  try {
+    expect(i18n.t('onboarding:title')).toBe('Launch your first bot')
+    expect(i18n.t('onboarding:steps.connect')).toBe('SDK connected')
+    expect(i18n.t('chat:title')).toBe('Чаты')
+  } finally {
+    await i18n.changeLanguage('ru')
+  }
+})
