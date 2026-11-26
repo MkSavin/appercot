@@ -190,6 +190,7 @@ export const seedTestFixtures = (
             .filter((role) => bot.roles.includes(role))
             .slice(0, 1),
           notifications: chat.notifications,
+          notificationsMutedUntil: chat.notificationsMutedUntil,
           lastMessageAt: history.at(-1)?.createdAt ?? null,
           nextSeq: history.length + 1,
           createdAt: now + chatIndex,

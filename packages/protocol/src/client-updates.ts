@@ -20,6 +20,7 @@ export const ClientChatSchema = ChatRefSchema.extend({
   lastMessageAt: z.int().nonnegative().nullable(),
   commands: z.array(BotCommandSchema).optional(),
   notifications: z.enum(['all', 'silent', 'off']).optional(),
+  notificationsMutedUntil: z.int().nonnegative().nullable().optional(),
   preview: MessageSchema.nullable().optional(),
 })
 

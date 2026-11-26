@@ -83,12 +83,24 @@ export class PushService {
   async sendMessage(userId: string, chatId: string, message: Message) {
     if (!this.configured) return
     const result = this.db
-      .select({ bot: bots, notifications: chats.notifications, blocked: chats.blockedAt })
+      .select({
+        bot: bots,
+        notifications: chats.notifications,
+        notificationsMutedUntil: chats.notificationsMutedUntil,
+        blocked: chats.blockedAt,
+      })
       .from(chats)
       .innerJoin(bots, eq(bots.id, chats.botId))
       .where(and(eq(chats.id, chatId), eq(chats.userId, userId), isNull(chats.revokedAt)))
       .get()
-    if (!result || result.notifications === 'off' || result.blocked !== null) return
+    const now = Date.now()
+    if (
+      !result ||
+      result.notifications === 'off' ||
+      (result.notificationsMutedUntil !== null && result.notificationsMutedUntil > now) ||
+      result.blocked !== null
+    )
+      return
     const subscriptions = this.db
       .select({ subscription: pushSubs })
       .from(pushSubs)

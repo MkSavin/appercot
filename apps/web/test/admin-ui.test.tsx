@@ -16,10 +16,10 @@ const bot = {
   tags: ['productivity', 'tools'],
 }
 
-const renderCatalog = (chatByBotId: Record<string, string>) =>
+const renderCatalog = () =>
   renderToStaticMarkup(
     <Router ssrPath="/browse">
-      <BotCatalog bots={[bot]} chatByBotId={chatByBotId} onAdd={() => {}} />
+      <BotCatalog bots={[bot]} />
     </Router>,
   )
 
@@ -28,21 +28,21 @@ describe('catalog and administration', () => {
   test('preserves a bot invitation through sign-in and rejects external return paths', () => {
     const invitation = '/browse?bot=examplebot&invite=example'
     expect(readAuthReturn(authHref('/login', invitation).split('?')[1] ?? '')).toBe(invitation)
+    expect(readAuthReturn('next=%2Fbrowse%2Fbot-1%3Ftag%3Dtools')).toBe('/browse/bot-1?tag=tools')
     expect(readAuthReturn('next=%2F%2Fexample.test%2Fbrowse')).toBe('/')
     expect(readAuthReturn('next=%2F%5Cexample.test%2Fbrowse')).toBe('/')
   })
 
-  test('shows whether a catalog bot is added and exposes its online state', () => {
-    const available = renderCatalog({})
+  // @anchor INV:admin-ui/opens-details
+  test('opens catalog details without turning the card into an add button', () => {
+    const available = renderCatalog()
     expect(available).toContain('@examplebot')
-    expect(available).toContain('Начать чат')
+    expect(available).toContain('Подробнее о боте Example')
+    expect(available).toContain('href="/browse/bot-1"')
     expect(available).toContain('в сети')
     expect(available).toContain('productivity')
     expect(available).toContain('tools')
-
-    const added = renderCatalog({ 'bot-1': 'chat-1' })
-    expect(added).toContain('href="/c/chat-1"')
-    expect(added).not.toContain('type="button"')
+    expect(available).not.toContain('type="button"')
   })
 
   test('renders the token, WebSocket URL and launch command as copyable values', () => {

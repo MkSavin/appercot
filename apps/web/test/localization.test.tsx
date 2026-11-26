@@ -26,6 +26,10 @@ test('loads English feature namespaces with Russian fallback for untranslated re
     expect(i18n.t('chat:retry')).toBe('Retry')
     expect(i18n.t('message:failed')).toBe('Not sent')
     expect(i18n.t('upload:status.completing')).toBe('Finishing the upload on the server…')
+    expect(i18n.t('browse:details.startChat')).toBe('Start chat')
+    expect(i18n.t('bot:notificationsMutePreset.1h')).toBe('For 1 hour')
+    expect(i18n.t('settings:notificationsPerChatHint')).toContain('each chat')
+    expect(i18n.t('common:retry')).toBe('Retry')
     expect(i18n.t('chat:title')).toBe('Чаты')
   } finally {
     await i18n.changeLanguage('ru')

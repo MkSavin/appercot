@@ -1,9 +1,20 @@
-import { AddBotDocument, BrowseBotsDocument, graphqlClient } from '@/shared/api'
-import type { BotDetails } from '../model/types'
+import { AddBotDocument, BrowseBotDocument, BrowseBotsDocument, graphqlClient } from '@/shared/api'
+import type { BotDetails, CatalogBotDetails } from '../model/types'
 
 export const browseBotsRequest = async (query?: string): Promise<BotDetails[]> => {
   const result = await graphqlClient.request(BrowseBotsDocument, { query })
   return result.browseBots
+}
+
+export const browseBotRequest = async (botId: string): Promise<CatalogBotDetails> => {
+  const { browseBot } = await graphqlClient.request(BrowseBotDocument, { botId })
+  return {
+    ...browseBot,
+    commands: browseBot.commands.map(({ shortcut, ...command }) => ({
+      ...command,
+      shortcut: shortcut ?? undefined,
+    })),
+  }
 }
 
 export const addBotRequest = async (username: string, invite?: string) => {

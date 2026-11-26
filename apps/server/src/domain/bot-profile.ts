@@ -140,6 +140,7 @@ export const getChatProfile = (
     bot: toBotDto(bot, hub),
     blocked: chat.blockedAt !== null,
     notifications: chat.notifications,
+    notificationsMutedUntil: chat.notificationsMutedUntil,
     media,
     olderMediaBefore: rows.length > mediaPageSize ? (page.at(-1)?.seq ?? null) : null,
   }

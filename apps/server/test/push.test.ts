@@ -87,14 +87,14 @@ describe('Web Push', () => {
       const setMode = (mode: string) =>
         graphqlRequest(
           fixture.baseUrl,
-          'mutation($chat: ID!, $mode: ChatNotifications!) { setChatNotifications(chatId: $chat, mode: $mode) }',
+          'mutation($chat: ID!, $mode: ChatNotifications!) { setChatNotifications(chatId: $chat, mode: $mode) { id } }',
           { chat: chatId, mode },
           cookie,
         )
-      expect((await setMode('off')).body.data.setChatNotifications).toBe(true)
+      expect((await setMode('off')).body.data.setChatNotifications).toEqual({ id: chatId })
       sendBotMessage(fixture.db, hub, botId, { chatId, content: { text: 'Muted' } })
       expect(delivered).toHaveLength(1)
-      expect((await setMode('silent')).body.data.setChatNotifications).toBe(true)
+      expect((await setMode('silent')).body.data.setChatNotifications).toEqual({ id: chatId })
       sendBotMessage(fixture.db, hub, botId, { chatId, content: { text: 'Quiet' } })
       await waitFor(() => delivered.length === 2)
       expect(JSON.parse(delivered[1]?.payload ?? '')).toMatchObject({ body: 'Quiet', silent: true })

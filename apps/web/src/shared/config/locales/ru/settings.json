@@ -40,6 +40,7 @@
   "byUsernameDescription": "Подключить бота к аккаунту пользователя платформы.",
   "ownerSaved": "Владелец сохранён.",
   "notificationsHint": "Получайте уведомления об ответах ботов, когда чат закрыт.",
+  "notificationsPerChatHint": "Звук, отключение и временный mute для отдельного чата настраиваются в его шапке или профиле.",
   "notificationsUnavailableTitle": "Push-уведомления недоступны",
   "notificationsServerUnavailable": "Push-уведомления не настроены на сервере. Обратитесь к администратору.",
   "notificationsBrowserUnavailable": "Этот браузер не поддерживает push-уведомления.",

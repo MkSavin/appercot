@@ -3,6 +3,7 @@ import { ArrowLeft, Circle } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'wouter'
 import { BotAvatar } from '@/entities/bot'
+import { ChatNotificationMenu } from '@/features/chat-notifications'
 import { cn } from '@/shared/lib/cn'
 import { Button } from '@/shared/ui/button'
 
@@ -23,7 +24,7 @@ export const ChatHeader = ({ chatId, bot }: { chatId: string; bot: ClientChat['b
         </Button>
         <Link
           href={`/c/${chatId}/profile`}
-          className="flex min-w-0 flex-1 items-center gap-3 pr-4 pl-14 hover:bg-accent/60 focus-visible:outline-2 focus-visible:-outline-offset-2 md:px-6"
+          className="flex min-w-0 flex-1 items-center gap-3 pr-2 pl-14 hover:bg-accent/60 focus-visible:outline-2 focus-visible:-outline-offset-2 md:px-6"
           aria-label={t('chat:botProfile', { name: bot.name })}
         >
           <BotAvatar bot={bot} />
@@ -43,6 +44,9 @@ export const ChatHeader = ({ chatId, bot }: { chatId: string; bot: ClientChat['b
             </p>
           </div>
         </Link>
+        <div className="flex items-center pr-2 md:pr-4">
+          <ChatNotificationMenu chatId={chatId} />
+        </div>
       </div>
     </header>
   )

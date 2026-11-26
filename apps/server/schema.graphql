@@ -81,6 +81,11 @@ type ButtonResult {
   toast: String
 }
 
+type CatalogBotDetails {
+  bot: Bot!
+  commands: [BotCommand!]!
+}
+
 enum ChatNotifications {
   all
   off
@@ -92,6 +97,7 @@ type ChatProfile {
   bot: Bot!
   media: JSON!
   notifications: ChatNotifications!
+  notificationsMutedUntil: Float
   olderMediaBefore: Int
 }
 
@@ -103,6 +109,7 @@ type Connection {
   id: ID!
   lastMessageAt: Float
   notifications: ChatNotifications!
+  notificationsMutedUntil: Float
   preview: Message
   roles: [String!]!
   unread: Int!
@@ -179,7 +186,8 @@ type Mutation {
   setBotMemberRevoked(botId: ID!, chatId: ID!, revoked: Boolean!): Boolean!
   setBotMemberRoles(botId: ID!, chatId: ID!, roles: [String!]!): Boolean!
   setBotOwner(botId: ID!, username: String): Boolean!
-  setChatNotifications(chatId: ID!, mode: ChatNotifications!): Boolean!
+  setChatMute(chatId: ID!, mutedUntil: Float): Connection!
+  setChatNotifications(chatId: ID!, mode: ChatNotifications!): Connection!
   setUserRole(role: PlatformRole!, userId: ID!): User!
   subscribePush(subscription: JSON!): Boolean!
   unsubscribePush(endpoint: String!): Boolean!
@@ -203,6 +211,7 @@ type Query {
   adminUsers(query: String): [User!]!
   botInvitations(botId: ID!): [BotInvite!]!
   botMemberships(botId: ID!): BotMemberships!
+  browseBot(botId: ID!): CatalogBotDetails!
   browseBots(query: String): [Bot!]!
   chatProfile(beforeMediaSeq: Int, chatId: ID!): ChatProfile!
   guestChat(username: String!): GuestChat!

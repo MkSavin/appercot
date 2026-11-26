@@ -1,0 +1,1 @@
+ALTER TABLE `chats` ADD `notifications_muted_until` integer;

@@ -2,12 +2,7 @@ import { ArrowLeft } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'wouter'
-import {
-  blockBotRequest,
-  fetchChatProfile,
-  setChatNotificationsRequest,
-  useChatStore,
-} from '@/entities/chat'
+import { blockBotRequest, fetchChatProfile, useChatStore } from '@/entities/chat'
 import { BlockBotDialog, updateChatBlocked } from '@/features/block-bot'
 import { showRequestError } from '@/shared/api'
 import { Button } from '@/shared/ui/button'
@@ -90,19 +85,10 @@ export const BotChatProfile = ({ chatId }: { chatId: string }) => {
         ) : (
           <>
             <BotProfileSummary
+              chatId={chatId}
               bot={{ ...profile.bot, ...chat?.bot }}
               blocked={chat?.blocked ?? profile.blocked}
-              notifications={chat?.notifications ?? profile.notifications}
               pending={pending}
-              onNotifications={(mode) =>
-                void run(async () => {
-                  await setChatNotificationsRequest(chatId, mode)
-                  setProfile((current) => current && { ...current, notifications: mode })
-                  const store = useChatStore.getState()
-                  const currentChat = store.chats.find((item) => item.id === chatId)
-                  if (currentChat) store.upsertChat({ ...currentChat, notifications: mode })
-                })
-              }
               onBlock={() => {
                 if (!(chat?.blocked ?? profile.blocked)) setBlockOpen(true)
                 else

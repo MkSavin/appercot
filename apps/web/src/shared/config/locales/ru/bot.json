@@ -14,6 +14,27 @@
   "notificationsAll": "Уведомления со звуком",
   "notificationsSilent": "Уведомления без звука",
   "notificationsOff": "Уведомления отключены",
+  "notificationsWithStatus": "Уведомления: {{status}}",
+  "notificationsStatus": {
+    "all": "все",
+    "silent": "без звука",
+    "off": "выключены"
+  },
+  "notificationsMode": {
+    "all": "Уведомления со звуком",
+    "silent": "Уведомления без звука",
+    "off": "Уведомления отключены"
+  },
+  "notificationsMute": "Отключить временно",
+  "notificationsMutePreset": {
+    "1h": "На 1 час",
+    "8h": "На 8 часов",
+    "1d": "На 1 день"
+  },
+  "notificationsMuted": "Уведомления временно отключены",
+  "notificationsMutedUntil": "Отключены до {{time}}",
+  "notificationsResume": "Включить раньше",
+  "notificationsBlockedHint": "Бот заблокирован. Настройки применятся после разблокировки.",
   "roles": "Роли бота",
   "systemRole": "Системная",
   "invitations": "Пригласительные ссылки",

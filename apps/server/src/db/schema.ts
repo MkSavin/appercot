@@ -143,6 +143,7 @@ export const chats = sqliteTable(
     notifications: text('notifications', { enum: ['all', 'silent', 'off'] })
       .notNull()
       .default('all'),
+    notificationsMutedUntil: integer('notifications_muted_until'),
     lastMessageAt: integer('last_message_at'),
     lastReadSeq: integer('last_read_seq').notNull().default(0),
     nextSeq: integer('next_seq').notNull().default(1),

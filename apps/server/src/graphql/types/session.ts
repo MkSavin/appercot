@@ -29,6 +29,7 @@ export interface ConnectionDto {
   createdAt: number
   commands: VisibleCommand[]
   notifications: 'all' | 'silent' | 'off'
+  notificationsMutedUntil: number | null
   preview: Message | null
 }
 
@@ -103,6 +104,7 @@ builder.objectType(ConnectionType, {
     createdAt: field.exposeFloat('createdAt'),
     commands: field.field({ type: [BotCommandType], resolve: (chat) => chat.commands }),
     notifications: field.expose('notifications', { type: ChatNotificationsType }),
+    notificationsMutedUntil: field.exposeFloat('notificationsMutedUntil', { nullable: true }),
     preview: field.field({ type: MessageType, nullable: true, resolve: (chat) => chat.preview }),
   }),
 })

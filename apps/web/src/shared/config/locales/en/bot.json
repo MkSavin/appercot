@@ -1,0 +1,24 @@
+{
+  "notifications": "Notifications",
+  "notificationsWithStatus": "Notifications: {{status}}",
+  "notificationsStatus": {
+    "all": "all",
+    "silent": "silent",
+    "off": "off"
+  },
+  "notificationsMode": {
+    "all": "Notifications with sound",
+    "silent": "Notifications without sound",
+    "off": "Notifications off"
+  },
+  "notificationsMute": "Mute temporarily",
+  "notificationsMutePreset": {
+    "1h": "For 1 hour",
+    "8h": "For 8 hours",
+    "1d": "For 1 day"
+  },
+  "notificationsMuted": "Notifications temporarily muted",
+  "notificationsMutedUntil": "Muted until {{time}}",
+  "notificationsResume": "Resume now",
+  "notificationsBlockedHint": "The bot is blocked. These settings will apply after you unblock it."
+}

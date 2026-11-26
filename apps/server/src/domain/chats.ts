@@ -96,6 +96,7 @@ export const toConnectionDto = (
   createdAt: chat.createdAt,
   commands,
   notifications: chat.notifications,
+  notificationsMutedUntil: chat.notificationsMutedUntil,
   preview,
 })
 
@@ -110,6 +111,7 @@ export const toClientChatDto = (...args: Parameters<typeof toConnectionDto>) => 
     createdAt,
     commands,
     notifications,
+    notificationsMutedUntil,
     preview,
   } = toConnectionDto(...args)
   const { access: _access, guestAccess: _guestAccess, ...clientBot } = bot
@@ -123,6 +125,7 @@ export const toClientChatDto = (...args: Parameters<typeof toConnectionDto>) => 
     createdAt,
     commands: args[3] ? commands : undefined,
     notifications,
+    notificationsMutedUntil,
     preview,
   }
 }
@@ -448,19 +451,51 @@ export const deleteChat = (db: AppDatabase, hub: Hub, userId: string, chatId: st
   return true
 }
 
+const updateChatNotificationSettings = (
+  db: AppDatabase,
+  hub: Hub,
+  userId: string,
+  chatId: string,
+  settings: Partial<Pick<typeof chats.$inferSelect, 'notifications' | 'notificationsMutedUntil'>>,
+) => {
+  const { chat, bot } = getChatForUser(db, chatId, userId)
+  db.update(chats).set(settings).where(eq(chats.id, chatId)).run()
+  const updated = { ...chat, ...settings }
+  if (chat.hiddenAt === null)
+    pushUserUpdate(db, hub, userId, {
+      type: 'chat.updated',
+      chat: toClientChatDto(updated, bot, hub),
+    })
+  return toConnectionDto(updated, bot, hub)
+}
+
 export const setChatNotifications = (
   db: AppDatabase,
   hub: Hub,
   userId: string,
   chatId: string,
   notifications: typeof chats.$inferSelect.notifications,
+) => updateChatNotificationSettings(db, hub, userId, chatId, { notifications })
+
+const maximumMuteDuration = 366 * 24 * 60 * 60 * 1000
+
+export const setChatMute = (
+  db: AppDatabase,
+  hub: Hub,
+  userId: string,
+  chatId: string,
+  mutedUntil: number | null,
 ) => {
-  const { chat, bot } = getChatForUser(db, chatId, userId)
-  db.update(chats).set({ notifications }).where(eq(chats.id, chatId)).run()
-  if (chat.hiddenAt === null)
-    pushUserUpdate(db, hub, userId, {
-      type: 'chat.updated',
-      chat: toClientChatDto({ ...chat, notifications }, bot, hub),
-    })
-  return true
+  const now = Date.now()
+  if (
+    mutedUntil !== null &&
+    (!Number.isSafeInteger(mutedUntil) ||
+      mutedUntil <= now ||
+      mutedUntil > now + maximumMuteDuration)
+  ) {
+    throw new DomainError('BAD_REQUEST', 'Mute expiry must be in the future and within one year')
+  }
+  return updateChatNotificationSettings(db, hub, userId, chatId, {
+    notificationsMutedUntil: mutedUntil,
+  })
 }

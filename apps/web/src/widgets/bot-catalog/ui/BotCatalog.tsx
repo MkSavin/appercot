@@ -1,29 +1,28 @@
-import { ArrowRight, LoaderCircle } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'wouter'
 import { BotAvatar, type BotDetails } from '@/entities/bot'
 import { testId, testIds } from '@/shared/lib/test-ids'
 import { Badge } from '@/shared/ui/badge'
 
-interface BotCatalogProps {
+export const BotCatalog = ({
+  bots,
+  returnSearch = '',
+}: {
   bots: BotDetails[]
-  chatByBotId: Record<string, string>
-  pendingBotId?: string
-  onAdd: (bot: BotDetails) => void
-}
-
-const tileClass =
-  'flex min-h-32 w-full min-w-0 items-start gap-3 rounded-xl border bg-linear-to-r/srgb from-accent/25 to-card p-4 text-left transition-colors hover:border-ring/50 hover:from-accent/85 focus-visible:outline-2 focus-visible:outline-ring disabled:cursor-wait disabled:opacity-70'
-
-export const BotCatalog = ({ bots, chatByBotId, pendingBotId, onAdd }: BotCatalogProps) => {
+  returnSearch?: string
+}) => {
   const { t } = useTranslation()
   return (
     <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-      {bots.map((bot) => {
-        const chatId = chatByBotId[bot.id]
-        const pending = pendingBotId === bot.id
-        const content = (
-          <>
+      {bots.map((bot) => (
+        <li key={bot.id} className="min-w-0">
+          <Link
+            {...testId(testIds.catalog.bot(bot.id))}
+            href={`/browse/${encodeURIComponent(bot.id)}${returnSearch}`}
+            className="flex min-h-32 w-full min-w-0 items-start gap-3 rounded-xl border bg-linear-to-r/srgb from-accent/25 to-card p-4 text-left transition-colors hover:border-ring/50 hover:from-accent/85 focus-visible:outline-2 focus-visible:outline-ring"
+            aria-label={t('browse:details.view', { name: bot.name })}
+          >
             <BotAvatar bot={bot} showPresence />
             <span className="min-w-0 flex-1">
               <span className="block truncate font-semibold">{bot.name}</span>
@@ -43,41 +42,10 @@ export const BotCatalog = ({ bots, chatByBotId, pendingBotId, onAdd }: BotCatalo
                 </span>
               ) : null}
             </span>
-            {pending ? (
-              <LoaderCircle aria-hidden="true" className="mt-1 size-4 shrink-0 animate-spin" />
-            ) : (
-              <ArrowRight
-                aria-hidden="true"
-                className="mt-1 size-4 shrink-0 text-muted-foreground"
-              />
-            )}
-          </>
-        )
-        return (
-          <li key={bot.id} className="min-w-0">
-            {chatId ? (
-              <Link
-                {...testId(testIds.catalog.bot(bot.id))}
-                href={`/c/${chatId}`}
-                className={tileClass}
-              >
-                {content}
-              </Link>
-            ) : (
-              <button
-                {...testId(testIds.catalog.bot(bot.id))}
-                type="button"
-                className={tileClass}
-                disabled={pendingBotId !== undefined}
-                onClick={() => onAdd(bot)}
-              >
-                <span className="sr-only">{t('browse:add')}</span>
-                {content}
-              </button>
-            )}
-          </li>
-        )
-      })}
+            <ArrowRight aria-hidden="true" className="mt-1 size-4 shrink-0 text-muted-foreground" />
+          </Link>
+        </li>
+      ))}
     </ul>
   )
 }

@@ -7,6 +7,7 @@ export const NotificationSettings = ({ vapidPublicKey }: { vapidPublicKey: strin
   return (
     <SettingsSection title={t('settings:notifications')}>
       <p className="text-sm text-muted-foreground">{t('settings:notificationsHint')}</p>
+      <p className="text-sm text-muted-foreground">{t('settings:notificationsPerChatHint')}</p>
       <PushSubscribeButton vapidPublicKey={vapidPublicKey} settings />
     </SettingsSection>
   )

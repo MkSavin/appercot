@@ -8,5 +8,11 @@
   "unsentRestored_one": "Restored {{count}} unsent message. It will be sent automatically.",
   "unsentRestored_other": "Restored {{count}} unsent messages. They will be sent automatically.",
   "offlineOutbox_one": "No connection. {{count}} message will be sent when the connection returns.",
-  "offlineOutbox_other": "No connection. {{count}} messages will be sent when the connection returns."
+  "offlineOutbox_other": "No connection. {{count}} messages will be sent when the connection returns.",
+  "unreadFilter_one": "Unread chats: {{count}}",
+  "unreadFilter_other": "Unread chats: {{count}}",
+  "noUnreadChats": "No unread chats",
+  "noFilterResults": "No unread chats match this search",
+  "clearUnreadFilter": "Show all chats",
+  "clearFilters": "Reset filters"
 }

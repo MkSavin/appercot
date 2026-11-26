@@ -7,7 +7,7 @@ export const readAuthReturn = (search: string) => {
     if (
       next.startsWith('/') &&
       url.origin === base &&
-      /^\/(?:browse|settings(?:\/[a-z]+(?:\/[a-zA-Z0-9-]+)?)?|c\/[a-zA-Z0-9-]+(?:\/profile)?)?$/.test(
+      /^\/(?:browse(?:\/[a-zA-Z0-9-]+)?|settings(?:\/[a-z]+(?:\/[a-zA-Z0-9-]+)?)?|c\/[a-zA-Z0-9-]+(?:\/profile)?)?$/.test(
         url.pathname,
       )
     ) {

@@ -93,6 +93,7 @@ const ChatConfigSchema = z.strictObject({
   bot: z.string().min(1),
   roles: z.array(z.string().min(1)).max(1).default([]),
   notifications: z.enum(['all', 'silent', 'off']).default('all'),
+  notificationsMutedUntil: z.number().int().nonnegative().nullable().default(null),
   messages: z.array(MessageConfigSchema).default([]),
 })
 

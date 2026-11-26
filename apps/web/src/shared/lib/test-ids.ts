@@ -13,13 +13,27 @@ export const testIds = {
   },
   chats: {
     search: 'chats.search',
+    unreadFilter: 'chats.unread-filter',
     item: (chatId: string) => `chats.item.${chatId}`,
   },
   catalog: {
     search: 'catalog.search',
+    allTags: 'catalog.tags.all',
+    tag: (tag: string) => `catalog.tag.${tag}`,
     bot: (botId: string) => `catalog.bot.${botId}`,
+    details: {
+      back: 'catalog.details.back',
+      start: 'catalog.details.start',
+    },
   },
   chat: {
+    notifications: {
+      trigger: 'chat.notifications.trigger',
+      profileTrigger: 'chat.notifications.profile-trigger',
+      mode: (mode: string) => `chat.notifications.mode.${mode}`,
+      mute: (preset: string) => `chat.notifications.mute.${preset}`,
+      resume: 'chat.notifications.resume',
+    },
     composer: {
       input: 'chat.composer.input',
       fileInput: 'chat.composer.file-input',

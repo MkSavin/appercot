@@ -1,10 +1,11 @@
 import type { ClientChat } from '@appercot/protocol'
-import { Pin } from 'lucide-react'
+import { BellOff, Pin } from 'lucide-react'
 import { ContextMenu } from 'radix-ui'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'wouter'
 import { BotAvatar } from '@/entities/bot'
 import { UnreadBadge, useChatStore } from '@/entities/chat'
+import { useNotificationMute } from '@/features/chat-notifications'
 import { cn } from '@/shared/lib/cn'
 import { testId, testIds } from '@/shared/lib/test-ids'
 
@@ -21,6 +22,7 @@ const dateFormat = new Intl.DateTimeFormat('ru', { day: 'numeric', month: 'short
 export const ChatListItem = ({ chat, active, pinned, onPin }: ChatListItemProps) => {
   const { t } = useTranslation()
   const cached = useChatStore((state) => state.messagesByChat[chat.id]?.at(-1))
+  const muted = useNotificationMute(chat.notificationsMutedUntil)
   const latest = cached && cached.seq > (chat.preview?.seq ?? 0) ? cached : chat.preview
   const content = latest?.content
   const preview = content?.text || (content?.media?.length ? t('chat:attachment') : undefined)
@@ -57,7 +59,15 @@ export const ChatListItem = ({ chat, active, pinned, onPin }: ChatListItemProps)
                 <span className="truncate text-xs text-muted-foreground">
                   {preview || chat.bot.description || `@${chat.bot.username}`}
                 </span>
-                <UnreadBadge count={chat.unread} />
+                <span className="flex shrink-0 items-center gap-1.5">
+                  {muted.active ? (
+                    <BellOff
+                      className="size-3.5 text-muted-foreground"
+                      aria-label={t('bot:notificationsMuted')}
+                    />
+                  ) : null}
+                  <UnreadBadge count={chat.unread} />
+                </span>
               </span>
             </span>
           </Link>

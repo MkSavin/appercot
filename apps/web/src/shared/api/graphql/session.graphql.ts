@@ -26,6 +26,7 @@ export const SessionDocument = graphql(`
         roles
         blocked
         notifications
+        notificationsMutedUntil
         unread
         lastMessageAt
         preview {
@@ -80,6 +81,7 @@ export const LoginDocument = graphql(`
         roles
         blocked
         notifications
+        notificationsMutedUntil
         unread
         lastMessageAt
         preview {
@@ -144,6 +146,7 @@ export const RegisterDocument = graphql(`
         roles
         blocked
         notifications
+        notificationsMutedUntil
         unread
         lastMessageAt
         preview {

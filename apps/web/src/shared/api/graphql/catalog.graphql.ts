@@ -16,6 +16,30 @@ export const BrowseBotsDocument = graphql(`
   }
 `)
 
+export const BrowseBotDocument = graphql(`
+  query BrowseBot($botId: ID!) {
+    browseBot(botId: $botId) {
+      bot {
+        id
+        username
+        name
+        description
+        online
+        listed
+        access
+        avatar
+        welcome
+        tags
+      }
+      commands {
+        name
+        description
+        shortcut
+      }
+    }
+  }
+`)
+
 export const AddBotDocument = graphql(`
   mutation AddBot($username: String!, $invite: String) {
     addBot(username: $username, invite: $invite) {
@@ -33,6 +57,7 @@ export const AddBotDocument = graphql(`
       roles
       blocked
       notifications
+      notificationsMutedUntil
       unread
       lastMessageAt
       createdAt

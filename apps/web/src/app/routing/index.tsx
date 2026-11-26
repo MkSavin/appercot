@@ -69,7 +69,7 @@ export const AppRouter = () => (
       <Route>
         <Protected>
           <Switch>
-            <Route path="/browse" component={BrowsePage} />
+            <Route path="/browse/:botId?" component={BrowsePage} />
             <Route path="/settings/:section?/:botId?" component={SettingsPage} />
             <Route path="/c/:chatId/:panel?" component={ChatPage} />
             <Route path="/" component={ChatPage} />

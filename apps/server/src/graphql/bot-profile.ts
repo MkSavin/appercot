@@ -1,9 +1,9 @@
 import { requireAdmin, requireUser } from '../auth/context'
 import { getChatProfile, updateBotProfile } from '../domain/bot-profile'
-import { deleteChat, setChatNotifications } from '../domain/chats'
+import { deleteChat, setChatMute, setChatNotifications } from '../domain/chats'
 import { builder } from './builder'
 import { toGraphQLError } from './errors'
-import { BotType, ChatNotificationsType } from './types/session'
+import { BotType, ChatNotificationsType, ConnectionType } from './types/session'
 
 const execute = <T>(operation: () => T) => {
   try {
@@ -19,6 +19,7 @@ ChatProfileType.implement({
     bot: f.field({ type: BotType, resolve: (profile) => profile.bot }),
     blocked: f.exposeBoolean('blocked'),
     notifications: f.expose('notifications', { type: ChatNotificationsType }),
+    notificationsMutedUntil: f.exposeFloat('notificationsMutedUntil', { nullable: true }),
     media: f.field({ type: 'JSON', resolve: (profile) => profile.media }),
     olderMediaBefore: f.exposeInt('olderMediaBefore', { nullable: true }),
   }),
@@ -62,7 +63,8 @@ builder.mutationFields((f) => ({
     resolve: (_, args, ctx) =>
       execute(() => deleteChat(ctx.db, ctx.hub, requireUser(ctx).id, String(args.chatId))),
   }),
-  setChatNotifications: f.boolean({
+  setChatNotifications: f.field({
+    type: ConnectionType,
     args: {
       chatId: f.arg.id({ required: true }),
       mode: f.arg({ type: ChatNotificationsType, required: true }),
@@ -70,6 +72,23 @@ builder.mutationFields((f) => ({
     resolve: (_, args, ctx) =>
       execute(() =>
         setChatNotifications(ctx.db, ctx.hub, requireUser(ctx).id, String(args.chatId), args.mode),
+      ),
+  }),
+  setChatMute: f.field({
+    type: ConnectionType,
+    args: {
+      chatId: f.arg.id({ required: true }),
+      mutedUntil: f.arg.float(),
+    },
+    resolve: (_, args, ctx) =>
+      execute(() =>
+        setChatMute(
+          ctx.db,
+          ctx.hub,
+          requireUser(ctx).id,
+          String(args.chatId),
+          args.mutedUntil ?? null,
+        ),
       ),
   }),
 }))

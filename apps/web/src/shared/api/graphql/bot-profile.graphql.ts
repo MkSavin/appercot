@@ -6,6 +6,7 @@ export const ChatProfileDocument = graphql(`
       bot { id username name description online listed avatar welcome }
       blocked
       notifications
+      notificationsMutedUntil
       media
       olderMediaBefore
     }
@@ -25,5 +26,34 @@ export const DeleteChatDocument = graphql(`
   mutation DeleteChat($chatId: ID!) { deleteChat(chatId: $chatId) }
 `)
 export const SetChatNotificationsDocument = graphql(`
-  mutation SetChatNotifications($chatId: ID!, $mode: ChatNotifications!) { setChatNotifications(chatId: $chatId, mode: $mode) }
+  mutation SetChatNotifications($chatId: ID!, $mode: ChatNotifications!) {
+    setChatNotifications(chatId: $chatId, mode: $mode) {
+      id
+      bot { id username name description online listed avatar welcome tags }
+      roles
+      blocked
+      notifications
+      notificationsMutedUntil
+      unread
+      lastMessageAt
+      createdAt
+      commands { name description shortcut }
+    }
+  }
+`)
+export const SetChatMuteDocument = graphql(`
+  mutation SetChatMute($chatId: ID!, $mutedUntil: Float) {
+    setChatMute(chatId: $chatId, mutedUntil: $mutedUntil) {
+      id
+      bot { id username name description online listed avatar welcome tags }
+      roles
+      blocked
+      notifications
+      notificationsMutedUntil
+      unread
+      lastMessageAt
+      createdAt
+      commands { name description shortcut }
+    }
+  }
 `)

@@ -1,15 +1,16 @@
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { requireUser } from '../auth/context'
 import { bots } from '../db/schema'
 import { createBotWebSocketUrl } from '../domain/bot-connection'
 import { toBotDto } from '../domain/bots'
+import { getCatalogBot } from '../domain/catalog'
 import { listUserChats } from '../domain/chats'
 import { listMessages } from '../domain/messages'
 import { latestUserSequence, syncUserUpdates } from '../domain/sync'
 import { builder } from './builder'
 import { toGraphQLError } from './errors'
 import { MessageType, SyncPayloadType } from './types/messaging'
-import { BotType, SessionType } from './types/session'
+import { BotCommandType, BotType, SessionType } from './types/session'
 
 const RegistrationPolicy = builder.objectRef<{ registration: boolean; invitations: boolean }>(
   'RegistrationPolicy',
@@ -18,6 +19,18 @@ RegistrationPolicy.implement({
   fields: (f) => ({
     registration: f.exposeBoolean('registration'),
     invitations: f.exposeBoolean('invitations'),
+  }),
+})
+
+const CatalogBotDetailsType =
+  builder.objectRef<ReturnType<typeof getCatalogBot>>('CatalogBotDetails')
+CatalogBotDetailsType.implement({
+  fields: (f) => ({
+    bot: f.field({ type: BotType, resolve: (details) => details.bot }),
+    commands: f.field({
+      type: [BotCommandType],
+      resolve: (details) => details.commands,
+    }),
   }),
 })
 
@@ -79,7 +92,7 @@ builder.queryType({
         return context.db
           .select()
           .from(bots)
-          .where(eq(bots.access, 'public'))
+          .where(and(eq(bots.access, 'public'), eq(bots.listed, true)))
           .all()
           .filter(
             (bot) =>
@@ -90,6 +103,18 @@ builder.queryType({
               bot.tags.some((tag) => tag.toLowerCase().includes(query)),
           )
           .map((bot) => toBotDto(bot, context.hub))
+      },
+    }),
+    browseBot: field.field({
+      type: CatalogBotDetailsType,
+      args: { botId: field.arg.id({ required: true }) },
+      resolve: (_parent, args, context) => {
+        const user = requireUser(context)
+        try {
+          return getCatalogBot(context.db, context.hub, user.id, String(args.botId))
+        } catch (error) {
+          throw toGraphQLError(error)
+        }
       },
     }),
     sync: field.field({

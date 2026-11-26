@@ -1,4 +1,4 @@
-import { MediaSchema } from '@appercot/protocol'
+import { type ClientChat, MediaSchema } from '@appercot/protocol'
 import {
   BlockBotDocument,
   ChatProfileDocument,
@@ -6,6 +6,7 @@ import {
   graphqlClient,
   MarkReadDocument,
   PressButtonDocument,
+  SetChatMuteDocument,
   SetChatNotificationsDocument,
 } from '@/shared/api'
 
@@ -43,5 +44,27 @@ export const fetchChatProfile = async (chatId: string, beforeMediaSeq?: number) 
 export const deleteChatRequest = (chatId: string) =>
   graphqlClient.request(DeleteChatDocument, { chatId })
 
-export const setChatNotificationsRequest = (chatId: string, mode: 'all' | 'silent' | 'off') =>
-  graphqlClient.request(SetChatNotificationsDocument, { chatId, mode })
+const normalizeConnection = (
+  connection: Omit<ClientChat, 'commands'> & {
+    commands: Array<{ name: string; description: string; shortcut: string | null }>
+  },
+): ClientChat => ({
+  ...connection,
+  commands: connection.commands.map(({ shortcut, ...command }) => ({
+    ...command,
+    shortcut: shortcut ?? undefined,
+  })),
+})
+
+export const setChatNotificationsRequest = async (
+  chatId: string,
+  mode: 'all' | 'silent' | 'off',
+) => {
+  const result = await graphqlClient.request(SetChatNotificationsDocument, { chatId, mode })
+  return normalizeConnection(result.setChatNotifications)
+}
+
+export const setChatMuteRequest = async (chatId: string, mutedUntil: number | null) => {
+  const result = await graphqlClient.request(SetChatMuteDocument, { chatId, mutedUntil })
+  return normalizeConnection(result.setChatMute)
+}

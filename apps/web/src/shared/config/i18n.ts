@@ -1,9 +1,13 @@
 import i18next from 'i18next'
 import { initReactI18next } from 'react-i18next'
+import englishBot from './locales/en/bot.json'
+import englishBrowse from './locales/en/browse.json'
 import englishChat from './locales/en/chat.json'
+import englishCommon from './locales/en/common.json'
 import englishErrors from './locales/en/errors.json'
 import englishMessage from './locales/en/message.json'
 import englishOnboarding from './locales/en/onboarding.json'
+import englishSettings from './locales/en/settings.json'
 import englishUpload from './locales/en/upload.json'
 import account from './locales/ru/account.json'
 import admin from './locales/ru/admin.json'
@@ -55,10 +59,14 @@ void i18n.use(initReactI18next).init({
   resources: {
     ru: resources,
     en: {
+      bot: englishBot,
+      browse: englishBrowse,
       chat: englishChat,
+      common: englishCommon,
       errors: englishErrors,
       message: englishMessage,
       onboarding: englishOnboarding,
+      settings: englishSettings,
       upload: englishUpload,
     },
   },

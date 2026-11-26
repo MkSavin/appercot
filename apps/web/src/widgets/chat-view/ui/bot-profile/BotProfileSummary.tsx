@@ -1,36 +1,31 @@
-import { Bell, BellOff, Ellipsis, ShieldBan, Trash2 } from 'lucide-react'
+import { Ellipsis, ShieldBan, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { BotAvatar } from '@/entities/bot'
 import type { fetchChatProfile } from '@/entities/chat'
+import { ChatNotificationMenu } from '@/features/chat-notifications'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from '@/shared/ui/dropdown-menu'
 
 type Profile = Awaited<ReturnType<typeof fetchChatProfile>>
-const isNotificationMode = (mode: string): mode is 'all' | 'silent' | 'off' =>
-  mode === 'all' || mode === 'silent' || mode === 'off'
 
 export const BotProfileSummary = ({
+  chatId,
   bot,
   blocked,
-  notifications,
   pending,
-  onNotifications,
   onBlock,
   onDelete,
 }: {
+  chatId: string
   bot: Profile['bot']
   blocked: boolean
-  notifications: 'all' | 'silent' | 'off'
   pending: boolean
-  onNotifications: (mode: 'all' | 'silent' | 'off') => void
   onBlock: () => void
   onDelete: () => void
 }) => {
@@ -49,32 +44,7 @@ export const BotProfileSummary = ({
         </p>
       ) : null}
       <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" disabled={pending}>
-              {notifications === 'off' ? (
-                <BellOff aria-hidden="true" />
-              ) : (
-                <Bell aria-hidden="true" />
-              )}
-              {t('bot:notifications')}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="center">
-            <DropdownMenuRadioGroup
-              value={notifications}
-              onValueChange={(mode) => {
-                if (isNotificationMode(mode)) onNotifications(mode)
-              }}
-            >
-              <DropdownMenuRadioItem value="all">{t('bot:notificationsAll')}</DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="silent">
-                {t('bot:notificationsSilent')}
-              </DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="off">{t('bot:notificationsOff')}</DropdownMenuRadioItem>
-            </DropdownMenuRadioGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <ChatNotificationMenu chatId={chatId} trigger="button" align="center" />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button

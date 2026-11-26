@@ -62,5 +62,13 @@
   "offlineStatus": "не в сети",
   "logout": "Выйти",
   "unread": "Непрочитанных: {{count}}",
+  "unreadFilter_one": "Непрочитанные чаты: {{count}}",
+  "unreadFilter_few": "Непрочитанные чаты: {{count}}",
+  "unreadFilter_many": "Непрочитанные чаты: {{count}}",
+  "unreadFilter_other": "Непрочитанные чаты: {{count}}",
+  "noUnreadChats": "Нет непрочитанных чатов",
+  "noFilterResults": "Нет непрочитанных чатов по этому запросу",
+  "clearUnreadFilter": "Показать все чаты",
+  "clearFilters": "Сбросить фильтры",
   "botProfile": "Профиль бота {{name}}"
 }
