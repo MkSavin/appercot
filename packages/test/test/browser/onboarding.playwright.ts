@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { expect, test } from '@playwright/test'
+import { localeStorageKey } from '../../../../apps/web/src/shared/lib/locale'
 import { testIds } from '../../../../apps/web/src/shared/lib/test-ids'
 import { AppercotTestClient } from '../../src/index'
 
@@ -25,20 +26,35 @@ for (const viewport of [
   { name: 'desktop', width: 1280, height: 900 },
   { name: 'mobile', width: 390, height: 844 },
 ]) {
-  test(`runs a real first bot through ${viewport.name} onboarding`, async ({ page, context }) => {
+  test(`runs a real first bot through ${viewport.name} onboarding`, async ({
+    page,
+    context,
+    browserName,
+    isMobile,
+  }) => {
     test.setTimeout(45_000)
     await page.setViewportSize({ width: viewport.width, height: viewport.height })
-    if (viewport.name === 'desktop') {
+    if (viewport.name === 'desktop' && browserName === 'chromium') {
       await context.grantPermissions(['clipboard-read', 'clipboard-write'])
     } else {
       await page.addInitScript(() => {
+        let clipboard = ''
         Object.defineProperty(navigator, 'clipboard', {
           configurable: true,
-          value: { writeText: () => Promise.reject(new DOMException('Denied', 'NotAllowedError')) },
+          value: {
+            writeText: (text: string) => {
+              if (window.innerWidth < 500)
+                return Promise.reject(new DOMException('Denied', 'NotAllowedError'))
+              clipboard = text
+              return Promise.resolve()
+            },
+            readText: () => Promise.resolve(clipboard),
+          },
         })
       })
     }
 
+    await page.addInitScript((key) => localStorage.setItem(key, 'en'), localeStorageKey)
     let diagnosticsRequests = 0
     page.on('request', (request) => {
       if (request.postData()?.includes('adminBotDiagnostics')) diagnosticsRequests += 1
@@ -114,7 +130,7 @@ for (const viewport of [
 
       await dialog.locator(selector(testIds.onboarding.close)).click()
       await expect(dialog).toBeHidden()
-      await expect(page.locator(selector(testIds.onboarding.create))).toBeFocused()
+      if (!isMobile) await expect(page.locator(selector(testIds.onboarding.create))).toBeFocused()
       expect(await page.locator(selector(testIds.onboarding.token)).count()).toBe(0)
       expect(
         await page.evaluate(

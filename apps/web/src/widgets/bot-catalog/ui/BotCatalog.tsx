@@ -1,5 +1,5 @@
 import { ArrowRight } from 'lucide-react'
-import { useTranslation } from 'react-i18next'
+
 import { Link } from 'wouter'
 import { BotAvatar, type BotDetails } from '@/entities/bot'
 import { testId, testIds } from '@/shared/lib/test-ids'
@@ -12,7 +12,6 @@ export const BotCatalog = ({
   bots: BotDetails[]
   returnSearch?: string
 }) => {
-  const { t } = useTranslation()
   return (
     <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
       {bots.map((bot) => (
@@ -21,7 +20,6 @@ export const BotCatalog = ({
             {...testId(testIds.catalog.bot(bot.id))}
             href={`/browse/${encodeURIComponent(bot.id)}${returnSearch}`}
             className="flex min-h-32 w-full min-w-0 items-start gap-3 rounded-xl border bg-linear-to-r/srgb from-accent/25 to-card p-4 text-left transition-colors hover:border-ring/50 hover:from-accent/85 focus-visible:outline-2 focus-visible:outline-ring"
-            aria-label={t('browse:details.view', { name: bot.name })}
           >
             <BotAvatar bot={bot} showPresence />
             <span className="min-w-0 flex-1">

@@ -35,6 +35,7 @@ try {
             ? resolve(workspace, 'apps/web/dist')
             : join(temporary, 'public'),
       },
+      admin: { username: 'admin', password: 'test-admin-password' },
       users: [
         { id: 'user-alice', username: 'alice', displayName: 'Alice', password: 'alice-password' },
       ],
@@ -86,13 +87,15 @@ try {
     ...process.env,
     BOT_APPERCOT_TEST_ENDPOINT: endpoint,
     BOT_APPERCOT_TEST_TOKEN: 'control-secret',
+    ADMIN_PASSWORD: 'test-admin-password',
   }
   const browserCommand = [
-    'node',
+    process.execPath,
     'packages/test/node_modules/@playwright/test/cli.js',
     'test',
     '--config',
     'packages/test/playwright.config.ts',
+    ...(process.argv.includes('--') ? process.argv.slice(process.argv.indexOf('--') + 1) : []),
   ]
   const commands = process.argv.includes('--browser-only')
     ? [browserCommand]

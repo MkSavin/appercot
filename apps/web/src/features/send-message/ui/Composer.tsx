@@ -142,7 +142,7 @@ export const Composer = ({ chatId, onOpenCommands }: ComposerProps) => {
                 variant="ghost"
                 className="shrink-0 text-muted-foreground"
                 disabled={submitting}
-                aria-label={t('chat:commandsTitle')}
+                aria-label={`${t('chat:commandsTitle')} ${displayShortcut(Shortcut.CommandPalette)}`}
                 aria-haspopup="dialog"
                 aria-keyshortcuts={ariaShortcut(Shortcut.CommandPalette)}
                 title={`${t('chat:commandsTitle')} (${displayShortcut(Shortcut.CommandPalette)})`}

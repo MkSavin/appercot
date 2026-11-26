@@ -20,6 +20,7 @@
     "@appercot/server": "workspace:*"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.1",
     "@jest/globals": "^30.5.2",
     "@playwright/test": "^1.65.1",
     "@swc/core": "^1.16.22",

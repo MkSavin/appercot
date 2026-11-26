@@ -2,5 +2,19 @@
   "pending": "Sending",
   "accepted": "Accepted",
   "processed": "Processed",
-  "failed": "Not sent"
+  "failed": "Not sent",
+  "copyCode": "Copy code",
+  "copied": "Copied",
+  "copyFailed": "Could not copy",
+  "enlargeImage": "Enlarge image",
+  "image": "Image",
+  "video": "Video",
+  "audio": "Audio",
+  "file": "File",
+  "download": "Download file",
+  "playVideo": "Play video",
+  "edited": "edited",
+  "original": "Original attachment",
+  "downloadOriginal": "Download original",
+  "codeBlock": "Code block"
 }

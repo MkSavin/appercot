@@ -21,6 +21,7 @@ export const ChatHeader = ({
   searchTriggerRef: RefObject<HTMLButtonElement | null>
 }) => {
   const { t } = useTranslation()
+  const status = bot.online ? t('chat:online') : t('chat:offlineStatus')
   return (
     <header className="shrink-0 border-b bg-card pt-[env(safe-area-inset-top)]">
       <div className="relative flex h-16 items-stretch">
@@ -30,14 +31,13 @@ export const ChatHeader = ({
           size="icon"
           className="absolute top-1/2 left-2 z-10 -translate-y-1/2 md:hidden"
         >
-          <Link href="/" aria-label={t('chat:back')}>
+          <Link {...testId(testIds.chat.back)} href="/" aria-label={t('chat:back')}>
             <ArrowLeft aria-hidden="true" />
           </Link>
         </Button>
         <Link
           href={`/c/${chatId}/profile`}
           className="flex min-w-0 flex-1 items-center gap-3 pr-2 pl-14 hover:bg-accent/60 focus-visible:outline-2 focus-visible:-outline-offset-2 md:px-6"
-          aria-label={t('chat:botProfile', { name: bot.name })}
         >
           <BotAvatar bot={bot} />
           <div className="min-w-0">
@@ -52,7 +52,7 @@ export const ChatHeader = ({
                   bot.online ? 'text-emerald-500' : 'text-zinc-400',
                 )}
               />
-              {bot.online ? t('chat:online') : t('chat:offlineStatus')}
+              {status}
             </p>
           </div>
         </Link>

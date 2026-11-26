@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { inviteBotMemberRequest, issueBotInviteRequest } from '@/entities/bot'
 import { showRequestError } from '@/shared/api'
+import { formatDate } from '@/shared/lib/format-date'
 import { Button } from '@/shared/ui/button'
 import { ChoiceCards } from '@/shared/ui/choice-cards'
 import {
@@ -34,7 +35,7 @@ export const InviteBotMemberDialog = ({
   onInvited: () => void
   onLinkIssued: (link: Awaited<ReturnType<typeof issueBotInviteRequest>>) => void
 }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const options = [
     {
       value: 'link',
@@ -119,7 +120,8 @@ export const InviteBotMemberDialog = ({
                 className="text-xs text-muted-foreground"
                 dateTime={new Date(issued.expiresAt).toISOString()}
               >
-                {t('settings:expires')} {new Date(issued.expiresAt).toLocaleDateString('ru')}
+                {t('settings:expires')}{' '}
+                {formatDate(issued.expiresAt, i18n.resolvedLanguage, { dateStyle: 'medium' })}
               </time>
             ) : null}
             <DialogFooter>

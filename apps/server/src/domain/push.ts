@@ -14,7 +14,13 @@ const PushSubscriptionSchema = z.strictObject({
   endpoint: z.url().refine((value) => ['http:', 'https:'].includes(new URL(value).protocol)),
   expirationTime: z.number().nullable().optional(),
   keys: z.strictObject({ p256dh: z.string().min(1), auth: z.string().min(1) }),
+  locale: z.enum(['ru', 'en']).default('ru'),
 })
+
+const pushFallback = {
+  ru: { media: 'Медиа', message: 'Новое сообщение' },
+  en: { media: 'Media', message: 'New message' },
+} as const
 
 export class PushService {
   private readonly configured: boolean
@@ -46,6 +52,7 @@ export class PushService {
         endpoint: subscription.endpoint,
         p256dh: subscription.keys.p256dh,
         auth: subscription.keys.auth,
+        locale: subscription.locale,
         createdAt,
       })
       .onConflictDoUpdate({
@@ -55,6 +62,7 @@ export class PushService {
           sessionId,
           p256dh: subscription.keys.p256dh,
           auth: subscription.keys.auth,
+          locale: subscription.locale,
           createdAt,
         },
       })
@@ -112,16 +120,19 @@ export class PushService {
         ),
       )
       .all()
-    const payload = JSON.stringify(
-      PushPayloadSchema.parse({
-        title: result.bot.name,
-        body: message.content.text ?? (message.content.media?.length ? 'Медиа' : 'Новое сообщение'),
-        tag: chatId,
-        url: `/c/${chatId}`,
-        ...(result.notifications === 'silent' ? { silent: true } : {}),
-      }),
-    )
     for (const { subscription } of subscriptions) {
+      const fallback = pushFallback[subscription.locale]
+      const payload = JSON.stringify(
+        PushPayloadSchema.parse({
+          title: result.bot.name,
+          body:
+            message.content.text ??
+            (message.content.media?.length ? fallback.media : fallback.message),
+          tag: chatId,
+          url: `/c/${chatId}`,
+          ...(result.notifications === 'silent' ? { silent: true } : {}),
+        }),
+      )
       try {
         await this.send(
           {

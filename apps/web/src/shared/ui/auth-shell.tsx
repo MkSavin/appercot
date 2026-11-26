@@ -1,6 +1,8 @@
 import { Bot } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
+import { testIds } from '@/shared/lib/test-ids'
+import { LanguageSelect } from './language-select'
 
 interface AuthShellProps {
   title: string
@@ -14,6 +16,9 @@ export const AuthShell = ({ title, subtitle, titleId, children }: AuthShellProps
   return (
     <main className="workspace-surface grid min-h-dvh place-items-center px-4 py-10">
       <div className="w-full max-w-[420px]">
+        <div className="mb-4 flex justify-end">
+          <LanguageSelect testId={testIds.auth.language} className="w-36" />
+        </div>
         <div className="mb-8 flex items-center justify-center gap-2.5">
           <span className="grid size-10 place-items-center rounded-xl bg-primary text-primary-foreground shadow-sm">
             <Bot aria-hidden="true" className="size-5" />

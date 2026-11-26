@@ -36,6 +36,7 @@ test.beforeEach(async () => {
 
 test('opens details without adding, preserves filters and starts one chat after retry', async ({
   page,
+  browserName,
 }) => {
   const manifest = await client.fixtures()
   const user = manifest.users[0]
@@ -72,8 +73,10 @@ test('opens details without adding, preserves filters and starts one chat after 
   )
   await page.locator(selector(testIds.catalog.bot(bot.id))).click()
   await page.route('**/graphql', async (route) => {
-    if (route.request().postData()?.includes('AddBot')) return route.abort()
-    return route.continue()
+    if (!route.request().postData()?.includes('AddBot')) return route.continue()
+    if (browserName === 'webkit')
+      return route.fulfill({ status: 503, contentType: 'application/json', body: '{}' })
+    return route.abort()
   })
   await page.locator(selector(testIds.catalog.details.start)).click()
   await expect(page.getByText('Не удалось начать чат. Попробуйте ещё раз.')).toBeVisible()

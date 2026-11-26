@@ -2,6 +2,7 @@ import { Check, Copy, Pencil } from 'lucide-react'
 import { type ReactNode, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { showRequestError } from '@/shared/api'
+import { formatDate } from '@/shared/lib/format-date'
 import { Badge } from './badge'
 import { Button } from './button'
 import {
@@ -24,8 +25,6 @@ interface Invitation {
   revokedAt: number | null
 }
 
-const dateTime = new Intl.DateTimeFormat('ru', { dateStyle: 'medium', timeStyle: 'short' })
-
 export const InvitationList = <T extends Invitation>({
   rows,
   editable = true,
@@ -39,7 +38,7 @@ export const InvitationList = <T extends Invitation>({
   onEdit: (row: T, data: FormData, limits: ReturnType<typeof readInviteLimits>) => Promise<void>
   onRevoke: (row: T) => Promise<void>
 }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [action, setAction] = useState<{ row: T; edit: boolean }>()
   const [pending, setPending] = useState(false)
   const [copied, setCopied] = useState<string>()
@@ -75,7 +74,12 @@ export const InvitationList = <T extends Invitation>({
                 <p className="mt-1 text-xs text-muted-foreground">
                   {t('invitation:accepted', { uses: row.uses, max: row.maxUses ?? '∞' })} ·{' '}
                   {row.expiresAt
-                    ? t('invitation:until', { date: dateTime.format(row.expiresAt) })
+                    ? t('invitation:until', {
+                        date: formatDate(row.expiresAt, i18n.resolvedLanguage, {
+                          dateStyle: 'medium',
+                          timeStyle: 'short',
+                        }),
+                      })
                     : t('invitation:noExpiry')}
                 </p>
               </div>

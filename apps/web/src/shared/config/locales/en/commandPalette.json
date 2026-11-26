@@ -1,0 +1,11 @@
+{
+  "title": "Chat commands",
+  "description": "Search commands and buttons from the latest message",
+  "search": "Find a command or button…",
+  "empty": "Nothing found",
+  "commands": "Commands",
+  "latestButtons": "Latest bot message",
+  "select": "Select",
+  "run": "Run",
+  "close": "Close"
+}

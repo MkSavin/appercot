@@ -37,7 +37,7 @@ describe('catalog and administration', () => {
   test('opens catalog details without turning the card into an add button', () => {
     const available = renderCatalog()
     expect(available).toContain('@examplebot')
-    expect(available).toContain('Подробнее о боте Example')
+    expect(available).not.toContain('aria-label="Подробнее о боте')
     expect(available).toContain('href="/browse/bot-1"')
     expect(available).toContain('в сети')
     expect(available).toContain('productivity')

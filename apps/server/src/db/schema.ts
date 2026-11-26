@@ -257,6 +257,9 @@ export const pushSubs = sqliteTable('push_subs', {
   endpoint: text('endpoint').notNull().unique(),
   p256dh: text('p256dh').notNull(),
   auth: text('auth').notNull(),
+  locale: text('locale', { enum: ['ru', 'en'] })
+    .notNull()
+    .default('ru'),
   createdAt: integer('created_at').notNull(),
 })
 

@@ -167,11 +167,14 @@ beforeEach(() => appercot.flushState())
 afterAll(() => bot.stop())
 ```
 
-Run all included compatibility scenarios, including headless Chromium:
+Run all included compatibility scenarios, including the headless browser matrix:
 
 ```bash
+bun packages/test/node_modules/@playwright/test/cli.js install chromium firefox webkit
 bun packages/test/scripts/run-compatibility.ts --with-browser
 ```
+
+For browser-only iteration, use `bun run --filter '@appercot/test' test:browser -- --project=desktop-chromium`; omit `--project` to run desktop/mobile Chromium, Firefox, and WebKit. See [browser testing](docs/guide/testing/browser.md) for WCAG scans and manual device limits.
 
 The control API is enabled only by the test CLI. Never expose it or its token in production. Full fixture and cleanup semantics are in the [testing guide](docs/guide/testing/index.md).
 

@@ -18,7 +18,7 @@
   "resetFilters": "Reset filters",
   "details": {
     "title": "About the bot",
-    "view": "View details for {{name}}",
+
     "back": "Back to catalog",
     "publicAccess": "Public bot",
     "startChat": "Start chat",

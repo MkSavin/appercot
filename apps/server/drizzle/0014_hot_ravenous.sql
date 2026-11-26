@@ -1,0 +1,1 @@
+ALTER TABLE `push_subs` ADD `locale` text DEFAULT 'ru' NOT NULL;

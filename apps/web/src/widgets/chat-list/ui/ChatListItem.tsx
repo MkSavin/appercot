@@ -7,6 +7,7 @@ import { BotAvatar } from '@/entities/bot'
 import { UnreadBadge, useChatStore } from '@/entities/chat'
 import { useNotificationMute } from '@/features/chat-notifications'
 import { cn } from '@/shared/lib/cn'
+import { formatDate } from '@/shared/lib/format-date'
 import { testId, testIds } from '@/shared/lib/test-ids'
 
 interface ChatListItemProps {
@@ -16,11 +17,8 @@ interface ChatListItemProps {
   onPin: () => void
 }
 
-const timeFormat = new Intl.DateTimeFormat('ru', { hour: '2-digit', minute: '2-digit' })
-const dateFormat = new Intl.DateTimeFormat('ru', { day: 'numeric', month: 'short' })
-
 export const ChatListItem = ({ chat, active, pinned, onPin }: ChatListItemProps) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const cached = useChatStore((state) => state.messagesByChat[chat.id]?.at(-1))
   const muted = useNotificationMute(chat.notificationsMutedUntil)
   const latest = cached && cached.seq > (chat.preview?.seq ?? 0) ? cached : chat.preview
@@ -48,10 +46,13 @@ export const ChatListItem = ({ chat, active, pinned, onPin }: ChatListItemProps)
                     className="shrink-0 text-[11px] text-muted-foreground"
                     dateTime={date.toISOString()}
                   >
-                    {(date.toDateString() === new Date().toDateString()
-                      ? timeFormat
-                      : dateFormat
-                    ).format(date)}
+                    {formatDate(
+                      date,
+                      i18n.resolvedLanguage,
+                      date.toDateString() === new Date().toDateString()
+                        ? { hour: '2-digit', minute: '2-digit' }
+                        : { day: 'numeric', month: 'short' },
+                    )}
                   </time>
                 ) : null}
               </span>

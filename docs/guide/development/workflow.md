@@ -27,7 +27,7 @@ For changes affecting the test CLI, SDK reconnect, cleanup, or browser selectors
 bun packages/test/scripts/run-compatibility.ts --with-browser
 ```
 
-This covers Bun, Vitest, Jest, and headless Chromium against the real environment.
+This covers Bun, Vitest, Jest, and the desktop/mobile Chromium, Firefox, and WebKit projects against the real environment. Install the browser binaries first with `bun packages/test/node_modules/@playwright/test/cli.js install chromium firefox webkit`. Browser-only iteration is available through `bun packages/test/scripts/run-compatibility.ts --browser-only`; pass `--project=desktop-chromium` to the package `test:browser` script for a single-project smoke.
 
 ## S3 media tests
 

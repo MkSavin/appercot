@@ -12,6 +12,6 @@ GraphQL reads every retained update after the checkpoint. Add bounded batches an
 
 Message storage, user updates and bot outbox insertion have separate commit boundaries. Move durable side effects into one transaction, then publish after commit. Not checked automatically: there is no crash-injection test for this boundary.
 
-## Web · Browser coverage
+## Web · Real-device accessibility and safe traces
 
-Component markup tests leave scrolling, focus, touch layout and installed PWA behavior to manual verification. Add desktop and mobile browser scenarios that exercise those behaviors. Not checked automatically: browser tests are outside the current CI suite.
+Playwright covers desktop/mobile Chromium, Firefox and WebKit, axe WCAG A/AA scans, keyboard/IME, history scrolling, touch layout, RU/EN and the Chromium offline app shell in CI. Physical iOS/Android PWA lifecycle, safe areas, VoiceOver and NVDA still require the manual release checklist. Full Playwright traces remain disabled because their network payloads can contain login passwords and bot tokens; failure screenshots and axe reports are retained instead.

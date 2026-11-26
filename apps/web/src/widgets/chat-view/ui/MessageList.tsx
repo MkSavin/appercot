@@ -194,6 +194,7 @@ export const MessageList = ({
         />
       ) : null}
       <div
+        {...testId(testIds.chat.history.viewport)}
         ref={viewport}
         className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 [overflow-anchor:none] [scrollbar-gutter:stable] md:px-8"
         role="log"
@@ -280,7 +281,7 @@ export const MessageList = ({
       {showLatest || historyMode === 'context' ? (
         <UiButton
           {...testId(testIds.chat.history.latest)}
-          className="absolute right-5 bottom-4 shadow-md"
+          className={`absolute right-5 shadow-md ${historyMode === 'context' && hasLater ? 'bottom-20' : 'bottom-4'}`}
           variant="outline"
           onClick={historyMode === 'context' ? onJumpLatest : () => virtualizer.scrollToEnd()}
         >

@@ -68,7 +68,7 @@ export const ChatNotificationMenu = ({
     void run(() => updateChatMute(useChatStore, chatId, mutedUntil, setChatMuteRequest))
 
   return (
-    <DropdownMenu>
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <Button
           {...testId(
@@ -89,7 +89,11 @@ export const ChatNotificationMenu = ({
           {trigger === 'button' ? t('bot:notifications') : null}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align={align} className="w-64">
+      <DropdownMenuContent
+        {...testId(testIds.chat.notifications.menu)}
+        align={align}
+        className="w-64"
+      >
         <DropdownMenuLabel>{t('bot:notifications')}</DropdownMenuLabel>
         <DropdownMenuRadioGroup
           value={notifications}

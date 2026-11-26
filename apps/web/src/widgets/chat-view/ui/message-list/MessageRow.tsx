@@ -1,12 +1,12 @@
 import type { BotCommand, Button } from '@appercot/protocol'
 import type { CSSProperties } from 'react'
+import { useTranslation } from 'react-i18next'
 import { BotMessage, SystemMessage, UserMessage } from '@/entities/message'
 import { cn } from '@/shared/lib/cn'
+import { formatDate } from '@/shared/lib/format-date'
 import type { ShortcutCombination } from '@/shared/lib/shortcuts'
 import { testId, testIds } from '@/shared/lib/test-ids'
 import type { ChatMessage } from '@/shared/model'
-
-const dayFormat = new Intl.DateTimeFormat('ru', { dateStyle: 'long' })
 
 export const MessageRow = ({
   index,
@@ -41,6 +41,7 @@ export const MessageRow = ({
   onCommand: (command: string) => void
   onButtonAction: (message: ChatMessage, button: Button, key: string) => void
 }) => {
+  const { i18n } = useTranslation()
   const date = new Date(message.createdAt)
   const newDay = !previous || date.toDateString() !== new Date(previous.createdAt).toDateString()
   return (
@@ -60,7 +61,7 @@ export const MessageRow = ({
     >
       {newDay ? (
         <p className="mb-4 text-center text-xs font-medium text-muted-foreground">
-          {dayFormat.format(date)}
+          {formatDate(date, i18n.resolvedLanguage, { dateStyle: 'long' })}
         </p>
       ) : null}
       {message.sender === 'user' ? (

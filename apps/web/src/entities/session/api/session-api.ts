@@ -11,6 +11,8 @@ import {
   UnsubscribePushDocument,
 } from '@/shared/api'
 import type { SessionQuery } from '@/shared/api/graphql/generated/graphql'
+import { i18n } from '@/shared/config'
+import { normalizeLocale } from '@/shared/lib/locale'
 import type { SessionPayload } from '@/shared/model'
 
 const toSessionPayload = (session: SessionQuery['session']): SessionPayload => {
@@ -72,7 +74,10 @@ export const fetchPushStatus = async (endpoint: string) => {
 }
 
 export const subscribePushRequest = async (subscription: unknown) => {
-  await graphqlClient.request(SubscribePushDocument, { subscription })
+  const value = typeof subscription === 'object' && subscription !== null ? subscription : {}
+  await graphqlClient.request(SubscribePushDocument, {
+    subscription: { ...value, locale: normalizeLocale(i18n.resolvedLanguage) },
+  })
 }
 
 export const unsubscribePushRequest = async (endpoint: string) => {

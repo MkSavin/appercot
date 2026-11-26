@@ -30,6 +30,17 @@ jobs:
       - run: bun install --frozen-lockfile --ignore-scripts
       - run: bun run check
       - run: bun run build
+      - name: Install Playwright browsers
+        working-directory: packages/test
+        run: bunx playwright install --with-deps chromium firefox webkit
+      - run: bun packages/test/scripts/run-compatibility.ts --browser-only
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: browser-failures
+          path: packages/test/test-results
+          if-no-files-found: ignore
+          overwrite: true
       - run: bun run build:sdk
       - run: bun run test:sdk-package
       - name: Archive the standalone Linux build

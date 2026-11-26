@@ -1,5 +1,6 @@
 import { Check, type LucideIcon } from 'lucide-react'
 import { cn } from '@/shared/lib/cn'
+import { testId } from '@/shared/lib/test-ids'
 
 interface ChoiceCardsProps<Value extends string> {
   name: string
@@ -7,6 +8,7 @@ interface ChoiceCardsProps<Value extends string> {
   value: Value
   options: readonly { value: Value; label: string; description: string; icon: LucideIcon }[]
   onChange: (value: Value) => void
+  optionTestId?: (value: Value) => string
   disabled?: boolean
   className?: string
 }
@@ -17,6 +19,7 @@ export const ChoiceCards = <Value extends string>({
   value,
   options,
   onChange,
+  optionTestId,
   disabled,
   className,
 }: ChoiceCardsProps<Value>) => (
@@ -27,6 +30,7 @@ export const ChoiceCards = <Value extends string>({
         className="relative flex min-w-0 cursor-pointer items-start gap-3 rounded-xl border bg-card p-4 transition-colors hover:border-primary/45 has-[:checked]:border-primary has-[:checked]:bg-secondary/45 has-[:disabled]:cursor-not-allowed has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring"
       >
         <input
+          {...(optionTestId ? testId(optionTestId(option)) : {})}
           type="radio"
           name={name}
           value={option}

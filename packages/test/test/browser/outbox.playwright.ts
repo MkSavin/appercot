@@ -49,10 +49,12 @@ const serverTextCount = async (page: Page, chatId: string, text: string) =>
     { chatId, text },
   )
 
-const failSend = (page: Page, afterCommit = false) =>
+const failSend = (page: Page, afterCommit = false, browserName?: string) =>
   page.route('**/graphql', async (route) => {
     if (!route.request().postData()?.includes('SendMessage')) return route.continue()
     if (afterCommit) await route.fetch()
+    if (browserName === 'webkit')
+      return route.fulfill({ status: 503, contentType: 'application/json', body: '{}' })
     await route.abort()
   })
 
@@ -63,6 +65,7 @@ test.beforeEach(async () => {
 
 test('restores a draft and retries an offline message after reload exactly once', async ({
   page,
+  browserName,
 }) => {
   const { user, chat } = await fixture()
   await login(page, user.username, user.password, chat.id)
@@ -75,7 +78,7 @@ test('restores a draft and retries an offline message after reload exactly once'
   )
   await expect(messageWithText(page, 'Draft survives reload')).toHaveCount(0)
 
-  await failSend(page)
+  await failSend(page, false, browserName)
   await page.locator(selector(testIds.chat.composer.input)).fill('Offline survives reload')
   await page.locator(selector(testIds.chat.composer.send)).click()
   await expect(messageWithText(page, 'Offline survives reload')).toHaveCount(1)
@@ -92,10 +95,11 @@ test('restores a draft and retries an offline message after reload exactly once'
 
 test('uses the same client id when the response is lost after the server commit', async ({
   page,
+  browserName,
 }) => {
   const { user, chat } = await fixture()
   await login(page, user.username, user.password, chat.id)
-  await failSend(page, true)
+  await failSend(page, true, browserName)
   await page.locator(selector(testIds.chat.composer.input)).fill('Committed without response')
   await page.locator(selector(testIds.chat.composer.send)).click()
   await expect.poll(() => serverTextCount(page, chat.id, 'Committed without response')).toBe(1)

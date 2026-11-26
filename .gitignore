@@ -3,6 +3,7 @@ dist/
 .data*/
 .test-data/
 /packages/test/test-results/
+/packages/test/playwright-report/
 backups/
 .env
 .env.local

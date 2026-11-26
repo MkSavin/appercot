@@ -1,6 +1,8 @@
 export const testIds = {
   auth: {
+    language: 'auth.language',
     login: {
+      error: 'auth.login.error',
       username: 'auth.login.username',
       password: 'auth.login.password',
       submit: 'auth.login.submit',
@@ -27,6 +29,7 @@ export const testIds = {
     },
   },
   chat: {
+    back: 'chat.back',
     search: {
       trigger: 'chat.search.trigger',
       input: 'chat.search.input',
@@ -37,11 +40,13 @@ export const testIds = {
       result: (messageId: string) => `chat.search.result.${messageId}`,
     },
     history: {
+      viewport: 'chat.history.viewport',
       earlier: 'chat.history.earlier',
       later: 'chat.history.later',
       latest: 'chat.history.latest',
     },
     notifications: {
+      menu: 'chat.notifications.menu',
       trigger: 'chat.notifications.trigger',
       profileTrigger: 'chat.notifications.profile-trigger',
       mode: (mode: string) => `chat.notifications.mode.${mode}`,
@@ -79,7 +84,12 @@ export const testIds = {
     button: (messageId: string, row: number, column: number) =>
       `command-palette.button.${messageId}:${row}:${column}`,
   },
+  language: {
+    option: (locale: string) => `language.option.${locale}`,
+  },
   settings: {
+    language: 'settings.language',
+    theme: (theme: string) => `settings.theme.${theme}`,
     tab: (tabId: string) => `settings.tab.${tabId}`,
     bot: { tags: 'settings.bot.tags' },
     save: 'settings.save',

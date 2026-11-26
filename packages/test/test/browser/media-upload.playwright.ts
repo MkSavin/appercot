@@ -137,20 +137,26 @@ test('sends multiple mobile picker files with caption through the durable outbox
 
 test('keeps a slow upload across navigation and supports keyboard cancel and retry', async ({
   page,
+  isMobile,
 }) => {
   const { user, chat } = await fixture()
   await login(page, user.username, user.password, chat.id)
   await page
     .locator(selector(testIds.chat.composer.fileInput))
     .setInputFiles(fixturePath('one.png'))
+  let continueUpload = () => {}
+  const uploadGate = new Promise<void>((resolve) => {
+    continueUpload = resolve
+  })
   await page.route('**/api/files?*', async (route) => {
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    await route.continue()
+    await uploadGate
+    if (!route.request().failure()) await route.continue()
   })
   await page.locator(selector(testIds.chat.composer.send)).click()
   await expect(page.locator('[data-test-id^="chat.attachment.progress."]')).toHaveCount(1)
 
-  await page.locator(selector(testIds.navigation.chats)).click()
+  if (isMobile) await page.locator(selector(testIds.chat.back)).click()
+  else await page.locator(selector(testIds.navigation.chats)).click()
   await page.locator(selector(testIds.chats.item(chat.id))).click()
   await expect(attachmentRows(page)).toHaveCount(1)
   const cancel = page.locator('[data-test-id^="chat.attachment.cancel."]')
@@ -161,6 +167,7 @@ test('keeps a slow upload across navigation and supports keyboard cancel and ret
     (await serverMessages(page, chat.id)).filter((message) => message.content.media),
   ).toHaveLength(0)
 
+  continueUpload()
   await page.unroute('**/api/files?*')
   const retry = page.locator('[data-test-id^="chat.attachment.retry."]')
   await retry.focus()
@@ -176,17 +183,24 @@ test('keeps a slow upload across navigation and supports keyboard cancel and ret
   await expect(attachmentRows(page)).toHaveCount(0)
 })
 
-test('uses the same queue for paste and drop without breaking text paste', async ({
-  page,
-  context,
-}) => {
+test('uses the same queue for paste and drop without breaking text paste', async ({ page }) => {
   const { user, chat } = await fixture()
-  await context.grantPermissions(['clipboard-read', 'clipboard-write'])
   await login(page, user.username, user.password, chat.id)
   const input = selector(testIds.chat.composer.input)
-  await page.evaluate(() => navigator.clipboard.writeText('Plain pasted caption'))
-  await page.locator(input).focus()
-  await page.locator(input).press(process.platform === 'darwin' ? 'Meta+V' : 'Control+V')
+  await page.evaluate((inputSelector) => {
+    const transfer = new DataTransfer()
+    transfer.setData('text/plain', 'Plain pasted caption')
+    const target = document.querySelector(inputSelector)
+    const event = new ClipboardEvent('paste', {
+      clipboardData: transfer,
+      bubbles: true,
+      cancelable: true,
+    })
+    if (target instanceof HTMLElement) target.focus()
+    target?.dispatchEvent(event)
+    if (!event.defaultPrevented)
+      document.execCommand('insertText', false, transfer.getData('text/plain'))
+  }, input)
   await expect(page.locator(input)).toHaveValue('Plain pasted caption')
   await expect(attachmentRows(page)).toHaveCount(0)
 

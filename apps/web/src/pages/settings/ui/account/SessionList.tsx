@@ -2,15 +2,14 @@ import { LucideComputer, LucideSmartphone } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { listSessions, revokeSession } from '@/entities/user'
+import { formatDate } from '@/shared/lib/format-date'
 import { Button } from '@/shared/ui/button'
 import { PagePlaceholder } from '@/shared/ui/page-placeholder'
 import { sessionDevice, sessionDeviceType } from '../../model/session-device'
 import { AccountDialog } from './AccountDialog'
 
-const dateTime = new Intl.DateTimeFormat('ru', { dateStyle: 'medium', timeStyle: 'short' })
-
 export const SessionList = ({ onSignOut }: { onSignOut: () => void }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [rows, setRows] = useState<Awaited<ReturnType<typeof listSessions>>>()
   const [failed, setFailed] = useState(false)
   useEffect(() => {
@@ -48,7 +47,10 @@ export const SessionList = ({ onSignOut }: { onSignOut: () => void }) => {
               {sessionDevice(row.userAgent)}
             </p>
             <p className="text-xs text-muted-foreground">
-              {dateTime.format(row.createdAt)}{' '}
+              {formatDate(row.createdAt, i18n.resolvedLanguage, {
+                dateStyle: 'medium',
+                timeStyle: 'short',
+              })}{' '}
               {row.current ? `· ${t('account:currentSession')}` : ''}
             </p>
           </div>

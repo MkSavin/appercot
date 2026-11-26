@@ -1,0 +1,9 @@
+{
+  "title": "Guest chat",
+  "unavailable": "Guest chat is currently unavailable.",
+  "loading": "Loading guest chat…",
+  "badge": "Guest",
+  "available": "Try the available commands in guest chat.",
+  "offline": "The bot is currently offline.",
+  "noCommands": "The bot has not published any guest commands yet."
+}

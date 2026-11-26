@@ -138,6 +138,79 @@ describe('Web Push', () => {
     }
   })
 
+  test('stores and updates subscription locales for platform fallback messages', async () => {
+    const keys = generateVAPIDKeys()
+    const fixture = createServerFixture(undefined, {
+      VAPID_PUBLIC_KEY: keys.publicKey,
+      VAPID_PRIVATE_KEY: keys.privateKey,
+    })
+    try {
+      const login = await graphqlRequest(
+        fixture.baseUrl,
+        'mutation { login(username: "admin", password: "password123") { user { id } } }',
+      )
+      const cookie = login.response.headers.get('set-cookie')
+      if (!cookie) throw new Error('Cookie is missing')
+      const userId = (login.body.data.login as { user: { id: string } }).user.id
+      await graphqlRequest(
+        fixture.baseUrl,
+        'mutation { createBot(username: "localebot", name: "Locale Bot", description: "Push") { bot { id } } }',
+        {},
+        cookie,
+      )
+      const added = await graphqlRequest(
+        fixture.baseUrl,
+        'mutation { addBot(username: "localebot") { id } }',
+        {},
+        cookie,
+      )
+      const chatId = (added.body.data.addBot as { id: string }).id
+      const subscribe = (value: unknown) =>
+        graphqlRequest(
+          fixture.baseUrl,
+          'mutation Subscribe($subscription: JSON!) { subscribePush(subscription: $subscription) }',
+          { subscription: value },
+          cookie,
+        )
+      expect((await subscribe(subscription)).body.errors).toBeUndefined()
+      expect((await subscribe({ ...subscription, locale: 'en' })).body.errors).toBeUndefined()
+      const russianSubscription = {
+        ...subscription,
+        endpoint: 'https://push.example.test/russian',
+      }
+      expect((await subscribe(russianSubscription)).body.errors).toBeUndefined()
+      expect((await subscribe({ ...subscription, locale: 'de' })).body.errors).toBeDefined()
+      expect(fixture.db.select().from(pushSubs).all()).toHaveLength(2)
+
+      const delivered: Array<{ endpoint: string; payload: string }> = []
+      const sender = async (target: unknown, payload?: string) => {
+        if (!payload) throw new Error('Payload is required')
+        delivered.push({
+          endpoint: (target as { endpoint: string }).endpoint,
+          payload,
+        })
+        return { statusCode: 201, body: '', headers: {} }
+      }
+      const push = new PushService(fixture.db, fixture.env, sender)
+      await push.sendMessage(userId, chatId, {
+        id: 'message-localized-push',
+        chatId,
+        seq: 1,
+        sender: 'bot',
+        content: { media: [{ fileId: 'file-localized-push', kind: 'file' }] },
+        status: 'accepted',
+        createdAt: Date.now(),
+      })
+      await waitFor(() => delivered.length === 2)
+      const bodyFor = (endpoint: string) =>
+        JSON.parse(delivered.find((delivery) => delivery.endpoint === endpoint)?.payload ?? '').body
+      expect(bodyFor(subscription.endpoint)).toBe('Media')
+      expect(bodyFor(russianSubscription.endpoint)).toBe('Медиа')
+    } finally {
+      fixture.stop()
+    }
+  })
+
   test('rejects subscriptions when VAPID is not configured', async () => {
     const fixture = createServerFixture()
     try {
