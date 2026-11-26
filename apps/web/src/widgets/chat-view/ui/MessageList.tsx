@@ -12,6 +12,7 @@ import {
 } from '@/features/command-menu'
 import { sendChatMessage } from '@/features/send-message'
 import { showRequestError } from '@/shared/api'
+import { testId, testIds } from '@/shared/lib/test-ids'
 import { toast } from '@/shared/lib/toast'
 import type { ChatMessage } from '@/shared/model'
 import { Button as UiButton } from '@/shared/ui/button'
@@ -24,11 +25,17 @@ import { MessageRow } from './message-list/MessageRow'
 interface MessageListProps {
   chatId: string
   messages: ChatMessage[]
-  hasMore: boolean
+  historyMode: 'tail' | 'context'
+  historyRevision: number
+  hasEarlier: boolean
+  hasLater: boolean
+  targetMessageId?: string
   loading: boolean
   historyError: boolean
   welcome?: string
   onLoadEarlier: () => void
+  onLoadLater: () => void
+  onJumpLatest: () => void
   onRetry: (clientId: string) => void
   onDelete: (clientId: string) => void
   commands?: BotCommand[]
@@ -40,11 +47,17 @@ interface MessageListProps {
 export const MessageList = ({
   chatId,
   messages,
-  hasMore,
+  historyMode,
+  historyRevision,
+  hasEarlier,
+  hasLater,
+  targetMessageId,
   loading,
   historyError,
   welcome,
   onLoadEarlier,
+  onLoadLater,
+  onJumpLatest,
   onRetry,
   onDelete,
   commands = [],
@@ -55,6 +68,7 @@ export const MessageList = ({
   const { t } = useTranslation()
   const viewport = useRef<HTMLDivElement>(null)
   const initialized = useRef(false)
+  const initializedRevision = useRef(historyRevision)
   const [showLatest, setShowLatest] = useState(false)
   const [pendingButtonKey, setPendingButtonKey] = useState<string | null>(null)
   const [externalUrl, setExternalUrl] = useState<string | null>(null)
@@ -72,11 +86,11 @@ export const MessageList = ({
     estimateSize,
     getItemKey: itemKey,
     anchorTo: 'end',
-    followOnAppend: true,
+    followOnAppend: historyMode === 'tail' && !targetMessageId,
     scrollEndThreshold: 80,
     overscan: 8,
-    paddingStart: hasMore ? 64 : 20,
-    paddingEnd: 16,
+    paddingStart: hasEarlier ? 64 : 20,
+    paddingEnd: hasLater ? 64 : 16,
   })
   const rows = virtualizer.getVirtualItems()
   const lastBotMessage = messages.findLast((message) => message.sender === 'bot')
@@ -96,10 +110,37 @@ export const MessageList = ({
   }
 
   useLayoutEffect(() => {
-    if (initialized.current || loading || !messages.length) return
+    if (initializedRevision.current === historyRevision) return
+    initializedRevision.current = historyRevision
+    initialized.current = false
+  }, [historyRevision])
+
+  useLayoutEffect(() => {
+    if (
+      historyMode !== 'tail' ||
+      targetMessageId ||
+      initialized.current ||
+      loading ||
+      !messages.length
+    )
+      return
     initialized.current = true
     virtualizer.scrollToEnd()
-  }, [loading, messages.length, virtualizer])
+  }, [historyMode, loading, messages.length, targetMessageId, virtualizer])
+
+  const targetIndex = targetMessageId
+    ? messages.findIndex((message) => message.id === targetMessageId)
+    : -1
+  useLayoutEffect(() => {
+    if (!targetMessageId || loading || targetIndex < 0) return
+    initialized.current = true
+    virtualizer.scrollToIndex(targetIndex, { align: 'center' })
+    document.getElementById(`history-message-${targetMessageId}`)?.focus({ preventScroll: true })
+    const frame = requestAnimationFrame(() => {
+      virtualizer.scrollToIndex(targetIndex, { align: 'center' })
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [loading, targetIndex, targetMessageId, virtualizer])
 
   useEffect(() => () => urlResolver.current?.(false), [])
 
@@ -174,9 +215,10 @@ export const MessageList = ({
             />
           ) : (
             <ol className="relative" style={{ height: virtualizer.getTotalSize() }}>
-              {hasMore ? (
+              {hasEarlier ? (
                 <li className="absolute inset-x-0 top-5 text-center">
                   <UiButton
+                    {...testId(testIds.chat.history.earlier)}
                     type="button"
                     variant="outline"
                     size="sm"
@@ -201,6 +243,7 @@ export const MessageList = ({
                     buttonShortcuts={buttonShortcuts}
                     pendingButtonKey={pendingButtonKey}
                     blocked={blocked}
+                    highlighted={message.id === targetMessageId}
                     style={{ transform: `translateY(${row.start}px)` }}
                     measureElement={virtualizer.measureElement}
                     onRetry={onRetry}
@@ -212,16 +255,34 @@ export const MessageList = ({
                   />
                 )
               })}
+              {hasLater ? (
+                <li
+                  className="absolute inset-x-0 top-0 text-center"
+                  style={{ transform: `translateY(${virtualizer.getTotalSize() - 48}px)` }}
+                >
+                  <UiButton
+                    {...testId(testIds.chat.history.later)}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={onLoadLater}
+                    disabled={loading}
+                  >
+                    {loading ? t('chat:loading') : t('chat:loadLater')}
+                  </UiButton>
+                </li>
+              ) : null}
             </ol>
           )}
           {loading && messages.length === 0 ? <PagePlaceholder variant="messages" /> : null}
         </div>
       </div>
-      {showLatest ? (
+      {showLatest || historyMode === 'context' ? (
         <UiButton
+          {...testId(testIds.chat.history.latest)}
           className="absolute right-5 bottom-4 shadow-md"
           variant="outline"
-          onClick={() => virtualizer.scrollToEnd()}
+          onClick={historyMode === 'context' ? onJumpLatest : () => virtualizer.scrollToEnd()}
         >
           <ArrowDown aria-hidden="true" />
           {t('chat:jumpToLatest')}

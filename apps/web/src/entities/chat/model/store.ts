@@ -51,6 +51,7 @@ interface ChatActions {
   applyUpdate: (seq: number, update: ClientUpdate) => boolean
   replaceMessages: (chatId: string, messages: Message[], preserveEarlier?: boolean) => void
   prependMessages: (chatId: string, messages: Message[]) => void
+  appendMessages: (chatId: string, messages: Message[]) => void
   beginOptimisticMessage: (
     chatId: string,
     clientId: string,
@@ -408,6 +409,13 @@ export const createChatStore = (options: ChatStoreOptions = {}) => {
       }))
     },
     prependMessages: (chatId, messages) =>
+      set((state) => ({
+        messagesByChat: {
+          ...state.messagesByChat,
+          [chatId]: mergeMessages(state.messagesByChat[chatId] ?? [], messages),
+        },
+      })),
+    appendMessages: (chatId, messages) =>
       set((state) => ({
         messagesByChat: {
           ...state.messagesByChat,

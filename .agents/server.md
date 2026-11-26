@@ -17,5 +17,6 @@ HTTP / WebSocket -> caller context -> domain -> SQLite
 - Read checkpoints cannot move backwards when tabs send read requests out of order. Checked: INV:messaging/keeps-read.
 - The bot outbox replays unacknowledged events and removes them after ACK. Checked: INV:bot-ws/replays-outbox.
 - File reads require access to the owning chat and support byte ranges. Checked: INV:files/protects-access.
+- Per-chat message search uses external-content FTS5 with escaped quoted tokens, deleted filtering, ownership checks and stable cursors. Upgrade/backfill and edit/delete/cascade triggers stay synchronized. Checked: INV:message-search/synchronizes-index, INV:message-search/protects-results.
 
 If compiled startup cannot find migrations, inspect [Bun compiled paths](workarounds/bun-compiled-path.md). Setup, environment and recovery commands are in the [deployment guide](../docs/guide/deployment/index.md).

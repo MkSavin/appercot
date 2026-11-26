@@ -14,5 +14,26 @@
   "noUnreadChats": "No unread chats",
   "noFilterResults": "No unread chats match this search",
   "clearUnreadFilter": "Show all chats",
-  "clearFilters": "Reset filters"
+  "clearFilters": "Reset filters",
+  "loadLater": "Newer messages",
+  "messageSearch": {
+    "title": "Message search",
+    "open": "Search messages",
+    "close": "Close search",
+    "placeholder": "Search in this chat",
+    "hint": "Enter a word or phrase. Prefixes match, but substrings inside words do not.",
+    "results": "Search results",
+    "resultsCount_one": "Messages found: {{count}}",
+    "resultsCount_other": "Messages found: {{count}}",
+    "noResults": "No messages found",
+    "failed": "Search failed.",
+    "paginationFailed": "Could not load more results.",
+    "loadMore": "Show more",
+    "refresh": "Refresh results",
+    "sender": {
+      "user": "You",
+      "bot": "Bot",
+      "system": "System"
+    }
+  }
 }

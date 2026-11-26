@@ -20,6 +20,8 @@ The media scenarios upload real fixture files through XHR. They cover mobile mul
 
 Notification scenarios cover mute reload and expiry, unread filtering, cross-tab resume, mobile profile/header synchronization, and keyboard focus return. Catalog scenarios cover query and tag filters, deep-linked details, unavailable bots, add failure and retry, single-chat creation under repeated CTA clicks, and existing-chat navigation.
 
+Message-search scenarios use more than 120 real messages. They cover RU/EN content, result pagination, bounded context jumps, earlier/later/latest navigation, unread preservation, refresh, failure retry, mobile layout and keyboard focus. Search uses prefix token matching, not stemming or arbitrary substring matching.
+
 ## Reset before each scenario
 
 ```ts

@@ -30,6 +30,8 @@ test('loads English feature namespaces with Russian fallback for untranslated re
     expect(i18n.t('bot:notificationsMutePreset.1h')).toBe('For 1 hour')
     expect(i18n.t('settings:notificationsPerChatHint')).toContain('each chat')
     expect(i18n.t('common:retry')).toBe('Retry')
+    expect(i18n.t('chat:messageSearch.placeholder')).toBe('Search in this chat')
+    expect(i18n.t('chat:messageSearch.resultsCount', { count: 2 })).toBe('Messages found: 2')
     expect(i18n.t('chat:title')).toBe('Чаты')
   } finally {
     await i18n.changeLanguage('ru')

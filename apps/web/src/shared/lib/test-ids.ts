@@ -27,6 +27,20 @@ export const testIds = {
     },
   },
   chat: {
+    search: {
+      trigger: 'chat.search.trigger',
+      input: 'chat.search.input',
+      close: 'chat.search.close',
+      retry: 'chat.search.retry',
+      refresh: 'chat.search.refresh',
+      loadMore: 'chat.search.load-more',
+      result: (messageId: string) => `chat.search.result.${messageId}`,
+    },
+    history: {
+      earlier: 'chat.history.earlier',
+      later: 'chat.history.later',
+      latest: 'chat.history.latest',
+    },
     notifications: {
       trigger: 'chat.notifications.trigger',
       profileTrigger: 'chat.notifications.profile-trigger',

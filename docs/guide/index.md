@@ -21,7 +21,7 @@ Use Appercot when a bot needs more than a hosted chat account. It combines a Bun
 ## What is available now
 
 - Signed-in and guest access to bots, including role-scoped commands.
-- Shared chats, deep-linked bot catalog details, invitations, message history, and Web Push with per-chat modes and temporary mute.
+- Shared chats, deep-linked bot catalog details, invitations, bounded message history with per-chat full-text search, and Web Push with per-chat modes and temporary mute.
 - Bot commands, callbacks, keyboards, multi-step flows, Markdown, and file delivery.
 - Local disk or S3-compatible media storage.
 - Multi-file composer uploads with previews, progress, cancellation, retry, paste, and drag-and-drop.

@@ -39,6 +39,17 @@ test('paginates history and update replay when a chat contains more than twenty 
       .messages as Array<{ seq: number }>
     expect(previous).toHaveLength(50)
     expect(previous.at(-1)?.seq).toBe(20000)
+    const found = await call(
+      'query($chat: ID!) { searchMessages(chatId: $chat, query: "Archive", limit: 30) { items { message { seq } } hasMore } }',
+      { chat: chatId },
+    )
+    const foundPage = found.body.data.searchMessages as {
+      items: Array<{ message: { seq: number } }>
+      hasMore: boolean
+    }
+    expect(foundPage.items[0]).toEqual({ message: { seq: 20050 } })
+    expect(foundPage.hasMore).toBe(true)
+    expect(foundPage.items).toHaveLength(30)
     const replay =
       'query($since: Int!) { sync(since: $since) { hasMore checkpoint updates { seq } } }'
     const first = (await call(replay, { since: 0 })).body.data.sync as {

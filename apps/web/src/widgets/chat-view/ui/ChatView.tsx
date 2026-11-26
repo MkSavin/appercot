@@ -1,19 +1,35 @@
+import type { Message } from '@appercot/protocol'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'wouter'
 import { markChatReadRequest, useChatStore } from '@/entities/chat'
-import { fetchMessages, sendMessageRequest } from '@/entities/message'
+import { fetchMessageContext, fetchMessages, sendMessageRequest } from '@/entities/message'
 import { BlockedChatNotice } from '@/features/block-bot'
+import { MessageSearchPanel } from '@/features/search-messages'
 import { Composer, discardChatMessage, retryChatMessage } from '@/features/send-message'
 import { showRequestError } from '@/shared/api'
 import type { ChatMessage } from '@/shared/model'
 import { Button } from '@/shared/ui/button'
+import { latestReadableSeq } from '../model/history-policy'
 import { ChatHeader } from './ChatHeader'
 import { ConnectionBanner } from './ConnectionBanner'
 import { MessageList } from './MessageList'
 import { TypingIndicator } from './TypingIndicator'
 
 const emptyMessages: ChatMessage[] = []
+
+const currentRequestContext = () => {
+  const state = useChatStore.getState()
+  return { userId: state.user?.id, historyEpoch: state.historyEpoch }
+}
+const isCurrentRequest = (chatId: string, previous: ReturnType<typeof currentRequestContext>) => {
+  const current = useChatStore.getState()
+  return (
+    previous.userId === current.user?.id &&
+    previous.historyEpoch === current.historyEpoch &&
+    current.chats.some((item) => item.id === chatId)
+  )
+}
 
 export const ChatView = ({ chatId }: { chatId: string }) => {
   const { t } = useTranslation()
@@ -23,26 +39,44 @@ export const ChatView = ({ chatId }: { chatId: string }) => {
   const typingUntil = useChatStore((state) => state.typingByChat[chatId])
   const [loading, setLoading] = useState(true)
   const [historyAttempt, setHistoryAttempt] = useState(0)
-  const [hasMore, setHasMore] = useState(false)
+  const [historyMode, setHistoryMode] = useState<'tail' | 'context'>('tail')
+  const [hasEarlier, setHasEarlier] = useState(false)
+  const [hasLater, setHasLater] = useState(false)
+  const [contextEndSeq, setContextEndSeq] = useState(0)
+  const [targetMessageId, setTargetMessageId] = useState<string>()
   const [historyError, setHistoryError] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
   const [paletteOpen, setPaletteOpen] = useState(false)
   const markedSeq = useRef<string | null>(null)
+  const searchTriggerRef = useRef<HTMLButtonElement>(null)
   const chatAvailable = Boolean(chat)
-  const latestSeq = messages.findLast((message) => !message.id.startsWith('pending:'))?.seq
+  const visibleMessages =
+    historyMode === 'context'
+      ? messages.filter(
+          (message) => message.id.startsWith('pending:') || message.seq <= contextEndSeq,
+        )
+      : messages
+  const latestSeq = latestReadableSeq(
+    historyMode,
+    messages.findLast((message) => !message.id.startsWith('pending:'))?.seq,
+  )
   const unread = chat?.unread ?? 0
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: The attempt counter reloads history on retry.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: The attempt counter reloads history on retry and latest.
   useEffect(() => {
     if (!chatAvailable) return
     let active = true
     setLoading(true)
     setHistoryError(false)
+    setHistoryMode('tail')
+    setHasLater(false)
+    setTargetMessageId(undefined)
     const historyEpoch = useChatStore.getState().historyEpoch
     fetchMessages(chatId)
       .then((history) => {
         if (!active || useChatStore.getState().historyEpoch !== historyEpoch) return
         useChatStore.getState().replaceMessages(chatId, history, history.length === 50)
-        setHasMore(history.length === 50)
+        setHasEarlier(history.length === 50)
       })
       .catch(() => {
         if (active) setHistoryError(true)
@@ -56,21 +90,15 @@ export const ChatView = ({ chatId }: { chatId: string }) => {
   }, [chatId, chatAvailable, historyAttempt])
 
   const loadEarlier = useCallback(async () => {
-    const previous = useChatStore.getState()
-    const firstSeq = previous.messagesByChat[chatId]?.[0]?.seq
+    const previous = currentRequestContext()
+    const firstSeq = useChatStore.getState().messagesByChat[chatId]?.[0]?.seq
     if (!firstSeq) return
     setLoading(true)
     try {
       const history = await fetchMessages(chatId, firstSeq)
-      const current = useChatStore.getState()
-      if (
-        previous.user?.id !== current.user?.id ||
-        previous.historyEpoch !== current.historyEpoch ||
-        !current.chats.some((chat) => chat.id === chatId)
-      )
-        return
-      current.prependMessages(chatId, history)
-      setHasMore(history.length === 50)
+      if (!isCurrentRequest(chatId, previous)) return
+      useChatStore.getState().prependMessages(chatId, history)
+      setHasEarlier(history.length === 50)
     } catch (cause) {
       showRequestError(cause)
     } finally {
@@ -78,6 +106,76 @@ export const ChatView = ({ chatId }: { chatId: string }) => {
     }
   }, [chatId])
 
+  const loadLater = async () => {
+    if (historyMode !== 'context' || !contextEndSeq) return
+    const previous = currentRequestContext()
+    setLoading(true)
+    try {
+      const context = await fetchMessageContext({
+        chatId,
+        seq: contextEndSeq,
+        before: 0,
+        after: 50,
+      })
+      if (!isCurrentRequest(chatId, previous)) return
+      useChatStore.getState().appendMessages(chatId, context.messages)
+      setContextEndSeq((current) =>
+        Math.max(current, ...context.messages.map((message) => message.seq)),
+      )
+      setHasLater(context.hasLater)
+    } catch (cause) {
+      showRequestError(cause)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const jumpToMessage = async (message: Message) => {
+    const previous = currentRequestContext()
+    setLoading(true)
+    setSearchOpen(false)
+    try {
+      const context = await fetchMessageContext({ chatId, seq: message.seq })
+      if (!isCurrentRequest(chatId, previous)) return
+      useChatStore.getState().replaceMessages(chatId, context.messages)
+      setHistoryMode('context')
+      setHasEarlier(context.hasEarlier)
+      setHasLater(context.hasLater)
+      setContextEndSeq(Math.max(...context.messages.map((item) => item.seq)))
+      setTargetMessageId(message.id)
+    } catch (cause) {
+      showRequestError(cause)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const jumpToLatest = () => {
+    setLoading(true)
+    setHistoryAttempt((attempt) => attempt + 1)
+  }
+
+  useEffect(() => {
+    if (!targetMessageId) return
+    const timer = setTimeout(() => setTargetMessageId(undefined), 2500)
+    return () => clearTimeout(timer)
+  }, [targetMessageId])
+
+  useEffect(() => {
+    const openSearch = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'f' && chatAvailable) {
+        event.preventDefault()
+        setSearchOpen(true)
+      }
+    }
+    document.addEventListener('keydown', openSearch)
+    return () => document.removeEventListener('keydown', openSearch)
+  }, [chatAvailable])
+
+  const closeSearch = () => {
+    setSearchOpen(false)
+    requestAnimationFrame(() => searchTriggerRef.current?.focus())
+  }
   const focusComposer = () => {
     requestAnimationFrame(() => document.getElementById(`message-${chatId}`)?.focus())
   }
@@ -138,7 +236,19 @@ export const ChatView = ({ chatId }: { chatId: string }) => {
 
   return (
     <section className="flex h-full min-h-0 flex-col bg-background" aria-labelledby="chat-title">
-      <ChatHeader chatId={chatId} bot={chat.bot} />
+      <ChatHeader
+        chatId={chatId}
+        bot={chat.bot}
+        searchTriggerRef={searchTriggerRef}
+        onOpenSearch={() => setSearchOpen(true)}
+      />
+      {searchOpen ? (
+        <MessageSearchPanel
+          chatId={chatId}
+          onClose={closeSearch}
+          onSelect={(message) => void jumpToMessage(message)}
+        />
+      ) : null}
       <ConnectionBanner
         connection={connection}
         botOnline={chat.bot.online}
@@ -158,12 +268,18 @@ export const ChatView = ({ chatId }: { chatId: string }) => {
       ) : null}
       <MessageList
         chatId={chatId}
-        messages={messages}
-        hasMore={hasMore}
+        messages={visibleMessages}
+        historyMode={historyMode}
+        historyRevision={historyAttempt}
+        hasEarlier={hasEarlier}
+        hasLater={hasLater}
+        targetMessageId={targetMessageId}
         loading={loading}
         historyError={historyError}
         welcome={chat.bot.welcome}
         onLoadEarlier={loadEarlier}
+        onLoadLater={loadLater}
+        onJumpLatest={jumpToLatest}
         onRetry={retry}
         onDelete={discard}
         commands={chat.commands}

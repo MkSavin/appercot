@@ -1,6 +1,7 @@
 import type { BotCommand, Button } from '@appercot/protocol'
 import type { CSSProperties } from 'react'
 import { BotMessage, SystemMessage, UserMessage } from '@/entities/message'
+import { cn } from '@/shared/lib/cn'
 import type { ShortcutCombination } from '@/shared/lib/shortcuts'
 import { testId, testIds } from '@/shared/lib/test-ids'
 import type { ChatMessage } from '@/shared/model'
@@ -16,6 +17,7 @@ export const MessageRow = ({
   buttonShortcuts,
   pendingButtonKey,
   blocked,
+  highlighted = false,
   style,
   measureElement,
   onRetry,
@@ -31,6 +33,7 @@ export const MessageRow = ({
   buttonShortcuts: Record<string, ShortcutCombination | undefined>
   pendingButtonKey: string | null
   blocked: boolean
+  highlighted?: boolean
   style: CSSProperties
   measureElement: (node: Element | null) => void
   onRetry: (clientId: string) => void
@@ -43,9 +46,16 @@ export const MessageRow = ({
   return (
     <li
       {...testId(testIds.message.item(message.id))}
+      id={`history-message-${message.id}`}
       data-index={index}
+      data-search-target={highlighted ? 'true' : undefined}
+      aria-current={highlighted ? 'location' : undefined}
+      tabIndex={highlighted ? -1 : undefined}
       ref={measureElement}
-      className="absolute inset-x-0 top-0 min-w-0 pb-3"
+      className={cn(
+        'absolute inset-x-0 top-0 min-w-0 rounded-lg pb-3 outline-none',
+        highlighted && 'ring-2 ring-ring ring-offset-2 ring-offset-background',
+      )}
       style={style}
     >
       {newDay ? (

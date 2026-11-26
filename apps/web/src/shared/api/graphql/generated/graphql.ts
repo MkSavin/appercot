@@ -415,6 +415,26 @@ export type MessagesQueryVariables = Exact<{
 
 export type MessagesQuery = { messages: Array<{ id: string, chatId: string, seq: number, sender: string, content: unknown, status: string, replyTo: string | null, createdAt: number, editedAt: number | null, deleted: boolean }> };
 
+export type SearchMessagesQueryVariables = Exact<{
+  chatId: string | number;
+  query: string;
+  beforeSeq?: number | null | undefined;
+  limit?: number | null | undefined;
+}>;
+
+
+export type SearchMessagesQuery = { searchMessages: { hasMore: boolean, items: Array<{ snippet: string, message: { id: string, chatId: string, seq: number, sender: string, content: unknown, status: string, replyTo: string | null, createdAt: number, editedAt: number | null, deleted: boolean } }> } };
+
+export type MessageContextQueryVariables = Exact<{
+  chatId: string | number;
+  seq: number;
+  before?: number | null | undefined;
+  after?: number | null | undefined;
+}>;
+
+
+export type MessageContextQuery = { messageContext: { targetSeq: number, hasEarlier: boolean, hasLater: boolean, latestSeq: number, messages: Array<{ id: string, chatId: string, seq: number, sender: string, content: unknown, status: string, replyTo: string | null, createdAt: number, editedAt: number | null, deleted: boolean }> } };
+
 export type SendMessageMutationVariables = Exact<{
   input: SendMessageInput;
 }>;
@@ -1108,6 +1128,55 @@ export const MessagesDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<MessagesQuery, MessagesQueryVariables>;
+export const SearchMessagesDocument = new TypedDocumentString(`
+    query SearchMessages($chatId: ID!, $query: String!, $beforeSeq: Int, $limit: Int = 30) {
+  searchMessages(
+    chatId: $chatId
+    query: $query
+    beforeSeq: $beforeSeq
+    limit: $limit
+  ) {
+    items {
+      message {
+        id
+        chatId
+        seq
+        sender
+        content
+        status
+        replyTo
+        createdAt
+        editedAt
+        deleted
+      }
+      snippet
+    }
+    hasMore
+  }
+}
+    `) as unknown as TypedDocumentString<SearchMessagesQuery, SearchMessagesQueryVariables>;
+export const MessageContextDocument = new TypedDocumentString(`
+    query MessageContext($chatId: ID!, $seq: Int!, $before: Int = 25, $after: Int = 25) {
+  messageContext(chatId: $chatId, seq: $seq, before: $before, after: $after) {
+    messages {
+      id
+      chatId
+      seq
+      sender
+      content
+      status
+      replyTo
+      createdAt
+      editedAt
+      deleted
+    }
+    targetSeq
+    hasEarlier
+    hasLater
+    latestSeq
+  }
+}
+    `) as unknown as TypedDocumentString<MessageContextQuery, MessageContextQueryVariables>;
 export const SendMessageDocument = new TypedDocumentString(`
     mutation SendMessage($input: SendMessageInput!) {
   sendMessage(input: $input) {

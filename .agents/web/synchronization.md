@@ -5,7 +5,8 @@
 - Each account has its own persisted checkpoint. Checked: INV:chat-store/isolates-checkpoints.
 - Responses from an ended session cannot restore that session during reset. Checked: INV:synchronization/ignores-stale.
 - Reset refreshes the session and open history before replay. Checked: INV:synchronization/reloads-history.
-- A history load or pagination preserves pending sends. Checked: INV:chat-store/preserves-pending.
+- A history load or pagination preserves pending sends, including identical pending texts and forward context pages. Checked: INV:chat-store/preserves-pending.
+- Search context windows do not follow appended messages or advance the read marker until the reader returns to the server tail. Checked: INV:message-search/preserves-read.
 - A failed send retries with the original client ID. Checked: INV:send-message/reuses-id.
 - Drafts hydrate without sending, and interrupted outbox requests retry with the original client ID. Checked: INV:durable-messaging/restores-records, INV:durable-messaging/reuses-id.
 - IndexedDB records are scoped by user ID; late responses and another account's records cannot mutate the current session. Checked: INV:durable-messaging/isolates-accounts.

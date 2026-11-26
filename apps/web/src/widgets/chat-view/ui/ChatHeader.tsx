@@ -1,13 +1,25 @@
 import type { ClientChat } from '@appercot/protocol'
-import { ArrowLeft, Circle } from 'lucide-react'
+import { ArrowLeft, Circle, Search } from 'lucide-react'
+import type { RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'wouter'
 import { BotAvatar } from '@/entities/bot'
 import { ChatNotificationMenu } from '@/features/chat-notifications'
 import { cn } from '@/shared/lib/cn'
+import { testId, testIds } from '@/shared/lib/test-ids'
 import { Button } from '@/shared/ui/button'
 
-export const ChatHeader = ({ chatId, bot }: { chatId: string; bot: ClientChat['bot'] }) => {
+export const ChatHeader = ({
+  chatId,
+  bot,
+  onOpenSearch,
+  searchTriggerRef,
+}: {
+  chatId: string
+  bot: ClientChat['bot']
+  onOpenSearch: () => void
+  searchTriggerRef: RefObject<HTMLButtonElement | null>
+}) => {
   const { t } = useTranslation()
   return (
     <header className="shrink-0 border-b bg-card pt-[env(safe-area-inset-top)]">
@@ -44,7 +56,18 @@ export const ChatHeader = ({ chatId, bot }: { chatId: string; bot: ClientChat['b
             </p>
           </div>
         </Link>
-        <div className="flex items-center pr-2 md:pr-4">
+        <div className="flex items-center gap-1 pr-2 md:pr-4">
+          <Button
+            {...testId(testIds.chat.search.trigger)}
+            ref={searchTriggerRef}
+            variant="ghost"
+            size="icon"
+            className="size-11 shrink-0 md:size-9"
+            aria-label={t('chat:messageSearch.open')}
+            onClick={onOpenSearch}
+          >
+            <Search aria-hidden="true" />
+          </Button>
           <ChatNotificationMenu chatId={chatId} />
         </div>
       </div>

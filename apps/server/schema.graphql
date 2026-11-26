@@ -152,6 +152,24 @@ type Message {
   status: String!
 }
 
+type MessageContext {
+  hasEarlier: Boolean!
+  hasLater: Boolean!
+  latestSeq: Int!
+  messages: [Message!]!
+  targetSeq: Int!
+}
+
+type MessageSearchHit {
+  message: Message!
+  snippet: String!
+}
+
+type MessageSearchPage {
+  hasMore: Boolean!
+  items: [MessageSearchHit!]!
+}
+
 type Mutation {
   addBot(invite: String, username: String!): Connection!
   beginTotp(password: String!): String!
@@ -215,10 +233,12 @@ type Query {
   browseBots(query: String): [Bot!]!
   chatProfile(beforeMediaSeq: Int, chatId: ID!): ChatProfile!
   guestChat(username: String!): GuestChat!
+  messageContext(after: Int = 25, before: Int = 25, chatId: ID!, seq: Int!): MessageContext!
   messages(before: Int, chatId: ID!, limit: Int = 50): [Message!]!
   mySessions: [AuthSession!]!
   pushStatus(endpoint: String!): Boolean!
   registrationPolicy: RegistrationPolicy!
+  searchMessages(beforeSeq: Int, chatId: ID!, limit: Int = 30, query: String!): MessageSearchPage!
   session: Session!
   sync(since: Int!): SyncPayload!
 }

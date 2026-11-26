@@ -10,7 +10,7 @@ Appercot separates platform administration, bot ownership, chat membership, and 
 | Administrator | Create bots and manage bots they own                                          |
 | Owner         | Manage all bots, assigned owners, registration invitations, and account roles |
 
-Listed public bots appear in the catalog. Their details expose only public profile fields and commands allowed by the viewer's current or future membership roles. Unlisted and invitation-only bots require a link or direct grant and cannot be read through the catalog details API. Invitation links can have roles, an expiry, and a use limit. Revoking a membership blocks direct operations until it is explicitly restored.
+Listed public bots appear in the catalog. Their details expose only public profile fields and commands allowed by the viewer's current or future membership roles. Unlisted and invitation-only bots require a link or direct grant and cannot be read through the catalog details API. Invitation links can have roles, an expiry, and a use limit. Revoking a membership blocks direct operations until it is explicitly restored. Message search and context queries enforce the same chat ownership and exclude deleted messages; user input is escaped rather than evaluated as a raw FTS expression.
 
 ## Credentials and sessions
 

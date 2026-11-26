@@ -175,19 +175,23 @@ describe('chat store', () => {
   })
 
   // @anchor INV:chat-store/preserves-pending
-  test('preserves pending messages when history is replaced or prepended', () => {
+  test('preserves pending messages when history is replaced, prepended or appended', () => {
     const store = createChatStore()
     store.getState().setSession(session)
     store.getState().replaceMessages(chat.id, [message({ id: 'newest', seq: 2 })])
-    store.getState().beginOptimisticMessage(chat.id, 'pending-1', { text: 'Pending' }, 2000)
+    store.getState().beginOptimisticMessage(chat.id, 'pending-1', { text: 'Same' }, 2000)
+    store.getState().beginOptimisticMessage(chat.id, 'pending-2', { text: 'Same' }, 2001)
     store.getState().prependMessages(chat.id, [message({ id: 'oldest', seq: 1 })])
     store.getState().replaceMessages(chat.id, [message({ id: 'newest', seq: 2 })])
+    store.getState().appendMessages(chat.id, [message({ id: 'later', seq: 3 })])
 
     expect(store.getState().messagesByChat[chat.id]?.map((item) => item.id)).toEqual([
       'newest',
+      'later',
       'pending:pending-1',
+      'pending:pending-2',
     ])
-    expect(store.getState().pendingByChat[chat.id]).toEqual(['pending-1'])
+    expect(store.getState().pendingByChat[chat.id]).toEqual(['pending-1', 'pending-2'])
   })
 
   test('does not match identical pending messages by their text', () => {
