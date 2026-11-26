@@ -7,6 +7,9 @@
 - Reset refreshes the session and open history before replay. Checked: INV:synchronization/reloads-history.
 - A history load or pagination preserves pending sends. Checked: INV:chat-store/preserves-pending.
 - A failed send retries with the original client ID. Checked: INV:send-message/reuses-id.
+- Drafts hydrate without sending, and interrupted outbox requests retry with the original client ID. Checked: INV:durable-messaging/restores-records, INV:durable-messaging/reuses-id.
+- IndexedDB records are scoped by user ID; late responses and another account's records cannot mutate the current session. Checked: INV:durable-messaging/isolates-accounts.
+- Outbox sends are FIFO per chat. Web Locks coordinate tabs where available, BroadcastChannel propagates local status, and server idempotency remains the final duplicate guard. Playwright covers reload, a lost response after commit, and two tabs.
 - A late send response preserves processed status and cannot restore a cleared optimistic message. Checked: INV:chat-store/keeps-processed, INV:chat-store/ignores-cleared.
 - A fresh session starts from a snapshot checkpoint. A reconnect reads bounded update batches and chat history uses cursor pages. Checked: INV:large-history/bounds-replay.
 

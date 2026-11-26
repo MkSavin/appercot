@@ -1,7 +1,7 @@
 import { ExternalLink } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useChatStore } from '@/entities/chat'
-import { resourceUrls } from '@/shared/config/resources'
+import { resourceUrls } from '@/shared/config'
 import { createBotLaunchCommand } from '../model/onboarding'
 
 export const BotConnectionGuide = () => {

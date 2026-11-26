@@ -5,9 +5,14 @@ import type { ConnectionStatus } from '@/shared/model'
 interface ConnectionBannerProps {
   connection: ConnectionStatus
   botOnline: boolean
+  pendingCount?: number
 }
 
-export const ConnectionBanner = ({ connection, botOnline }: ConnectionBannerProps) => {
+export const ConnectionBanner = ({
+  connection,
+  botOnline,
+  pendingCount = 0,
+}: ConnectionBannerProps) => {
   const { t } = useTranslation()
   if (connection === 'online' && botOnline) return null
   const networkOffline = connection !== 'online'
@@ -21,7 +26,9 @@ export const ConnectionBanner = ({ connection, botOnline }: ConnectionBannerProp
       {connection === 'connecting'
         ? t('chat:reconnecting')
         : networkOffline
-          ? t('chat:offline')
+          ? pendingCount
+            ? t('chat:offlineOutbox', { count: pendingCount })
+            : t('chat:offline')
           : t('chat:botOffline')}
     </div>
   )

@@ -1,0 +1,6 @@
+{
+  "pending": "Sending",
+  "accepted": "Accepted",
+  "processed": "Processed",
+  "failed": "Not sent"
+}

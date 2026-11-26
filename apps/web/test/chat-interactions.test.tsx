@@ -45,6 +45,9 @@ describe('chat interaction presentation', () => {
     expect(
       renderToStaticMarkup(<ConnectionBanner connection="online" botOnline={false} />),
     ).toContain('Бот ответит, когда вернётся в сеть')
+    expect(
+      renderToStaticMarkup(<ConnectionBanner connection="offline" botOnline pendingCount={2} />),
+    ).toContain('2 сообщения будут отправлены')
     expect(renderToStaticMarkup(<ConnectionBanner connection="connecting" botOnline />)).toContain(
       'Восстанавливаем связь с сервером',
     )

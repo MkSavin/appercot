@@ -1,5 +1,8 @@
 import i18next from 'i18next'
 import { initReactI18next } from 'react-i18next'
+import englishChat from './locales/en/chat.json'
+import englishErrors from './locales/en/errors.json'
+import englishMessage from './locales/en/message.json'
 import englishOnboarding from './locales/en/onboarding.json'
 import account from './locales/ru/account.json'
 import admin from './locales/ru/admin.json'
@@ -46,7 +49,15 @@ const resources = {
 export const i18n = i18next.createInstance()
 
 void i18n.use(initReactI18next).init({
-  resources: { ru: resources, en: { onboarding: englishOnboarding } },
+  resources: {
+    ru: resources,
+    en: {
+      chat: englishChat,
+      errors: englishErrors,
+      message: englishMessage,
+      onboarding: englishOnboarding,
+    },
+  },
   ns: Object.keys(resources),
   defaultNS: 'global',
   fallbackNS: 'global',

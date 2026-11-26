@@ -4,7 +4,7 @@ import { Link } from 'wouter'
 import { markChatReadRequest, useChatStore } from '@/entities/chat'
 import { fetchMessages, sendMessageRequest } from '@/entities/message'
 import { BlockedChatNotice } from '@/features/block-bot'
-import { Composer, retryChatMessage } from '@/features/send-message'
+import { Composer, discardChatMessage, retryChatMessage } from '@/features/send-message'
 import { showRequestError } from '@/shared/api'
 import type { ChatMessage } from '@/shared/model'
 import { Button } from '@/shared/ui/button'
@@ -78,11 +78,27 @@ export const ChatView = ({ chatId }: { chatId: string }) => {
     }
   }, [chatId])
 
+  const focusComposer = () => {
+    requestAnimationFrame(() => document.getElementById(`message-${chatId}`)?.focus())
+  }
+
   const retry = async (clientId: string) => {
     try {
       await retryChatMessage(useChatStore, chatId, clientId, sendMessageRequest)
     } catch (cause) {
       showRequestError(cause)
+    } finally {
+      focusComposer()
+    }
+  }
+
+  const discard = async (clientId: string) => {
+    try {
+      await discardChatMessage(useChatStore, chatId, clientId)
+    } catch (cause) {
+      showRequestError(cause)
+    } finally {
+      focusComposer()
     }
   }
 
@@ -123,7 +139,11 @@ export const ChatView = ({ chatId }: { chatId: string }) => {
   return (
     <section className="flex h-full min-h-0 flex-col bg-background" aria-labelledby="chat-title">
       <ChatHeader chatId={chatId} bot={chat.bot} />
-      <ConnectionBanner connection={connection} botOnline={chat.bot.online} />
+      <ConnectionBanner
+        connection={connection}
+        botOnline={chat.bot.online}
+        pendingCount={messages.filter((message) => message.id.startsWith('pending:')).length}
+      />
       {historyError ? (
         <div className="flex flex-wrap items-center justify-center gap-2 bg-destructive/10 px-4 py-1 text-sm text-destructive">
           <p role="alert">{t('chat:historyFailed')}</p>
@@ -145,6 +165,7 @@ export const ChatView = ({ chatId }: { chatId: string }) => {
         welcome={chat.bot.welcome}
         onLoadEarlier={loadEarlier}
         onRetry={retry}
+        onDelete={discard}
         commands={chat.commands}
         paletteOpen={paletteOpen}
         onPaletteOpen={setPaletteOpen}

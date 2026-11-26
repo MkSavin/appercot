@@ -1,8 +1,9 @@
 import { type ReactNode, useEffect, useRef } from 'react'
 import { useLocation } from 'wouter'
 import { synchronizeChatState, useChatStore } from '@/entities/chat'
-import { fetchMessages, fetchSynchronization } from '@/entities/message'
+import { fetchMessages, fetchSynchronization, sendMessageRequest } from '@/entities/message'
 import { fetchSession } from '@/entities/session'
+import { flushChatDraft, startDurableMessaging } from '@/features/send-message'
 import {
   type ClientWebSocketTransport,
   createClientWebSocketTransport,
@@ -31,11 +32,20 @@ const useSessionBootstrap = () => {
   }, [setAnonymous, setSession])
 }
 
+const useDurableOutbox = () => {
+  const userId = useChatStore((state) => state.user?.id)
+  useEffect(() => {
+    if (!userId) return
+    return startDurableMessaging(useChatStore, sendMessageRequest)
+  }, [userId])
+}
+
 const useClientSynchronization = () => {
   const userId = useChatStore((state) => state.user?.id)
   const [location] = useLocation()
   const activeChatId = activeChatFromLocation(location)
   const locationRef = useRef(location)
+  const previousChatRef = useRef(activeChatId)
   const transportRef = useRef<ClientWebSocketTransport | null>(null)
   locationRef.current = location
 
@@ -142,12 +152,18 @@ const useClientSynchronization = () => {
 
   useEffect(() => {
     transportRef.current?.setFocus(activeChatId ?? null)
+    const previousChatId = previousChatRef.current
+    if (userId && previousChatId && previousChatId !== activeChatId) {
+      void flushChatDraft(useChatStore, previousChatId)
+    }
+    previousChatRef.current = activeChatId
     if (userId) useChatStore.getState().setActiveChat(activeChatId ?? null)
   }, [activeChatId, userId])
 }
 
 export const AppProviders = ({ children }: { children: ReactNode }) => {
   useSessionBootstrap()
+  useDurableOutbox()
   useClientSynchronization()
   return (
     <>

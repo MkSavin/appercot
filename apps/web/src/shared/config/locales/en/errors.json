@@ -1,0 +1,6 @@
+{
+  "storageUnavailable": "Local storage is unavailable. New drafts and unsent messages will not survive a reload.",
+  "storageUpdateBlocked": "Reload appercot in all old tabs to finish upgrading local storage.",
+  "corruptedRecords_one": "A damaged local record was skipped. Your other drafts and messages were restored.",
+  "corruptedRecords_other": "{{count}} damaged local records were skipped. Your other drafts and messages were restored."
+}

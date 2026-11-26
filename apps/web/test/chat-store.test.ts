@@ -100,10 +100,14 @@ describe('chat store', () => {
     expect(store.getState().pendingByChat[chat.id]).toEqual(['client-1'])
 
     expect(store.getState().applyUpdate(1, { type: 'message.new', message: message() })).toBe(true)
+    expect(store.getState().messagesByChat[chat.id]).toHaveLength(2)
+    expect(store.getState().pendingByChat[chat.id]).toEqual(['client-1'])
+    expect(store.getState().chats[0]?.preview).toMatchObject({ id: 'message-1' })
+
+    store.getState().completeOutgoingMessage(chat.id, 'client-1', message())
     expect(store.getState().messagesByChat[chat.id]).toHaveLength(1)
     expect(lastMessage(store)).toMatchObject({ id: 'message-1', status: 'accepted' })
     expect(store.getState().pendingByChat[chat.id]).toEqual([])
-    expect(store.getState().chats[0]?.preview).toMatchObject({ id: 'message-1' })
 
     store.getState().applyUpdate(2, {
       type: 'message.status',
@@ -184,6 +188,28 @@ describe('chat store', () => {
       'pending:pending-1',
     ])
     expect(store.getState().pendingByChat[chat.id]).toEqual(['pending-1'])
+  })
+
+  test('does not match identical pending messages by their text', () => {
+    const store = createChatStore()
+    store.getState().setSession(session)
+    store.getState().beginOptimisticMessage(chat.id, 'client-1', { text: 'Same' }, 1000)
+    store.getState().beginOptimisticMessage(chat.id, 'client-2', { text: 'Same' }, 1001)
+
+    store.getState().applyUpdate(1, {
+      type: 'message.new',
+      message: message({ content: { text: 'Same' } }),
+    })
+
+    expect(store.getState().pendingByChat[chat.id]).toEqual(['client-1', 'client-2'])
+    store.getState().completeOutgoingMessage(chat.id, 'client-2', message())
+    expect(store.getState().pendingByChat[chat.id]).toEqual(['client-1'])
+    expect(
+      store
+        .getState()
+        .messagesByChat[chat.id]?.map((item) => item.id)
+        .sort(),
+    ).toEqual(['message-1', 'pending:client-1'])
   })
 
   // @anchor INV:chat-store/isolates-checkpoints

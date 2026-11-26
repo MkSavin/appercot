@@ -2,7 +2,7 @@ import { Check, Circle, ExternalLink, MessageCircle, Plus, Settings, X } from 'l
 import { useTranslation } from 'react-i18next'
 import { Link } from 'wouter'
 import type { fetchAdminBotDiagnostics, ManagedBot } from '@/entities/bot'
-import { resourceUrls } from '@/shared/config/resources'
+import { resourceUrls } from '@/shared/config'
 import { testId, testIds } from '@/shared/lib/test-ids'
 import { Button } from '@/shared/ui/button'
 import { getOnboardingSteps } from '../model/onboarding'

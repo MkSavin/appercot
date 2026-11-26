@@ -1,10 +1,4 @@
-import type {
-  ClientChat,
-  ClientUpdate,
-  Message,
-  MessageContent,
-  UserContent,
-} from '@appercot/protocol'
+import type { ClientChat, ClientUpdate, Message, UserContent } from '@appercot/protocol'
 import { create } from 'zustand'
 import type {
   ChatConnection,
@@ -66,6 +60,7 @@ interface ChatActions {
   completeOutgoingMessage: (chatId: string, clientId: string, message: Message) => void
   failOutgoingMessage: (chatId: string, clientId: string) => void
   retryOutgoingMessage: (chatId: string, clientId: string) => void
+  discardOutgoingMessage: (chatId: string, clientId: string) => void
   upsertChat: (chat: ClientChat) => void
   removeChat: (chatId: string) => void
   expireTyping: (chatId: string, until: number) => void
@@ -150,9 +145,6 @@ const withChat = (chats: ChatConnection[], chat: ChatConnection) => {
 export const isTypingActive = (until: number | undefined, now: number) =>
   until !== undefined && until > now
 
-const sameContent = (left: MessageContent, right: MessageContent) =>
-  JSON.stringify(left) === JSON.stringify(right)
-
 const applyClientUpdate = (
   state: ChatState,
   update: ClientUpdate,
@@ -174,26 +166,7 @@ const applyClientUpdate = (
       if (!cached && state.activeChatId !== undefined && state.activeChatId !== chatId)
         return { chats }
       const current = cached ?? []
-      const existing = current.some((message) => message.id === update.message.id)
-      const pending = existing
-        ? undefined
-        : current.find(
-            (message) =>
-              message.clientId &&
-              message.status === 'pending' &&
-              update.message.sender === 'user' &&
-              sameContent(message.content, update.message.content),
-          )
-      const withoutPending = pending
-        ? current.filter((message) => message.id !== pending.id)
-        : current
-      const pendingByChat = { ...state.pendingByChat }
-      if (pending?.clientId) {
-        pendingByChat[update.message.chatId] = (pendingByChat[update.message.chatId] ?? []).filter(
-          (clientId) => clientId !== pending.clientId,
-        )
-      }
-      const messages = withMessage(withoutPending, update.message)
+      const messages = withMessage(current, update.message)
       return {
         chats,
         messagesByChat: {
@@ -203,7 +176,6 @@ const applyClientUpdate = (
               ? messages
               : warmHistory(messages),
         },
-        pendingByChat,
       }
     }
     case 'message.edited': {
@@ -444,6 +416,8 @@ export const createChatStore = (options: ChatStoreOptions = {}) => {
       })),
     beginOptimisticMessage: (chatId, clientId, content, createdAt) => {
       const current = get().messagesByChat[chatId] ?? []
+      const restored = current.find((message) => message.clientId === clientId)
+      if (restored) return restored
       const optimistic: ChatMessage = {
         id: `pending:${clientId}`,
         chatId,
@@ -507,6 +481,19 @@ export const createChatStore = (options: ChatStoreOptions = {}) => {
           [chatId]: (state.messagesByChat[chatId] ?? []).map((message) =>
             message.clientId === clientId ? { ...message, status: 'pending' } : message,
           ),
+        },
+      })),
+    discardOutgoingMessage: (chatId, clientId) =>
+      set((state) => ({
+        messagesByChat: {
+          ...state.messagesByChat,
+          [chatId]: (state.messagesByChat[chatId] ?? []).filter(
+            (message) => message.clientId !== clientId || !message.id.startsWith('pending:'),
+          ),
+        },
+        pendingByChat: {
+          ...state.pendingByChat,
+          [chatId]: (state.pendingByChat[chatId] ?? []).filter((id) => id !== clientId),
         },
       })),
     upsertChat: (chat) => set((state) => ({ chats: withChat(state.chats, chat) })),

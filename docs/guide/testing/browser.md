@@ -14,6 +14,8 @@ Chromium is headless by default. Install its Playwright browser binary with `bun
 
 The onboarding scenarios run the real echo SDK on desktop and mobile viewports. They cover token copying and clipboard fallback, live presence, focus restoration, polling cleanup, opening the chat, and a real `/start` reply.
 
+The outbox scenarios exercise real IndexedDB and server history: draft reload, offline send followed by reconnect, a response lost after the server commit, two sending tabs, and denied-storage fallback. They assert final server counts so an optimistic row alone cannot make a duplicate-prone test pass.
+
 ## Reset before each scenario
 
 ```ts

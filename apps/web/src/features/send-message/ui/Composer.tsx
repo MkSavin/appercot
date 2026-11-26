@@ -16,7 +16,7 @@ import { Button } from '@/shared/ui/button'
 import { Kbd } from '@/shared/ui/kbd'
 import { Textarea } from '@/shared/ui/textarea'
 import { shouldSubmitOnEnter } from '../model/keyboard'
-import { sendChatMessage } from '../model/send-message'
+import { sendChatMessage, setChatDraft } from '../model/send-message'
 
 interface ComposerProps {
   chatId: string
@@ -26,18 +26,19 @@ interface ComposerProps {
 export const Composer = ({ chatId, onOpenCommands }: ComposerProps) => {
   const { t } = useTranslation()
   const text = useChatStore((state) => state.draftsByChat[chatId] ?? '')
-  const setText = (value: string) => useChatStore.getState().setDraft(chatId, value)
+  const setText = (value: string) => setChatDraft(useChatStore, chatId, value)
   const [attachment, setAttachment] = useState<File | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const formRef = useRef<HTMLFormElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
-  const sendContent = async (content: UserContent) => {
+  const sendContent = async (content: UserContent, draftToClear?: string) => {
     if (submitting) return
     setSubmitting(true)
-    setText('')
     try {
-      await sendChatMessage(useChatStore, { chatId, content }, sendMessageRequest)
+      await sendChatMessage(useChatStore, { chatId, content }, sendMessageRequest, {
+        clearDraft: draftToClear,
+      })
     } catch (error) {
       showRequestError(error)
     } finally {
@@ -46,7 +47,7 @@ export const Composer = ({ chatId, onOpenCommands }: ComposerProps) => {
   }
 
   const sendText = async (content: string) => {
-    if (content) await sendContent({ text: content })
+    if (content.trim()) await sendContent({ text: content.trim() }, content)
   }
 
   const upload = async (file: File) => {
@@ -57,7 +58,6 @@ export const Composer = ({ chatId, onOpenCommands }: ComposerProps) => {
       if (limit && file.size > limit) throw new Error(t('errors:uploadTooLarge'))
       const { fileId, mime } = await uploadChatAttachment(chatId, file)
       const caption = text.trim()
-      setText('')
       setAttachment(null)
       await sendChatMessage(
         useChatStore,
@@ -69,6 +69,7 @@ export const Composer = ({ chatId, onOpenCommands }: ComposerProps) => {
           },
         },
         sendMessageRequest,
+        { clearDraft: text },
       )
     } catch (error) {
       showRequestError(error)
@@ -80,7 +81,7 @@ export const Composer = ({ chatId, onOpenCommands }: ComposerProps) => {
   const submit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (attachment) void upload(attachment)
-    else void sendText(text.trim())
+    else void sendText(text)
   }
 
   return (

@@ -27,6 +27,8 @@ export const testIds = {
   },
   message: {
     item: (messageId: string) => `message.item.${messageId}`,
+    retry: (clientId: string) => `message.retry.${clientId}`,
+    delete: (clientId: string) => `message.delete.${clientId}`,
     button: (messageId: string, row: number, column: number) =>
       `message.button.${messageId}:${row}:${column}`,
   },

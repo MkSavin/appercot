@@ -25,9 +25,10 @@ Use Appercot when a bot needs more than a hosted chat account. It combines a Bun
 - Bot commands, callbacks, keyboards, multi-step flows, Markdown, and file delivery.
 - Local disk or S3-compatible media storage.
 - A real test server with seeded fixtures and explicit cleanup operations.
+- Browser drafts and an unsent-message outbox that survive reloads and reconnects.
 - Bun, Vitest, Jest, and Playwright compatibility scenarios.
 
-The current product is a bot messenger, not a general-purpose replacement for every messenger feature. Web applications inside the bot shell are a future mode. A durable browser outbox across reloads is not implemented. Do not assume end-to-end encryption, multi-node SQLite deployment, or guaranteed browser support for every video codec.
+The current product is a bot messenger, not a general-purpose replacement for every messenger feature. Web applications inside the bot shell are a future mode. Raw file and Blob uploads do not survive a browser restart. Do not assume end-to-end encryption, multi-node SQLite deployment, or guaranteed browser support for every video codec.
 
 ## Documentation map
 

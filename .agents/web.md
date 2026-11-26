@@ -2,7 +2,7 @@
 
 The React PWA owns rendering, navigation, pending sends and the browser session view. Feature-Sliced dependencies flow down through public slice entry points.
 
-Desktop uses a navigation rail, a context panel and a work area. Mobile switches between list and detail screens. Settings groups are profile, appearance, notifications and role-scoped management. Chat pins are local to the browser account, and drafts survive navigation within the current session. Theme colors come from [Zen Inspired Theme](https://tweakcn.com/themes/cmlm03etv000204lh15608kec).
+Desktop uses a navigation rail, a context panel and a work area. Mobile switches between list and detail screens. Settings groups are profile, appearance, notifications and role-scoped management. Chat pins are local to the browser account. Drafts and unsent message records are isolated by account in IndexedDB and survive reloads; unavailable storage falls back to in-memory sending with a warning. Theme colors come from [Zen Inspired Theme](https://tweakcn.com/themes/cmlm03etv000204lh15608kec).
 
 ```text
 app -> pages -> widgets -> features -> entities -> shared
@@ -14,6 +14,8 @@ app -> pages -> widgets -> features -> entities -> shared
 | Why is history empty after reconnect or a send duplicated? | [Synchronization](web/synchronization.md) |
 | Why does Enter send while an IME is active? | [IME Enter](workarounds/ime-enter.md) |
 
+- Text drafts restore without automatic sending, and outbox retries preserve the original client ID. Checked: INV:durable-messaging/restores-records, INV:durable-messaging/reuses-id.
+- Local drafts and outbox records never hydrate or send under another account. Checked: INV:durable-messaging/isolates-accounts.
 - Bot Markdown displays GFM without raw HTML. Checked: INV:ui/sanitizes-markdown.
 - A push click accepts only same-origin chat routes. Checked: INV:pwa/restricts-deeplinks.
 - Bot join links survive platform sign-in without allowing external return URLs. Checked: INV:admin-ui/preserves-invitation.

@@ -1,0 +1,12 @@
+{
+  "retry": "Retry",
+  "deleteUnsent": "Delete",
+  "deleteUnsentTitle": "Delete the unsent message?",
+  "deleteUnsentDescription": "The text will be permanently removed from this browser.",
+  "deleteChatOutboxWarning_one": "Deleting the chat will also delete its draft and {{count}} unsent message.",
+  "deleteChatOutboxWarning_other": "Deleting the chat will also delete its draft and {{count}} unsent messages.",
+  "unsentRestored_one": "Restored {{count}} unsent message. It will be sent automatically.",
+  "unsentRestored_other": "Restored {{count}} unsent messages. They will be sent automatically.",
+  "offlineOutbox_one": "No connection. {{count}} message will be sent when the connection returns.",
+  "offlineOutbox_other": "No connection. {{count}} messages will be sent when the connection returns."
+}

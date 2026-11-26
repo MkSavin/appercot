@@ -22,6 +22,10 @@ Public bots appear in the catalog. Invitation-only bots require a link or direct
 
 Use TLS in production and keep credentials in environment variables or a secret manager. Restrict filesystem access to the database, media, backups, and `totp.key`.
 
+## Browser-local message data
+
+Drafts and unsent messages are stored in IndexedDB under the current account ID so they can survive reloads. These records contain message text and uploaded-file references. They are not encrypted by appercot, are not a backup, and remain on the browser profile until sent, deleted, or cleared by browser storage controls. Use appropriate device access controls and clear site data on shared devices. If IndexedDB is unavailable, the PWA warns that new drafts and unsent messages will not survive a reload.
+
 ## Content and files
 
 Bot Markdown supports GFM without raw HTML in the PWA. File downloads and byte-range requests check access to the owning chat. URL imports validate redirects and network addresses; private hosts must be explicitly allowlisted with `MEDIA_TRUSTED_HOSTS`.

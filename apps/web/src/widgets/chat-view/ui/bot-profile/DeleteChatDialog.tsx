@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { useLocation } from 'wouter'
 import { deleteChatRequest, useChatStore } from '@/entities/chat'
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,6 +28,7 @@ export const DeleteChatDialog = ({
 }) => {
   const { t } = useTranslation()
   const [, navigate] = useLocation()
+  const unsentCount = useChatStore((state) => state.pendingByChat[chatId]?.length ?? 0)
   return (
     <AlertDialog
       open={open}
@@ -37,7 +39,10 @@ export const DeleteChatDialog = ({
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{t('bot:deleteChatTitle')}</AlertDialogTitle>
-          <AlertDialogDescription>{t('bot:deleteChatDescription')}</AlertDialogDescription>
+          <AlertDialogDescription>
+            {t('bot:deleteChatDescription')}{' '}
+            {unsentCount ? t('chat:deleteChatOutboxWarning', { count: unsentCount }) : null}
+          </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={pending}>{t('common:cancel')}</AlertDialogCancel>

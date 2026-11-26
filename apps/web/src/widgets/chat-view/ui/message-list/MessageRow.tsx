@@ -19,6 +19,7 @@ export const MessageRow = ({
   style,
   measureElement,
   onRetry,
+  onDelete,
   onCommand,
   onButtonAction,
 }: {
@@ -33,6 +34,7 @@ export const MessageRow = ({
   style: CSSProperties
   measureElement: (node: Element | null) => void
   onRetry: (clientId: string) => void
+  onDelete: (clientId: string) => void
   onCommand: (command: string) => void
   onButtonAction: (message: ChatMessage, button: Button, key: string) => void
 }) => {
@@ -55,6 +57,7 @@ export const MessageRow = ({
         <UserMessage
           message={message}
           onRetry={onRetry}
+          onDelete={onDelete}
           commands={commands}
           onCommand={blocked ? undefined : onCommand}
         />

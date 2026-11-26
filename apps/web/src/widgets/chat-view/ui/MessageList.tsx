@@ -30,6 +30,7 @@ interface MessageListProps {
   welcome?: string
   onLoadEarlier: () => void
   onRetry: (clientId: string) => void
+  onDelete: (clientId: string) => void
   commands?: BotCommand[]
   paletteOpen?: boolean
   onPaletteOpen?: (open: boolean) => void
@@ -45,6 +46,7 @@ export const MessageList = ({
   welcome,
   onLoadEarlier,
   onRetry,
+  onDelete,
   commands = [],
   paletteOpen = false,
   onPaletteOpen,
@@ -202,6 +204,7 @@ export const MessageList = ({
                     style={{ transform: `translateY(${row.start}px)` }}
                     measureElement={virtualizer.measureElement}
                     onRetry={onRetry}
+                    onDelete={onDelete}
                     onCommand={sendCommand}
                     onButtonAction={(target, button, key) =>
                       void handleButtonAction(target, button, key)

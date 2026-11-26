@@ -1,2 +1,5 @@
+export * from './model/durable-messaging'
+export * from './model/local-records'
+export * from './model/memory-repository'
 export * from './model/send-message'
 export * from './ui/Composer'

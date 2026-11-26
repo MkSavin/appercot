@@ -210,7 +210,7 @@ Replace `OWNER` with the real repository owner; adding the configuration file al
 - [x] Local and S3-compatible media with access-controlled delivery
 - [x] Real test server with fixtures and Bun, Vitest, Jest, and Playwright scenarios
 - [ ] Web applications inside the bot shell
-- [ ] Durable browser outbox across reloads
+- [x] Durable browser drafts and text outbox across reloads
 - [ ] Bounded synchronization catch-up and broader interactive browser coverage
 - [ ] Crash-injection coverage across message, update, and outbox commit boundaries
 

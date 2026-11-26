@@ -1,8 +1,8 @@
 # Open gaps
 
-## Web · Offline outbox
+## Web · Durable media sends
 
-A failed send can be retried during the current session. A durable local outbox would retain queued text across reload and reconnect. Not checked automatically: offline delivery across reload is unimplemented.
+Text drafts and uploaded-media references use the durable browser outbox. Raw files and large Blob uploads still cannot be restored after a browser restart. Not checked automatically: durable file upload recovery is unimplemented.
 
 ## Sync · Catch-up cost
 
