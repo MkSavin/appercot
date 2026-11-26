@@ -16,13 +16,15 @@ app -> pages -> widgets -> features -> entities -> shared
 
 - Text drafts restore without automatic sending, and outbox retries preserve the original client ID. Checked: INV:durable-messaging/restores-records, INV:durable-messaging/reuses-id.
 - Local drafts and outbox records never hydrate or send under another account. Checked: INV:durable-messaging/isolates-accounts.
+- XHR uploads distinguish byte progress, server completion, abort and transport errors. Checked: INV:upload-api/tracks-upload.
+- Attachment queues cap a message at ten files, share one submit across composer instances and retry only failed siblings. Checked: INV:attachment-queue/limits-files, INV:attachment-queue/retries-partial.
 - Bot Markdown displays GFM without raw HTML. Checked: INV:ui/sanitizes-markdown.
 - A push click accepts only same-origin chat routes. Checked: INV:pwa/restricts-deeplinks.
 - Bot join links survive platform sign-in without allowing external return URLs. Checked: INV:admin-ui/preserves-invitation.
 
 Bot settings open from the managed bot list. Creation keeps the issued token in the same shadcn dialog as the launch command and server-backed connection status; the optional first-bot checklist stores only its account-scoped dismissed flag. Reset-token setup uses the same dialog. Desktop/mobile Playwright covers a real echo SDK, clipboard failure, focus restoration, polling cleanup, and `/start`.
 - Invitations are dialogs and chat pinning uses a context menu. Bot responses use the full message column and the composer is a floating surface with a separate tools row. Not checked automatically: these layout details require a browser.
-- JSON interface resources live in `shared/config/locales/ru/*.json`; onboarding also has an English namespace under `locales/en`. They are read through `react-i18next` with explicit namespaces such as `global:appName` and `chat:online`. Chats, catalog and settings share `ContextPanel` and `WorkspaceHeader`; loading layouts use `PagePlaceholder`.
+- JSON interface resources live in `shared/config/locales/ru/*.json`; completed feature namespaces also have English resources under `locales/en`. They are read through `react-i18next` with explicit namespaces such as `global:appName` and `chat:online`. Chats, catalog and settings share `ContextPanel` and `WorkspaceHeader`; loading layouts use `PagePlaceholder`.
 - The catalog has one global sidebar search and no separate connected-bots view. Bot tags are edited in bot settings, shown on catalog cards and included in search.
 - Session chat connections include the latest non-deleted message as `preview`. Realtime updates keep it current even when the chat is closed and its history is absent from the cache.
 - The chat header opens the bot profile and media gallery. A welcome message appears in an empty chat. Deleting a chat removes its history and hides it while retaining membership and blocking. Checked: INV:bot-profile/chat-deletion.

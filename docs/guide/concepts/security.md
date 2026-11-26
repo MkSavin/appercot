@@ -24,7 +24,7 @@ Use TLS in production and keep credentials in environment variables or a secret 
 
 ## Browser-local message data
 
-Drafts and unsent messages are stored in IndexedDB under the current account ID so they can survive reloads. These records contain message text and uploaded-file references. They are not encrypted by appercot, are not a backup, and remain on the browser profile until sent, deleted, or cleared by browser storage controls. Use appropriate device access controls and clear site data on shared devices. If IndexedDB is unavailable, the PWA warns that new drafts and unsent messages will not survive a reload.
+Drafts and unsent messages are stored in IndexedDB under the current account ID so they can survive reloads. These records contain message text and uploaded-file references. They are not encrypted by appercot, are not a backup, and remain on the browser profile until sent, deleted, or cleared by browser storage controls. Use appropriate device access controls and clear site data on shared devices. If IndexedDB is unavailable, the PWA warns that new drafts and unsent messages will not survive a reload. Files selected in the composer remain only in memory until uploaded; the UI warns that they are not restored after a reload.
 
 ## Content and files
 

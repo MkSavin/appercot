@@ -1,0 +1,38 @@
+{
+  "status": {
+    "selected": "Checking the file…",
+    "queued": "Ready to upload",
+    "uploading": "Uploading",
+    "ready": "File uploaded; the message has not been sent yet",
+    "failed": "Upload failed",
+    "cancelled": "Upload cancelled",
+    "completing": "Finishing the upload on the server…",
+    "rateLimited": "The server is busy. Retrying in {{seconds}} s."
+  },
+  "error": {
+    "ABORTED": "Upload cancelled.",
+    "NETWORK": "Network error. Check your connection and retry.",
+    "TIMEOUT": "The upload timed out. Try again.",
+    "TOO_LARGE": "The file exceeds the {{limit}} limit.",
+    "UNSUPPORTED": "SVG is not supported. Choose another file.",
+    "RATE_LIMIT": "Too many simultaneous uploads.",
+    "UNAUTHORIZED": "Your session has expired. Sign in again.",
+    "FORBIDDEN": "This file can no longer be sent to the chat. Choose it again.",
+    "SERVER": "The server could not finish the upload. Try again.",
+    "INVALID_RESPONSE": "The server returned an invalid response. Try uploading again."
+  },
+  "notice": {
+    "TOO_MANY_FILES": "You can select up to {{limit}} files. Not added: {{count}}.",
+    "DUPLICATES_IGNORED": "Duplicate selections skipped: {{count}}.",
+    "UPLOAD_INCOMPLETE": "Retry or remove failed files before sending."
+  },
+  "waitingForFiles": "Waiting for files. The message will be queued when uploads finish.",
+  "volatile": "Selected files will not be restored after a page reload.",
+  "dropFiles": "Drop files here",
+  "preview": "Preview of {{filename}}",
+  "progress": "Upload progress for {{filename}}",
+  "retry": "Retry uploading {{filename}}",
+  "cancel": "Cancel uploading {{filename}}",
+  "remove": "Remove {{filename}}",
+  "unknownType": "Unknown type"
+}

@@ -1,3 +1,4 @@
+import { MEDIA_MAX } from '@appercot/protocol'
 import { authenticateBotToken } from '../auth/bot-token'
 import { getRequestSession } from '../auth/session'
 import type { AppDatabase } from '../db/client'
@@ -86,7 +87,12 @@ export const createFileHandlers = (db: AppDatabase, env: AppEnv, storage: MediaS
   return {
     pausePreviews: previews.pause,
     resumePreviews: previews.resume,
-    limits: () => Response.json({ maxBytes: env.MEDIA_MAX_BYTES }),
+    limits: () =>
+      Response.json({
+        maxBytes: env.MEDIA_MAX_BYTES,
+        maxFiles: MEDIA_MAX,
+        recommendedConcurrency: Math.min(2, env.MEDIA_UPLOADS_PER_ACTOR),
+      }),
     uploadUser: (request: Request) => {
       const session = getRequestSession(db, request)
       return session

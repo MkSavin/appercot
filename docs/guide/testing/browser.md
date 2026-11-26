@@ -16,6 +16,8 @@ The onboarding scenarios run the real echo SDK on desktop and mobile viewports. 
 
 The outbox scenarios exercise real IndexedDB and server history: draft reload, offline send followed by reconnect, a response lost after the server commit, two sending tabs, and denied-storage fallback. They assert final server counts so an optimistic row alone cannot make a duplicate-prone test pass.
 
+The media scenarios upload real fixture files through XHR. They cover mobile multi-file selection with one caption, previews, bounded progress, navigation during upload, keyboard cancel/retry, paste, drag-and-drop, object URL cleanup, and idempotent reload after a lost message response.
+
 ## Reset before each scenario
 
 ```ts

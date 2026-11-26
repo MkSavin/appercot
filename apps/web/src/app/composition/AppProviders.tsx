@@ -3,7 +3,11 @@ import { useLocation } from 'wouter'
 import { synchronizeChatState, useChatStore } from '@/entities/chat'
 import { fetchMessages, fetchSynchronization, sendMessageRequest } from '@/entities/message'
 import { fetchSession } from '@/entities/session'
-import { flushChatDraft, startDurableMessaging } from '@/features/send-message'
+import {
+  flushChatDraft,
+  observeAttachmentQueues,
+  startDurableMessaging,
+} from '@/features/send-message'
 import {
   type ClientWebSocketTransport,
   createClientWebSocketTransport,
@@ -36,7 +40,12 @@ const useDurableOutbox = () => {
   const userId = useChatStore((state) => state.user?.id)
   useEffect(() => {
     if (!userId) return
-    return startDurableMessaging(useChatStore, sendMessageRequest)
+    const stopAttachments = observeAttachmentQueues(useChatStore, userId)
+    const stopDurable = startDurableMessaging(useChatStore, sendMessageRequest)
+    return () => {
+      stopAttachments()
+      stopDurable()
+    }
   }, [userId])
 }
 

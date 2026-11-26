@@ -1,4 +1,6 @@
+export * from './model/attachment-queue'
 export * from './model/durable-messaging'
+export * from './model/format-bytes'
 export * from './model/local-records'
 export * from './model/memory-repository'
 export * from './model/send-message'

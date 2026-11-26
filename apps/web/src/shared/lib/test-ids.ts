@@ -22,11 +22,24 @@ export const testIds = {
   chat: {
     composer: {
       input: 'chat.composer.input',
+      fileInput: 'chat.composer.file-input',
       send: 'chat.composer.send',
+      attachments: 'chat.composer.attachments',
+      waiting: 'chat.composer.waiting',
+      dropTarget: 'chat.composer.drop-target',
+      dropOverlay: 'chat.composer.drop-overlay',
+    },
+    attachment: {
+      item: (localId: string) => `chat.attachment.item.${localId}`,
+      progress: (localId: string) => `chat.attachment.progress.${localId}`,
+      retry: (localId: string) => `chat.attachment.retry.${localId}`,
+      cancel: (localId: string) => `chat.attachment.cancel.${localId}`,
+      remove: (localId: string) => `chat.attachment.remove.${localId}`,
     },
   },
   message: {
     item: (messageId: string) => `message.item.${messageId}`,
+    attachment: (fileId: string) => `message.attachment.${fileId}`,
     retry: (clientId: string) => `message.retry.${clientId}`,
     delete: (clientId: string) => `message.delete.${clientId}`,
     button: (messageId: string, row: number, column: number) =>

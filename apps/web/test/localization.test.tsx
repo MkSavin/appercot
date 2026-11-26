@@ -25,6 +25,7 @@ test('loads English feature namespaces with Russian fallback for untranslated re
     expect(i18n.t('onboarding:steps.connect')).toBe('SDK connected')
     expect(i18n.t('chat:retry')).toBe('Retry')
     expect(i18n.t('message:failed')).toBe('Not sent')
+    expect(i18n.t('upload:status.completing')).toBe('Finishing the upload on the server…')
     expect(i18n.t('chat:title')).toBe('Чаты')
   } finally {
     await i18n.changeLanguage('ru')

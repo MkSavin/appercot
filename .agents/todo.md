@@ -1,8 +1,8 @@
 # Open gaps
 
-## Web · Durable media sends
+## Web · Resumable media uploads
 
-Text drafts and uploaded-media references use the durable browser outbox. Raw files and large Blob uploads still cannot be restored after a browser restart. Not checked automatically: durable file upload recovery is unimplemented.
+The composer uploads up to ten files with previews, progress, cancellation and partial retry, then sends their IDs through the durable outbox. Raw files and large Blob uploads still cannot be resumed after a browser restart. Not checked automatically: resumable or chunked upload recovery is unimplemented.
 
 ## Sync · Catch-up cost
 

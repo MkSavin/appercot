@@ -24,6 +24,7 @@ Use Appercot when a bot needs more than a hosted chat account. It combines a Bun
 - Shared chats, a bot catalog, invitations, message history, and Web Push.
 - Bot commands, callbacks, keyboards, multi-step flows, Markdown, and file delivery.
 - Local disk or S3-compatible media storage.
+- Multi-file composer uploads with previews, progress, cancellation, retry, paste, and drag-and-drop.
 - A real test server with seeded fixtures and explicit cleanup operations.
 - Browser drafts and an unsent-message outbox that survive reloads and reconnects.
 - Bun, Vitest, Jest, and Playwright compatibility scenarios.

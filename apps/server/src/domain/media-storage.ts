@@ -44,18 +44,26 @@ export const createMediaStorage = (env: AppEnv, environmentPrefix = '') => {
       preview = false,
     ) => {
       const objectKey = key(id, preview)
-      const payload =
-        body instanceof Uint8Array
-          ? body
-          : new Response(body, { headers: { 'content-type': type } })
       if (kind === 's3') {
         if (!s3) throw new Error('S3 storage is not configured')
+        const payload =
+          body instanceof Uint8Array
+            ? body
+            : new Response(body, { headers: { 'content-type': type } })
         await s3.file(objectKey).write(payload, { type })
       } else {
         const localKey = `${id}${preview ? '.jpg' : ''}`
         await mkdir(directory, { recursive: true })
-        if (payload instanceof Response) await Bun.write(join(directory, localKey), payload)
-        else await Bun.write(join(directory, localKey), payload)
+        if (body instanceof Uint8Array) {
+          await Bun.write(join(directory, localKey), body)
+        } else {
+          const writer = Bun.file(join(directory, localKey)).writer()
+          for await (const chunk of body) {
+            writer.write(chunk)
+            await writer.flush()
+          }
+          await writer.end()
+        }
       }
     },
     remove: async (kind: StorageKind, id: string, preview = false) => {

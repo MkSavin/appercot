@@ -2,6 +2,7 @@ import type { Media } from '@appercot/protocol'
 import { Download, FileIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/shared/lib/cn'
+import { testId, testIds } from '@/shared/lib/test-ids'
 import { Button } from '@/shared/ui/button'
 import { MediaViewer } from './MediaViewer'
 import { originalUrl } from './media-url'
@@ -11,7 +12,11 @@ export const MediaGallery = ({ media }: { media: Media[] }) => {
   return (
     <ul className={cn('my-3 grid gap-3', media.length > 1 && 'sm:grid-cols-2')}>
       {media.map((item) => (
-        <li key={item.fileId} className="min-w-0">
+        <li
+          {...testId(testIds.message.attachment(item.fileId))}
+          key={item.fileId}
+          className="min-w-0"
+        >
           {item.kind === 'image' || item.kind === 'video' ? <MediaViewer item={item} /> : null}
           {item.kind === 'audio' ? (
             // biome-ignore lint/a11y/useMediaCaption: The bot protocol carries a text caption but no subtitle track.
