@@ -35,7 +35,7 @@ await bot.start({ commands: [start, help] })
 
 Alternatively, call `bot.commands([start, help])` before `bot.start()`. Command roles are checked both when the command is invoked and when a queued event is delivered.
 
-`Mod` means Command on macOS and Control elsewhere. Letter, digit, and slash shortcuts use physical keyboard codes, so they continue to work in non-Latin layouts. Avoid browser-reserved `Ctrl+/` and `Ctrl/Cmd+K`.
+`Mod` means Command on macOS and Control elsewhere. Letter, digit, and slash shortcuts use physical keyboard codes, so they continue to work in non-Latin layouts. Avoid browser-reserved `Ctrl+/` (`Cmd+/` on Apple platforms) and `Ctrl/Cmd+K`.
 
 `replyWithCommand` inserts command names into one `%s` placeholder per definition. Without a template it produces a list with descriptions.
 

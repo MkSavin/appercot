@@ -41,7 +41,7 @@ export const ManagementSettings = ({ section }: { section: 'users' | 'invites' |
     }
   }, [section, status])
 
-  if (status === 'loading') return <PagePlaceholder variant="list" />
+  if (status === 'loading') return <PagePlaceholder variant={section} />
   if (status === 'failed')
     return (
       <div className="settings-card grid justify-items-start gap-3">
@@ -67,7 +67,10 @@ export const ManagementSettings = ({ section }: { section: 'users' | 'invites' |
         )
       }
       onToken={(issued) => {
-        setBots((current) => [{ ...issued.bot, access: 'public', memberCount: 0 }, ...current])
+        setBots((current) => [
+          { ...issued.bot, stopped: issued.bot.stopped ?? false, access: 'public', memberCount: 0 },
+          ...current,
+        ])
       }}
     />
   )

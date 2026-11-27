@@ -27,12 +27,10 @@ const login = async (page: Page, username: string, password: string, chatId: str
 }
 
 const muteFor = async (page: Page, preset: string) => {
-  await page.locator(selector(testIds.chat.notifications.trigger)).click()
+  const trigger = page.locator(selector(testIds.chat.notifications.profileTrigger))
+  await trigger.click()
   await page.locator(selector(testIds.chat.notifications.mute(preset))).click()
-  await expect(page.locator(selector(testIds.chat.notifications.trigger))).toHaveAttribute(
-    'aria-label',
-    /Отключены до/,
-  )
+  await expect(trigger).toHaveAttribute('aria-label', /Отключены до/)
 }
 
 test.beforeEach(async () => {
@@ -40,12 +38,16 @@ test.beforeEach(async () => {
   await client.flushState()
 })
 
-test('persists mute, keeps unread filtering and expires without reload', async ({ page }) => {
+test('persists profile mute, filters unread through navigation and expires without reload', async ({
+  page,
+}) => {
   const { user, chat } = await fixture()
   await login(page, user.username, user.password, chat.id)
+  await expect(page.locator(selector(testIds.chat.notifications.trigger))).toHaveCount(0)
+  await page.goto(`/c/${chat.id}/profile`)
   await muteFor(page, '1h')
   await page.reload()
-  await expect(page.locator(selector(testIds.chat.notifications.trigger))).toHaveAttribute(
+  await expect(page.locator(selector(testIds.chat.notifications.profileTrigger))).toHaveAttribute(
     'aria-label',
     /Отключены до/,
   )
@@ -55,15 +57,19 @@ test('persists mute, keeps unread filtering and expires without reload', async (
   const item = page.locator(selector(testIds.chats.item(chat.id)))
   await expect(item).toContainText('Muted unread')
   await expect(item).toContainText('1')
-  await page.locator(selector(testIds.chats.unreadFilter)).click()
+  await page.locator(selector(testIds.navigation.unread)).click()
+  await expect(page).toHaveURL(/\?filter=unread$/)
   await expect(item).toBeVisible()
   await item.click()
   await expect(page.locator(selector(testIds.chat.composer.input))).toBeVisible()
   await page.goto('/')
+  await page.locator(selector(testIds.navigation.unread)).click()
   await expect(page.getByText('Нет непрочитанных чатов', { exact: true })).toBeVisible()
-  await page.locator(selector(testIds.chats.unreadFilter)).click()
+  await page.locator(selector(testIds.navigation.chats)).click()
+  await expect(item).toBeVisible()
+  await expect(page).toHaveURL(/\/$/)
 
-  await page.goto(`/c/${chat.id}`)
+  await page.goto(`/c/${chat.id}/profile`)
   await page.evaluate(async (chatId) => {
     await fetch('/graphql', {
       method: 'POST',
@@ -76,32 +82,32 @@ test('persists mute, keeps unread filtering and expires without reload', async (
       }),
     })
   }, chat.id)
-  const trigger = page.locator(selector(testIds.chat.notifications.trigger))
+  const trigger = page.locator(selector(testIds.chat.notifications.profileTrigger))
   await expect(trigger).toHaveAttribute('aria-label', /Отключены до/)
   await expect(trigger).toHaveAttribute('aria-label', /Уведомления: все/, { timeout: 4000 })
 })
 
-test('synchronizes profile and header controls and returns keyboard focus on mobile', async ({
+test('synchronizes profile controls across tabs and returns keyboard focus on mobile', async ({
   page,
   context,
 }) => {
   const { user, chat } = await fixture()
   await page.setViewportSize({ width: 390, height: 844 })
   await login(page, user.username, user.password, chat.id)
-  await muteFor(page, '8h')
   await page.goto(`/c/${chat.id}/profile`)
+  await muteFor(page, '8h')
   const profileTrigger = page.locator(selector(testIds.chat.notifications.profileTrigger))
   await expect(profileTrigger).toHaveAttribute('aria-label', /Отключены до/)
   const second = await context.newPage()
   await second.setViewportSize({ width: 390, height: 844 })
-  await second.goto(`/c/${chat.id}`)
-  const headerTrigger = second.locator(selector(testIds.chat.notifications.trigger))
-  await expect(headerTrigger).toHaveAttribute('aria-label', /Отключены до/)
+  await second.goto(`/c/${chat.id}/profile`)
+  const secondTrigger = second.locator(selector(testIds.chat.notifications.profileTrigger))
+  await expect(secondTrigger).toHaveAttribute('aria-label', /Отключены до/)
 
   await profileTrigger.focus()
   await page.keyboard.press('Enter')
   await page.locator(selector(testIds.chat.notifications.resume)).click()
-  await expect(headerTrigger).toHaveAttribute('aria-label', /Уведомления: все/)
+  await expect(secondTrigger).toHaveAttribute('aria-label', /Уведомления: все/)
   await expect(profileTrigger).toHaveAttribute('aria-label', /Уведомления: все/)
   await profileTrigger.focus()
   await page.keyboard.press('Enter')

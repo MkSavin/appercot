@@ -20,6 +20,12 @@ const GuestChatPage = lazy(() =>
 )
 
 const workspacePlaceholder = <PagePlaceholder />
+const routePlaceholder = (path: string) => {
+  if (path.startsWith('/settings'))
+    return <PagePlaceholder variant="settings-page" detail={path !== '/settings'} />
+  if (path.startsWith('/browse')) return <PagePlaceholder variant="catalog" />
+  return workspacePlaceholder
+}
 const authenticationPlaceholder = (
   <main className="grid min-h-dvh place-items-center p-6">
     <PagePlaceholder variant="auth" />
@@ -36,7 +42,7 @@ const Protected = ({ children }: { children: ReactNode }) => {
   }
   return (
     <Workspace path={path}>
-      <Suspense fallback={workspacePlaceholder}>{children}</Suspense>
+      <Suspense fallback={routePlaceholder(path)}>{children}</Suspense>
     </Workspace>
   )
 }

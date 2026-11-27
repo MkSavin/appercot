@@ -67,6 +67,18 @@ test('changes account data, enforces TOTP and revokes sessions on reset or delet
         ?.code,
     ).toBe('UNAUTHORIZED')
 
+    const thirdCookie = sessionCookie((await login('visitor', 'password123')).response)
+    expect((await call('mutation { revokeMyOtherSessions }', {}, cookie)).body.data).toEqual({
+      revokeMyOtherSessions: true,
+    })
+    expect(
+      (await call('query { mySessions { current } }', {}, cookie)).body.data.mySessions,
+    ).toEqual([{ current: true }])
+    expect(
+      (await call('query { mySessions { id } }', {}, thirdCookie)).body.errors?.[0]?.extensions
+        ?.code,
+    ).toBe('UNAUTHORIZED')
+
     const changeProfile =
       'mutation { updateProfile(username: "courier", displayName: "Courier", bio: "Parcel delivery") { username displayName bio } }'
     expect((await call(changeProfile, {}, cookie)).body.data.updateProfile).toEqual({

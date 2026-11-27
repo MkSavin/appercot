@@ -8,7 +8,7 @@ import { showRequestError } from '@/shared/api'
 import { ariaShortcut, displayShortcut, Shortcut } from '@/shared/lib/shortcuts'
 import { testId, testIds } from '@/shared/lib/test-ids'
 import { Button } from '@/shared/ui/button'
-import { Kbd } from '@/shared/ui/kbd'
+import { ShortcutKbd } from '@/shared/ui/shortcut-kbd'
 import { Textarea } from '@/shared/ui/textarea'
 import { attachmentQueueFor } from '../model/attachment-queue'
 import { shouldSubmitOnEnter } from '../model/keyboard'
@@ -149,9 +149,11 @@ export const Composer = ({ chatId, onOpenCommands }: ComposerProps) => {
                 onClick={onOpenCommands}
               >
                 <Terminal aria-hidden="true" />
-                <Kbd aria-hidden="true" className="hidden sm:inline-flex">
-                  {displayShortcut(Shortcut.CommandPalette)}
-                </Kbd>
+                <ShortcutKbd
+                  aria-hidden="true"
+                  className="hidden sm:inline-flex"
+                  shortcut={Shortcut.CommandPalette}
+                />
               </Button>
             ) : null}
             <Button

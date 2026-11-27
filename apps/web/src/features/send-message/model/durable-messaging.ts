@@ -39,6 +39,7 @@ export interface DurableMessaging {
   userId: string
   start: () => Promise<void>
   stop: () => void
+  discardChat: (chatId: string) => Promise<void>
   enqueue: (input: EnqueueInput) => Promise<void>
   setDraft: (chatId: string, text: string) => void
   flushDraft: (chatId: string) => Promise<void>
@@ -439,6 +440,7 @@ export const createDurableMessaging = (options: DurableMessagingOptions): Durabl
     userId,
     start,
     stop,
+    discardChat,
     enqueue: async (input) => {
       await ready
       if (!isCurrent()) throw new Error('The session ended before the message was queued')

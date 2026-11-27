@@ -4,8 +4,8 @@ import type { RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'wouter'
 import { BotAvatar } from '@/entities/bot'
-import { ChatNotificationMenu } from '@/features/chat-notifications'
 import { cn } from '@/shared/lib/cn'
+import { ariaShortcut, Shortcut } from '@/shared/lib/shortcuts'
 import { testId, testIds } from '@/shared/lib/test-ids'
 import { Button } from '@/shared/ui/button'
 
@@ -56,19 +56,20 @@ export const ChatHeader = ({
             </p>
           </div>
         </Link>
-        <div className="flex items-center gap-1 pr-2 md:pr-4">
+        <div className="flex items-stretch">
           <Button
             {...testId(testIds.chat.search.trigger)}
             ref={searchTriggerRef}
             variant="ghost"
             size="icon"
-            className="size-11 shrink-0 md:size-9"
+            className="h-16 w-14 shrink-0 rounded-none"
             aria-label={t('chat:messageSearch.open')}
+            aria-keyshortcuts={ariaShortcut(Shortcut.MessageSearch)}
+            title={t('chat:messageSearch.openWithShortcut')}
             onClick={onOpenSearch}
           >
             <Search aria-hidden="true" />
           </Button>
-          <ChatNotificationMenu chatId={chatId} />
         </div>
       </div>
     </header>

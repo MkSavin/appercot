@@ -47,6 +47,7 @@ export const AdminBotsDocument = graphql(`
       name
       description
       online
+      stopped
       listed
       access
       memberCount
@@ -64,6 +65,7 @@ export const CreateBotDocument = graphql(`
         name
         description
         online
+        stopped
         listed
         access
       }
@@ -81,11 +83,26 @@ export const ResetBotTokenDocument = graphql(`
         name
         description
         online
+        stopped
         listed
         access
       }
       token
     }
+  }
+`)
+
+export const SetBotStoppedDocument = graphql(`
+  mutation SetBotStopped($botId: ID!, $stopped: Boolean!) {
+    setBotStopped(botId: $botId, stopped: $stopped) {
+      id username name description online stopped listed access memberCount avatar welcome guestAccess tags
+    }
+  }
+`)
+
+export const DeleteBotDocument = graphql(`
+  mutation DeleteBot($botId: ID!) {
+    deleteBot(botId: $botId)
   }
 `)
 
@@ -104,7 +121,7 @@ export const SetUserRoleDocument = graphql(`
 export const SetBotAccessDocument = graphql(`
   mutation SetBotAccess($botId: ID!, $access: BotAccess!) {
     setBotAccess(botId: $botId, access: $access) {
-      id username name description online listed access guestAccess
+      id username name description online stopped listed access guestAccess
     }
   }
 `)
@@ -133,7 +150,7 @@ export const AdminBotDiagnosticsDocument = graphql(`
 
 export const AdminBotDocument = graphql(`
   query AdminBot($botId: ID!) {
-    adminBot(botId: $botId) { id username name description online listed access memberCount avatar welcome guestAccess tags }
+    adminBot(botId: $botId) { id username name description online stopped listed access memberCount avatar welcome guestAccess tags }
   }
 `)
 

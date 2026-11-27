@@ -123,21 +123,21 @@ test('keeps composer, touch actions and long content usable at 320 pixels', asyn
   expect((box?.y ?? 0) + (box?.height ?? 0)).toBeLessThanOrEqual(740)
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
   if (isMobile) {
-    for (const id of [testIds.chat.composer.send, testIds.chat.notifications.trigger]) {
+    for (const id of [testIds.chat.composer.send, testIds.chat.search.trigger]) {
       const target = await page.locator(selector(id)).boundingBox()
       expect(target?.width).toBeGreaterThanOrEqual(44)
       expect(target?.height).toBeGreaterThanOrEqual(44)
     }
   }
 
-  const notifications = page.locator(selector(testIds.chat.notifications.trigger))
-  await notifications.focus()
+  const searchTrigger = page.locator(selector(testIds.chat.search.trigger))
+  await searchTrigger.focus()
   await page.keyboard.press('Enter')
-  await expect(page.locator(selector(testIds.chat.notifications.mode('all')))).toBeVisible()
-  await expect(page.locator(selector(testIds.chat.notifications.menu))).toHaveCSS('opacity', '1')
+  await expect(page.locator(selector(testIds.chat.search.input))).toBeVisible()
+  await expect(page.locator('#chat-title')).toHaveCount(0)
   await expectNoAxeViolations(page)
-  await page.keyboard.press('Escape')
-  await expect(notifications).toBeFocused()
+  await page.locator(selector(testIds.chat.search.close)).click()
+  if (!isMobile) await expect(searchTrigger).toBeFocused()
   await expect(page.locator(selector(testIds.chat.composer.fileInput))).toBeAttached()
 
   const longText = `https://example.test/${'very-long-segment/'.repeat(20)}`
@@ -150,4 +150,15 @@ test('keeps composer, touch actions and long content usable at 320 pixels', asyn
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
   await page.goBack()
   await expect(page.locator(selector(testIds.chats.search))).toBeVisible()
+  for (const id of [
+    testIds.navigation.catalog,
+    testIds.navigation.chats,
+    testIds.navigation.unread,
+    testIds.navigation.settings,
+  ]) {
+    const target = await page.locator(selector(id)).boundingBox()
+    expect(target?.width).toBeGreaterThanOrEqual(44)
+    expect((target?.x ?? 0) + (target?.width ?? 0)).toBeLessThanOrEqual(320)
+  }
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
 })

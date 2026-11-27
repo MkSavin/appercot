@@ -16,7 +16,9 @@ import { PagePlaceholder } from '@/shared/ui/page-placeholder'
 import { BotProfileEditor } from './BotProfileEditor'
 import { BotAccessSettings } from './bot-settings/BotAccessSettings'
 import { BotConnectionSettings } from './bot-settings/BotConnectionSettings'
+import { BotDangerZone } from './bot-settings/BotDangerZone'
 import { BotInvitationsSection } from './bot-settings/BotInvitationsSection'
+import { BotOwnerSettings } from './bot-settings/BotOwnerSettings'
 import { BotRolesList } from './bot-settings/BotRolesList'
 
 export const BotSettings = ({ botId, isOwner }: { botId: string; isOwner: boolean }) => {
@@ -64,7 +66,7 @@ export const BotSettings = ({ botId, isOwner }: { botId: string; isOwner: boolea
         <Button onClick={() => setStatus('loading')}>{t('chat:retry')}</Button>
       </div>
     )
-  if (!bot || !memberships) return <PagePlaceholder variant="settings" />
+  if (!bot || !memberships) return <PagePlaceholder variant="bot-settings" />
 
   return (
     <div className="grid gap-8">
@@ -73,8 +75,12 @@ export const BotSettings = ({ botId, isOwner }: { botId: string; isOwner: boolea
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="text-lg font-semibold">{bot.name}</h2>
-            <Badge variant="secondary">
-              {bot.online ? t('settings:botOnline') : t('settings:botOffline')}
+            <Badge variant={bot.stopped ? 'destructive' : 'secondary'}>
+              {bot.stopped
+                ? t('settings:botStopped')
+                : bot.online
+                  ? t('settings:botOnline')
+                  : t('settings:botOffline')}
             </Badge>
           </div>
           <p className="text-sm text-muted-foreground">@{bot.username}</p>
@@ -110,13 +116,21 @@ export const BotSettings = ({ botId, isOwner }: { botId: string; isOwner: boolea
       />
       <BotConnectionSettings
         bot={bot}
-        isOwner={isOwner}
         pending={pending}
         run={run}
         onBotChange={setBot}
-        onLinksChange={setLinks}
         onIssued={setIssued}
       />
+      {isOwner ? (
+        <BotOwnerSettings
+          bot={bot}
+          pending={pending}
+          run={run}
+          onBotChange={setBot}
+          onLinksChange={setLinks}
+        />
+      ) : null}
+      <BotDangerZone bot={bot} pending={pending} run={run} onBotChange={setBot} />
       {issued ? (
         <BotSetupDialog key={issued.token} issued={issued} onClose={() => setIssued(undefined)} />
       ) : null}

@@ -23,12 +23,17 @@ test('upgrades an existing database and keeps external-content FTS synchronized'
   const journal = JSON.parse(await readFile(resolve(source, 'meta/_journal.json'), 'utf8')) as {
     entries: Array<Record<string, unknown> & { idx: number; tag: string }>
   }
-  const current = journal.entries.find((entry) => entry.tag === '0013_message_search')
-  if (!current) throw new Error('Message search migration is missing')
+  const pending = journal.entries.filter((entry) => entry.idx >= 13)
+  if (!pending.some((entry) => entry.tag === '0013_message_search'))
+    throw new Error('Message search migration is missing')
   journal.entries = journal.entries.filter((entry) => entry.idx < 13)
   await writeFile(resolve(migrations, 'meta/_journal.json'), JSON.stringify(journal))
   for (const file of await readdir(source)) {
-    if (file.endsWith('.sql') && file !== '0013_message_search.sql') {
+    if (
+      file.endsWith('.sql') &&
+      file !== '0013_message_search.sql' &&
+      journal.entries.some((entry) => entry.tag === file.slice(0, -4))
+    ) {
       await copyFile(resolve(source, file), resolve(migrations, file))
     }
   }
@@ -50,11 +55,10 @@ test('upgrades an existing database and keeps external-content FTS synchronized'
     UPDATE messages SET deleted_at = 3 WHERE id = 'deleted';
   `)
   legacy.sqlite.close()
-  await copyFile(
-    resolve(source, '0013_message_search.sql'),
-    resolve(migrations, '0013_message_search.sql'),
-  )
-  journal.entries.push(current)
+  for (const entry of pending) {
+    await copyFile(resolve(source, `${entry.tag}.sql`), resolve(migrations, `${entry.tag}.sql`))
+  }
+  journal.entries.push(...pending)
   await writeFile(resolve(migrations, 'meta/_journal.json'), JSON.stringify(journal))
 
   const upgraded = createDatabase(databasePath, migrations)

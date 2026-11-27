@@ -10,6 +10,7 @@ export interface BotDto {
   name: string
   description: string
   online: boolean
+  stopped: boolean
   listed: boolean
   guestAccess: boolean
   access: BotAccess
@@ -75,6 +76,7 @@ builder.objectType(BotType, {
     name: field.exposeString('name'),
     description: field.exposeString('description'),
     online: field.exposeBoolean('online'),
+    stopped: field.exposeBoolean('stopped'),
     listed: field.exposeBoolean('listed'),
     guestAccess: field.exposeBoolean('guestAccess'),
     access: field.expose('access', { type: BotAccessType }),

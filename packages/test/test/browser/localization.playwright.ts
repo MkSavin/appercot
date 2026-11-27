@@ -22,8 +22,26 @@ test('selects English before auth and preserves it across settings, reload and n
   const { user, chat } = await browserFixture()
   await page.goto('/login')
   await expect(page.locator('html')).toHaveAttribute('lang', 'ru')
+  const authLanguage = page.locator(selector(testIds.auth.language))
+  await expect(authLanguage).toHaveText('RU')
+  const logoBox = await page.locator(selector(testIds.auth.logo)).boundingBox()
+  const languageBox = await authLanguage.boundingBox()
+  if (!logoBox || !languageBox) throw new Error('Auth language controls are not visible')
+  expect(languageBox.x).toBeGreaterThan(logoBox.x + logoBox.width)
+  expect(languageBox.y + languageBox.height / 2).toBeCloseTo(logoBox.y + logoBox.height / 2, 1)
+  const passwordBox = await page.locator(selector(testIds.auth.login.password)).boundingBox()
+  const toggleBox = await page.locator(selector(testIds.auth.login.passwordToggle)).boundingBox()
+  if (!passwordBox || !toggleBox) throw new Error('Password controls are not visible')
+  expect(toggleBox.height).toBe(isMobile ? 44 : 40)
+  expect(toggleBox.y - passwordBox.y).toBe(4)
+  await expect(page.locator(selector(testIds.auth.login.submit))).toHaveCSS('cursor', 'pointer')
+  await authLanguage.click()
+  await expect(page.locator(selector(testIds.language.option('en')))).toContainText('EN')
+  await expect(page.locator(selector(testIds.language.option('ru')))).toContainText('RU')
+  await expect(page.getByRole('menu')).toBeVisible()
   await expectNoAxeViolations(page)
-  await selectLanguage(page, testIds.auth.language, 'en')
+  await page.locator(selector(testIds.language.option('en'))).click()
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en')
   await expect(page.locator(selector(testIds.auth.login.submit))).toHaveText('Sign in')
 
   await page.locator(selector(testIds.auth.login.username)).fill(user.username)
@@ -44,24 +62,47 @@ test('selects English before auth and preserves it across settings, reload and n
   await expect(page.locator('html')).toHaveAttribute('lang', 'en')
   await expectNoAxeViolations(page)
 
-  await page.locator(selector(testIds.chat.notifications.trigger)).click()
+  await page.goto(`/c/${chat.id}/profile`)
+  const notificationTrigger = page.locator(selector(testIds.chat.notifications.profileTrigger))
+  await notificationTrigger.click()
   await expect(page.locator(selector(testIds.chat.notifications.mode('all')))).toBeVisible()
   await expect(page.locator(selector(testIds.chat.notifications.menu))).toHaveCSS('opacity', '1')
   await expectNoAxeViolations(page)
   await page.keyboard.press('Escape')
-  await expect(page.locator(selector(testIds.chat.notifications.trigger))).toBeFocused()
+  await expect(notificationTrigger).toBeFocused()
 
-  if (isMobile) await page.locator(selector(testIds.chat.back)).click()
+  if (isMobile) {
+    await page.locator(selector(testIds.chat.back)).click()
+    await expect(page.locator(selector(testIds.chat.composer.input))).toBeVisible()
+    await page.locator(selector(testIds.chat.back)).click()
+  }
   await page.locator(selector(testIds.navigation.settings)).click()
   await page.locator(selector(testIds.settings.tab('appearance'))).click()
   const language = page.locator(selector(testIds.settings.language))
   await expect(language).toHaveText('English')
+  const railWidth = isMobile
+    ? undefined
+    : await page
+        .locator(selector(testIds.navigation.rail))
+        .evaluate((rail) => rail.getBoundingClientRect().width)
   await selectLanguage(page, testIds.settings.language, 'ru')
   await expect(page.locator(selector(testIds.settings.tab('appearance')))).toHaveText('Оформление')
   await expect(second.locator('html')).toHaveAttribute('lang', 'ru')
+  if (railWidth !== undefined)
+    expect(
+      await page
+        .locator(selector(testIds.navigation.rail))
+        .evaluate((rail) => rail.getBoundingClientRect().width),
+    ).toBe(railWidth)
   await selectLanguage(page, testIds.settings.language, 'en')
   await expect(page.locator(selector(testIds.settings.tab('appearance')))).toHaveText('Appearance')
   await expect(second.locator('html')).toHaveAttribute('lang', 'en')
+  if (railWidth !== undefined)
+    expect(
+      await page
+        .locator(selector(testIds.navigation.rail))
+        .evaluate((rail) => rail.getBoundingClientRect().width),
+    ).toBe(railWidth)
   await second.close()
   expect(await page.evaluate(() => localStorage.getItem('appercot:locale:v1'))).toBe('en')
 
@@ -70,6 +111,8 @@ test('selects English before auth and preserves it across settings, reload and n
   await dark.check({ force: true })
   await expect(dark).toBeChecked()
   await expect(page.locator('h1')).toHaveCSS('color', /0\.9173/)
+  await expect(page.locator('body')).toHaveCSS('color', /0\.9173/)
+  await expect(language).toHaveCSS('color', /0\.9173/)
   await expectNoAxeViolations(page)
   await page.setViewportSize({ width: 320, height: 740 })
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)

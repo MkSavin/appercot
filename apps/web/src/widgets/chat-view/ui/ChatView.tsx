@@ -8,6 +8,7 @@ import { BlockedChatNotice } from '@/features/block-bot'
 import { MessageSearchPanel } from '@/features/search-messages'
 import { Composer, discardChatMessage, retryChatMessage } from '@/features/send-message'
 import { showRequestError } from '@/shared/api'
+import { matchesShortcut, Shortcut } from '@/shared/lib/shortcuts'
 import type { ChatMessage } from '@/shared/model'
 import { Button } from '@/shared/ui/button'
 import { latestReadableSeq } from '../model/history-policy'
@@ -161,21 +162,26 @@ export const ChatView = ({ chatId }: { chatId: string }) => {
     return () => clearTimeout(timer)
   }, [targetMessageId])
 
-  useEffect(() => {
-    const openSearch = (event: KeyboardEvent) => {
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'f' && chatAvailable) {
-        event.preventDefault()
-        setSearchOpen(true)
-      }
-    }
-    document.addEventListener('keydown', openSearch)
-    return () => document.removeEventListener('keydown', openSearch)
-  }, [chatAvailable])
-
-  const closeSearch = () => {
+  const closeSearch = useCallback(() => {
     setSearchOpen(false)
     requestAnimationFrame(() => searchTriggerRef.current?.focus())
-  }
+  }, [])
+
+  useEffect(() => {
+    const handleSearchKeyboard = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || !chatAvailable) return
+      if (matchesShortcut(event, Shortcut.MessageSearch)) {
+        event.preventDefault()
+        if (searchOpen) closeSearch()
+        else setSearchOpen(true)
+      } else if (searchOpen && event.key === 'Escape') {
+        event.preventDefault()
+        closeSearch()
+      }
+    }
+    document.addEventListener('keydown', handleSearchKeyboard)
+    return () => document.removeEventListener('keydown', handleSearchKeyboard)
+  }, [chatAvailable, closeSearch, searchOpen])
   const focusComposer = () => {
     requestAnimationFrame(() => document.getElementById(`message-${chatId}`)?.focus())
   }
@@ -235,20 +241,25 @@ export const ChatView = ({ chatId }: { chatId: string }) => {
   }
 
   return (
-    <section className="flex h-full min-h-0 flex-col bg-background" aria-labelledby="chat-title">
-      <ChatHeader
-        chatId={chatId}
-        bot={chat.bot}
-        searchTriggerRef={searchTriggerRef}
-        onOpenSearch={() => setSearchOpen(true)}
-      />
+    <section
+      className="flex h-full min-h-0 flex-col bg-background"
+      aria-labelledby={searchOpen ? undefined : 'chat-title'}
+      aria-label={searchOpen ? t('chat:messageSearch.title') : undefined}
+    >
       {searchOpen ? (
         <MessageSearchPanel
           chatId={chatId}
           onClose={closeSearch}
           onSelect={(message) => void jumpToMessage(message)}
         />
-      ) : null}
+      ) : (
+        <ChatHeader
+          chatId={chatId}
+          bot={chat.bot}
+          searchTriggerRef={searchTriggerRef}
+          onOpenSearch={() => setSearchOpen(true)}
+        />
+      )}
       <ConnectionBanner
         connection={connection}
         botOnline={chat.bot.online}

@@ -1,9 +1,9 @@
 import type { Button } from '@appercot/protocol'
 import { LoaderCircle } from 'lucide-react'
-import { displayShortcut, type ShortcutCombination } from '@/shared/lib/shortcuts'
+import type { ShortcutCombination } from '@/shared/lib/shortcuts'
 import { testId, testIds } from '@/shared/lib/test-ids'
 import { Button as UiButton } from '@/shared/ui/button'
-import { Kbd } from '@/shared/ui/kbd'
+import { ShortcutKbd } from '@/shared/ui/shortcut-kbd'
 
 interface MessageKeyboardProps {
   rows: Button[][]
@@ -40,7 +40,7 @@ export const MessageKeyboard = ({
             >
               {pending ? <LoaderCircle aria-hidden="true" className="animate-spin" /> : null}
               {button.text}
-              {shortcut ? <Kbd>{displayShortcut(shortcut)}</Kbd> : null}
+              {shortcut ? <ShortcutKbd shortcut={shortcut} /> : null}
             </UiButton>
           )
         })}

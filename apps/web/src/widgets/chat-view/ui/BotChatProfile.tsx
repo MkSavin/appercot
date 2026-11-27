@@ -5,6 +5,7 @@ import { Link } from 'wouter'
 import { blockBotRequest, fetchChatProfile, useChatStore } from '@/entities/chat'
 import { BlockBotDialog, updateChatBlocked } from '@/features/block-bot'
 import { showRequestError } from '@/shared/api'
+import { testId, testIds } from '@/shared/lib/test-ids'
 import { Button } from '@/shared/ui/button'
 import { PagePlaceholder } from '@/shared/ui/page-placeholder'
 import { WorkspaceHeader } from '@/shared/ui/workspace-header'
@@ -62,7 +63,11 @@ export const BotChatProfile = ({ chatId }: { chatId: string }) => {
         className="pt-[env(safe-area-inset-top)]"
         before={
           <Button asChild variant="ghost" size="icon">
-            <Link href={chat ? `/c/${chatId}` : '/'} aria-label={t('chat:back')}>
+            <Link
+              {...testId(testIds.chat.back)}
+              href={chat ? `/c/${chatId}` : '/'}
+              aria-label={t('chat:back')}
+            >
               <ArrowLeft aria-hidden="true" />
             </Link>
           </Button>

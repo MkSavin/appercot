@@ -5,6 +5,8 @@ import { testIds } from '@/shared/lib/test-ids'
 import { getThemePreference, saveThemePreference, type ThemePreference } from '@/shared/lib/theme'
 import { ChoiceCards } from '@/shared/ui/choice-cards'
 import { LanguageSelect } from '@/shared/ui/language-select'
+import { SettingsSection } from '@/shared/ui/settings-section'
+import { SettingsRow } from './account/SettingsRow'
 
 export const AppearanceSettings = () => {
   const { t } = useTranslation()
@@ -48,19 +50,15 @@ export const AppearanceSettings = () => {
           }}
         />
       </section>
-      <section aria-labelledby="language-title" className="grid gap-3">
-        <div>
-          <h2 id="language-title" className="text-base font-semibold">
-            {t('settings:language')}
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground">{t('settings:languageDescription')}</p>
-        </div>
-        <LanguageSelect
-          id="settings-language"
-          testId={testIds.settings.language}
-          className="sm:w-56"
-        />
-      </section>
+      <SettingsSection title={t('settings:language')}>
+        <SettingsRow title={t('settings:language')} description={t('settings:languageDescription')}>
+          <LanguageSelect
+            id="settings-language"
+            testId={testIds.settings.language}
+            className="sm:w-56"
+          />
+        </SettingsRow>
+      </SettingsSection>
     </>
   )
 }

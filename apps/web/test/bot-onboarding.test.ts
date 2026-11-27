@@ -1,7 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import {
   canManageBots,
-  createBotLaunchCommand,
   getOnboardingSteps,
   readOnboardingDismissed,
   writeOnboardingDismissed,
@@ -9,9 +8,11 @@ import {
 
 describe('first bot onboarding model', () => {
   test('derives checklist steps from server-backed facts', () => {
-    expect(getOnboardingSteps(false, false)).toEqual(['current', 'upcoming', 'upcoming'])
-    expect(getOnboardingSteps(true, false)).toEqual(['done', 'current', 'upcoming'])
-    expect(getOnboardingSteps(true, true)).toEqual(['done', 'done', 'current'])
+    expect(getOnboardingSteps(false, false, false)).toEqual(['current', 'upcoming', 'upcoming'])
+    expect(getOnboardingSteps(true, false, false)).toEqual(['done', 'current', 'upcoming'])
+    expect(getOnboardingSteps(true, true, false)).toEqual(['done', 'done', 'current'])
+    expect(getOnboardingSteps(true, false, true)).toEqual(['done', 'current', 'upcoming'])
+    expect(getOnboardingSteps(true, true, true)).toEqual(['done', 'done', 'done'])
   })
 
   test('limits bot onboarding to administrators and owners', () => {
@@ -33,13 +34,5 @@ describe('first bot onboarding model', () => {
     expect([...values.values()]).toEqual(['1'])
     writeOnboardingDismissed('user-1', false, storage)
     expect(readOnboardingDismissed('user-1', storage)).toBe(false)
-  })
-
-  test('shell-quotes secrets and URLs in the launch command', () => {
-    const command = createBotLaunchCommand("bot:sec'ret", 'ws://localhost:3000/api/bot/ws')
-    expect(command).toBe(
-      "BOT_TOKEN='bot:sec'\\''ret' BOT_URL='ws://localhost:3000/api/bot/ws' bun examples/echo-bot/index.ts",
-    )
-    expect(command).not.toContain('token=')
   })
 })

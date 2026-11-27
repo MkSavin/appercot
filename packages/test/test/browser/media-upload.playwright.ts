@@ -124,6 +124,7 @@ test('sends multiple mobile picker files with caption through the durable outbox
   await page.reload()
   await page.unroute('**/graphql')
   await expect(messageWithText(page, 'Three files caption')).toHaveCount(1)
+  await expect(page.locator('[data-test-id^="message.item.pending:"]')).toHaveCount(0)
   const messages = await serverMessages(page, chat.id)
   const sent = messages.find((message) => message.content.text === 'Three files caption')
   expect(sent?.content.media).toHaveLength(3)

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 
-export const SecuritySetting = ({
+export const SettingsRow = ({
   title,
   description,
   children,

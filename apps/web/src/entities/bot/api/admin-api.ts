@@ -6,6 +6,7 @@ import {
   BotInvitationsDocument,
   BotMembershipsDocument,
   CreateBotDocument,
+  DeleteBotDocument,
   EditBotInviteDocument,
   graphqlClient,
   InviteBotMemberDocument,
@@ -17,6 +18,7 @@ import {
   SetBotMemberRevokedDocument,
   SetBotMemberRolesDocument,
   SetBotOwnerDocument,
+  SetBotStoppedDocument,
   UpdateBotProfileDocument,
 } from '@/shared/api'
 
@@ -47,6 +49,16 @@ export const createBotRequest = async (variables: {
 export const resetBotTokenRequest = async (botId: string) => {
   const result = await graphqlClient.request(ResetBotTokenDocument, { botId })
   return result.resetBotToken
+}
+
+export const setBotStoppedRequest = async (botId: string, stopped: boolean) => {
+  const result = await graphqlClient.request(SetBotStoppedDocument, { botId, stopped })
+  return result.setBotStopped
+}
+
+export const deleteBotRequest = async (botId: string) => {
+  const result = await graphqlClient.request(DeleteBotDocument, { botId })
+  return result.deleteBot
 }
 
 export const setBotOwnerRequest = async (botId: string, username: string) => {

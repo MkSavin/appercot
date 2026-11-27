@@ -1,19 +1,27 @@
 import { Search } from 'lucide-react'
 import type { ComponentProps } from 'react'
 import { useEffect, useRef } from 'react'
-import { ariaShortcut, displayShortcut, matchesShortcut, Shortcut } from '@/shared/lib/shortcuts'
+import {
+  ariaShortcut,
+  matchesShortcut,
+  Shortcut,
+  type ShortcutCombination,
+} from '@/shared/lib/shortcuts'
 import { InputGroup, InputGroupAddon, InputGroupInput } from './input-group'
-import { Kbd } from './kbd'
+import { ShortcutKbd } from './shortcut-kbd'
 
-export const SearchInput = (
-  props: Omit<ComponentProps<typeof InputGroupInput>, 'type' | 'ref'>,
-) => {
+export const SearchInput = ({
+  shortcut = Shortcut.Search,
+  ...props
+}: Omit<ComponentProps<typeof InputGroupInput>, 'type' | 'ref'> & {
+  shortcut?: ShortcutCombination
+}) => {
   const input = useRef<HTMLInputElement>(null)
   useEffect(() => {
     const focus = (event: KeyboardEvent) => {
       if (
         event.defaultPrevented ||
-        !matchesShortcut(event, Shortcut.Search) ||
+        !matchesShortcut(event, shortcut) ||
         !input.current?.getClientRects().length
       )
         return
@@ -24,7 +32,7 @@ export const SearchInput = (
     }
     window.addEventListener('keydown', focus)
     return () => window.removeEventListener('keydown', focus)
-  }, [])
+  }, [shortcut])
   return (
     <InputGroup>
       <InputGroupAddon>
@@ -34,12 +42,10 @@ export const SearchInput = (
         ref={input}
         type="search"
         autoComplete="off"
-        aria-keyshortcuts={ariaShortcut(Shortcut.Search)}
+        aria-keyshortcuts={ariaShortcut(shortcut)}
         {...props}
       />
-      <Kbd aria-hidden="true" className="hidden sm:inline-flex">
-        {displayShortcut(Shortcut.Search)}
-      </Kbd>
+      <ShortcutKbd aria-hidden="true" className="hidden sm:inline-flex" shortcut={shortcut} />
     </InputGroup>
   )
 }

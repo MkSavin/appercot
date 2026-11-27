@@ -2,7 +2,7 @@ import '../src/shared/config/i18n'
 import { describe, expect, test } from 'bun:test'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { Router } from 'wouter'
-import { BotConnectionSnippet } from '../src/features/bot-onboarding'
+import { BotTokenField } from '../src/entities/bot'
 import { authHref, readAuthReturn } from '../src/shared/lib/auth-return'
 import { BotCatalog } from '../src/widgets/bot-catalog'
 
@@ -45,19 +45,15 @@ describe('catalog and administration', () => {
     expect(available).not.toContain('type="button"')
   })
 
-  test('renders the token, WebSocket URL and launch command as copyable values', () => {
-    const markup = renderToStaticMarkup(
-      <BotConnectionSnippet
-        token="bot-1:secret"
-        webSocketUrl="ws://localhost:3000/api/bot/ws"
-        onTokenSaved={() => {}}
-      />,
-    )
+  test('renders a concealed reusable token with reveal and copy controls', () => {
+    const markup = renderToStaticMarkup(<BotTokenField token="bot-1:secret" />)
     expect(markup).toContain('bot-1:secret')
+    expect(markup).toContain('type="password"')
     expect(markup).toContain('readOnly=""')
-    expect(markup).toContain('Копировать BOT_TOKEN')
-    expect(markup).toContain('Копировать BOT_URL')
-    expect(markup).toContain('Копировать команду')
-    expect(markup).toContain('bun examples/echo-bot/index.ts')
+    expect(markup).toContain('Показать токен')
+    expect(markup).toContain('Копировать токен')
+    expect(markup).toContain('Сохраните токен в надёжном месте')
+    expect(markup).not.toContain('echo-bot')
+    expect(markup).not.toContain('type="checkbox"')
   })
 })

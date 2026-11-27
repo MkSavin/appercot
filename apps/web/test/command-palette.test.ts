@@ -15,12 +15,36 @@ import {
 } from '../src/shared/lib/shortcuts'
 
 test('declares static shortcuts as arrays with const meta keys', () => {
-  expect(Shortcut.CommandPalette).toEqual([MetaKey.Control, '/'])
+  expect(Shortcut.CommandPalette).toEqual([MetaKey.Mod, '/'])
   expect(Shortcut.Search).toEqual([MetaKey.Mod, 'K'])
+  expect(Shortcut.MessageSearch).toEqual([MetaKey.Mod, MetaKey.Shift, 'F'])
   expect(MetaKey.Mod).toBe('Mod')
   expect(MetaKey.Meta).toBe('Meta')
   expect(MetaKey.Control).toBe('Ctrl')
   expect(ariaShortcut(Shortcut.Search)).toBe('Control+K Meta+K')
+  expect(ariaShortcut(Shortcut.MessageSearch)).toBe('Control+Shift+F Meta+Shift+F')
+})
+
+test('uses Cmd on Apple platforms and Ctrl elsewhere for the command palette', () => {
+  const original = navigator.platform
+  try {
+    Object.defineProperty(navigator, 'platform', { configurable: true, value: 'MacIntel' })
+    expect(displayShortcut(Shortcut.CommandPalette)).toBe('⌘/')
+    expect(
+      matchesShortcut(
+        keyboardEvent({ key: '/', code: 'Slash', metaKey: true }),
+        Shortcut.CommandPalette,
+      ),
+    ).toBe(true)
+    expect(
+      matchesShortcut(
+        keyboardEvent({ key: '/', code: 'Slash', ctrlKey: true }),
+        Shortcut.CommandPalette,
+      ),
+    ).toBe(false)
+  } finally {
+    Object.defineProperty(navigator, 'platform', { configurable: true, value: original })
+  }
 })
 
 // @anchor INV:command-palette/scopes-shortcuts
@@ -81,22 +105,30 @@ const keyboardEvent = ({
 const matches = (event: KeyboardEvent, shortcut: ShortcutCombination) =>
   matchesShortcut(event, shortcut)
 
+const commandPaletteEvent = (key: string, code = '') => {
+  const apple = /Mac|iPhone|iPad/.test(navigator.platform)
+  return keyboardEvent({ key, code, ctrlKey: !apple, metaKey: apple })
+}
+
 test('matches logical shortcut keys by physical code in other layouts', () => {
-  expect(
-    matches(keyboardEvent({ key: '.', code: 'Slash', ctrlKey: true }), Shortcut.CommandPalette),
-  ).toBe(true)
-  expect(
-    matches(keyboardEvent({ key: '/', code: 'Slash', ctrlKey: true }), Shortcut.CommandPalette),
-  ).toBe(true)
+  expect(matches(commandPaletteEvent('.', 'Slash'), Shortcut.CommandPalette)).toBe(true)
+  expect(matches(commandPaletteEvent('/', 'Slash'), Shortcut.CommandPalette)).toBe(true)
   expect(
     matches(keyboardEvent({ key: 'ы', code: 'KeyS', ctrlKey: true }), [MetaKey.Control, 'S']),
   ).toBe(true)
   expect(
     matches(
-      keyboardEvent({ key: '/', code: 'NumpadDivide', ctrlKey: true }),
-      Shortcut.CommandPalette,
+      keyboardEvent({
+        key: 'а',
+        code: 'KeyF',
+        ctrlKey: !/Mac|iPhone|iPad/.test(navigator.platform),
+        metaKey: /Mac|iPhone|iPad/.test(navigator.platform),
+        shiftKey: true,
+      }),
+      Shortcut.MessageSearch,
     ),
   ).toBe(true)
+  expect(matches(commandPaletteEvent('/', 'NumpadDivide'), Shortcut.CommandPalette)).toBe(true)
 })
 
 test('gives recognized physical codes priority over conflicting logical keys', () => {
@@ -112,7 +144,7 @@ test('falls back to logical keys only for unrecognized physical codes', () => {
       'S',
     ]),
   ).toBe(true)
-  expect(matches(keyboardEvent({ key: '/', ctrlKey: true }), Shortcut.CommandPalette)).toBe(true)
+  expect(matches(commandPaletteEvent('/'), Shortcut.CommandPalette)).toBe(true)
 })
 
 test('matches numpad digits only while Num Lock is enabled', () => {

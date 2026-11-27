@@ -95,13 +95,13 @@ export const RegisterForm = ({ initialInvite, onSuccess }: RegisterFormProps) =>
             enterKeyHint="next"
             minLength={8}
             required
-            className="h-12 pr-12"
+            className="h-12 pr-12 pointer-coarse:h-[52px]"
           />
           <Button
             type="button"
             variant="ghost"
-            size="icon"
-            className="absolute right-1 top-1 text-muted-foreground"
+            size="icon-lg"
+            className="absolute inset-y-1 right-1 text-muted-foreground"
             aria-label={showPassword ? t('auth:hidePassword') : t('auth:showPassword')}
             aria-pressed={showPassword}
             onClick={() => setShowPassword((visible) => !visible)}

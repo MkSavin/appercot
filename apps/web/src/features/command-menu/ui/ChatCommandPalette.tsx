@@ -22,6 +22,7 @@ import {
   CommandShortcut,
 } from '@/shared/ui/command'
 import { Kbd } from '@/shared/ui/kbd'
+import { ShortcutKbd } from '@/shared/ui/shortcut-kbd'
 
 type VisibleCommand = Pick<BotCommand, 'name' | 'description' | 'shortcut'>
 export type PaletteButton = { button: Button; key: string }
@@ -194,7 +195,7 @@ export const ChatCommandPalette = ({
       ) : null}
       {entry.shortcut ? (
         <CommandShortcut>
-          <Kbd>{displayShortcut(entry.shortcut)}</Kbd>
+          <ShortcutKbd shortcut={entry.shortcut} />
         </CommandShortcut>
       ) : null}
     </CommandItem>

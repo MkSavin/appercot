@@ -40,6 +40,10 @@ export const MySessionsDocument = graphql(`
 export const RevokeMySessionDocument = graphql(`
   mutation RevokeMySession($id: ID!) { revokeMySession(id: $id) }
 `)
+export const RevokeMyOtherSessionsDocument = graphql(`
+  mutation RevokeMyOtherSessions { revokeMyOtherSessions }
+`)
+
 export const DeleteMyAccountDocument = graphql(`
   mutation DeleteMyAccount($password: String!, $otp: String) { deleteMyAccount(password: $password, otp: $otp) }
 `)

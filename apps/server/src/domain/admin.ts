@@ -4,13 +4,22 @@ import {
   type PlatformRole,
   RESERVED_BOT_ROLES,
 } from '@appercot/protocol'
-import { and, asc, count, desc, eq, isNull } from 'drizzle-orm'
+import { and, asc, count, desc, eq, inArray, isNull, or, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { createBotToken } from '../auth/bot-token'
 import { toUserDto, type UserDto } from '../auth/session'
 import { createRandomToken, hashToken } from '../auth/tokens'
 import type { AppDatabase } from '../db/client'
-import { botEvents, botInvites, bots, chats, invites, users } from '../db/schema'
+import {
+  botEvents,
+  botInvites,
+  bots,
+  chats,
+  files,
+  invites,
+  users,
+  userUpdates,
+} from '../db/schema'
 import type { AppEnv } from '../env'
 import type { Hub } from '../ws/hub'
 import { getBot, toBotDto } from './bots'
@@ -23,6 +32,7 @@ import {
 } from './chats'
 import { DomainError } from './errors'
 import { enqueueBotEvent } from './events'
+import type { MediaStorage } from './media-storage'
 import { setChatRoles } from './roles'
 import { publishBotPresence, pushUserUpdate } from './updates'
 
@@ -191,6 +201,85 @@ export const resetAdminBotToken = (db: AppDatabase, hub: Hub, actor: UserDto, bo
   db.update(bots).set({ tokenHash: token.hash }).where(eq(bots.id, botId)).run()
   disconnectBotCredential(db, hub, botId)
   return { bot: toBotDto(getBot(db, botId), hub), token: token.token }
+}
+
+export const setAdminBotStopped = (
+  db: AppDatabase,
+  hub: Hub,
+  actor: UserDto,
+  botId: string,
+  stopped: boolean,
+) => {
+  const bot = requireManagedBot(db, actor, botId)
+  if ((bot.stoppedAt !== null) === stopped) return toBotDto(bot, hub)
+  db.update(bots)
+    .set({ stoppedAt: stopped ? Date.now() : null })
+    .where(eq(bots.id, botId))
+    .run()
+  if (stopped) disconnectBotCredential(db, hub, botId)
+  return toBotDto(getBot(db, botId), hub)
+}
+
+export const deleteAdminBot = async (
+  db: AppDatabase,
+  hub: Hub,
+  storage: MediaStorage,
+  actor: UserDto,
+  botId: string,
+) => {
+  requireManagedBot(db, actor, botId)
+  const removedChats = db
+    .select({ id: chats.id, userId: chats.userId })
+    .from(chats)
+    .where(eq(chats.botId, botId))
+    .all()
+  const chatIds = removedChats.map((chat) => chat.id)
+  const media = db
+    .select({ id: files.id, storage: files.storage })
+    .from(files)
+    .where(
+      or(
+        and(eq(files.ownerType, 'bot'), eq(files.ownerId, botId)),
+        chatIds.length ? inArray(files.chatId, chatIds) : undefined,
+      ),
+    )
+    .all()
+  db.transaction((tx) => {
+    if (chatIds.length) {
+      const chatReference = sql`coalesce(
+        json_extract(${userUpdates.payload}, '$.chatId'),
+        json_extract(${userUpdates.payload}, '$.chat.id'),
+        json_extract(${userUpdates.payload}, '$.message.chatId')
+      )`
+      tx.delete(userUpdates).where(inArray(chatReference, chatIds)).run()
+    }
+    if (media.length) {
+      tx.update(files)
+        .set({ chatId: null, detachedAt: Date.now() })
+        .where(
+          inArray(
+            files.id,
+            media.map((file) => file.id),
+          ),
+        )
+        .run()
+    }
+    tx.delete(bots).where(eq(bots.id, botId)).run()
+  })
+  disconnectBotCredential(db, hub, botId)
+  for (const chat of removedChats) {
+    pushUserUpdate(db, hub, chat.userId, { type: 'chat.removed', chatId: chat.id })
+  }
+  for (const file of media) {
+    try {
+      await storage.remove(file.storage, file.id)
+      await storage.remove(file.storage, file.id, true)
+      db.delete(files).where(eq(files.id, file.id)).run()
+    } catch {
+      // Detached metadata lets the regular prune job retry transient storage failures.
+    }
+  }
+  return true
 }
 
 export const setAdminBotOwner = (

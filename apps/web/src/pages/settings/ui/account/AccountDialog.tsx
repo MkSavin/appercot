@@ -1,6 +1,7 @@
 import { type ReactNode, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { showRequestError } from '@/shared/api'
+import { testId, testIds } from '@/shared/lib/test-ids'
 import { Button } from '@/shared/ui/button'
 import {
   Dialog,
@@ -19,12 +20,14 @@ export const AccountDialog = ({
   children,
   submit,
   destructive = false,
+  triggerTestId,
 }: {
   title: string
   description: string
   children: ReactNode
   submit: (form: FormData) => Promise<void>
   destructive?: boolean
+  triggerTestId?: string
 }) => {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
@@ -39,7 +42,12 @@ export const AccountDialog = ({
         }}
       >
         <DialogTrigger asChild>
-          <Button variant={destructive ? 'destructive' : 'outline'}>{title}</Button>
+          <Button
+            {...(triggerTestId ? testId(triggerTestId) : {})}
+            variant={destructive ? 'destructive' : 'outline'}
+          >
+            {title}
+          </Button>
         </DialogTrigger>
         <DialogContent>
           <DialogHeader>
@@ -67,11 +75,17 @@ export const AccountDialog = ({
             {children}
             <DialogFooter>
               <DialogClose asChild>
-                <Button type="button" variant="outline" disabled={pending}>
+                <Button
+                  {...testId(testIds.dialog.cancel)}
+                  type="button"
+                  variant="outline"
+                  disabled={pending}
+                >
                   {t('common:cancel')}
                 </Button>
               </DialogClose>
               <Button
+                {...testId(testIds.dialog.confirm)}
                 type="submit"
                 variant={destructive ? 'destructive' : 'default'}
                 disabled={pending}

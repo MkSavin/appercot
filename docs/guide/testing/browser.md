@@ -19,15 +19,17 @@ Network-interception scenarios block service workers because mobile WebKit can b
 ## Automated coverage
 
 - Login → chat → send → settings runs in every project.
-- RU/EN selection works before and after authentication, survives reload, updates `html lang`, and is scanned at login, validation error, chat, notification menu, settings, dark theme, reduced motion, and catalog states.
+- RU/EN selection works before and after authentication, survives reload, updates `html lang`, shows a globe and language codes in full/compact selectors, and is scanned at login, validation error, chat, notification menu, settings, dark theme, reduced motion, and catalog states. Geometry assertions cover auth logo/select alignment, password-control sizing, fixed rail width and pointer cursors.
 - Axe checks `wcag2a`, `wcag2aa`, `wcag21a`, and `wcag21aa` without global rule suppressions. Full violation details attach only on failure.
 - Keyboard and layout scenarios cover Shift+Enter, IME-safe Enter, dialog/menu focus, narrow 320 px layouts, coarse-pointer targets, long URLs, history position, and incoming messages near and away from the tail.
-- Onboarding runs the real echo SDK on desktop and mobile viewports: token copying and clipboard fallback, live presence, focus restoration, polling cleanup, opening the chat, and a real `/start` reply.
+- Onboarding runs a real SDK fixture on desktop and mobile viewports: concealed token reveal/copy, clipboard fallback, manual connection retry and live presence, equal create-form CTA sizes, focus restoration, checklist collapse and aggregate 3/3 progress, opening the chat, and a real `/start` reply.
+- Bot-settings scenarios cover endpoint display, manual connection failure, token reset, stop/resume confirmation, username-gated permanent deletion and return to an updated bot list.
+- Account-settings scenarios use two independent browser sessions: the current session has no individual end action, End all revokes only the other session, and logout remains separate from the account danger zone.
 - Outbox scenarios exercise real IndexedDB and server history: draft reload, offline send followed by reconnect, a response lost after the server commit, two sending tabs, and denied-storage fallback. Final server counts prevent optimistic rows from hiding duplicates.
 - Media scenarios upload real fixture files through XHR: mobile multi-file selection with one caption, previews, bounded progress, navigation during upload, keyboard cancel/retry, paste, drag-and-drop, object URL cleanup, and idempotent reload after a lost response.
-- Notification scenarios cover mute reload and expiry, unread filtering, cross-tab resume, mobile profile/header synchronization, and keyboard focus return.
+- Notification scenarios cover profile-only mute reload and expiry, unread navigation through `/?filter=unread`, cross-tab resume, mobile profile synchronization, and keyboard focus return.
 - Catalog scenarios cover query and tag filters, deep-linked details, unavailable bots, add failure and retry, single-chat creation under repeated CTA clicks, and existing-chat navigation.
-- Message-search scenarios use more than 120 real messages: RU/EN content, result pagination, bounded context jumps, earlier/later/latest navigation, unread preservation, refresh, failure retry, mobile layout and keyboard focus. Search uses prefix token matching, not stemming or arbitrary substring matching.
+- Message-search scenarios use more than 120 real messages: RU/EN content, result pagination, bounded context jumps, earlier/later/latest navigation, unread preservation, refresh, failure retry, mobile layout and keyboard focus. Ctrl/Cmd+Shift+F uses physical `KeyF` in RU/EN layouts and replaces the bot header with search. Repeating the chord or pressing Escape closes search, whose close control retains the trigger position. An empty query renders no results or placeholder panel. Search uses prefix token matching, not stemming or arbitrary substring matching.
 - A Chromium-only service-worker scenario verifies that the production app shell reloads while the browser is offline.
 
 Emulation does not prove physical-device safe areas, virtual keyboard behavior, installed PWA lifecycle, screen-reader output, push delivery, or codec support. Complete the [manual release checklist](manual-release.md) for those behaviors.

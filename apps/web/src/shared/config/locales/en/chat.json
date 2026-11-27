@@ -1,5 +1,6 @@
 {
   "title": "Chats",
+  "new": "New",
   "search": "Search chats",
   "browse": "Bot catalog",
   "emptyTitle": "Select a chat",
@@ -68,9 +69,9 @@
   "messageSearch": {
     "title": "Message search",
     "open": "Search messages",
+    "openWithShortcut": "Search messages (Ctrl/⌘+Shift+F)",
     "close": "Close search",
     "placeholder": "Search in this chat",
-    "hint": "Enter a word or phrase. Prefixes match, but substrings inside words do not.",
     "results": "Search results",
     "resultsCount_one": "Messages found: {{count}}",
     "resultsCount_other": "Messages found: {{count}}",

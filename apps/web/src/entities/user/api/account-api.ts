@@ -8,6 +8,7 @@ import {
   graphqlClient,
   MySessionsDocument,
   ResetUserPasswordDocument,
+  RevokeMyOtherSessionsDocument,
   RevokeMySessionDocument,
   UpdateAdminUserDocument,
   UpdateProfileDocument,
@@ -33,4 +34,5 @@ export const disableTotp = (password: string, otp: string) =>
   graphqlClient.request(DisableTotpDocument, { password, otp })
 export const listSessions = async () => (await graphqlClient.request(MySessionsDocument)).mySessions
 export const revokeSession = (id: string) => graphqlClient.request(RevokeMySessionDocument, { id })
+export const revokeOtherSessions = () => graphqlClient.request(RevokeMyOtherSessionsDocument)
 export const deleteAccount = (input: Proof) => graphqlClient.request(DeleteMyAccountDocument, input)

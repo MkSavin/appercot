@@ -1,0 +1,1 @@
+ALTER TABLE `bots` ADD `stopped_at` integer;

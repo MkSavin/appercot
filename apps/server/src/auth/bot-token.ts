@@ -13,6 +13,6 @@ export const authenticateBotToken = (db: AppDatabase, token: string) => {
   if (separatorIndex < 1) return null
   const botId = token.slice(0, separatorIndex)
   const bot = db.select().from(bots).where(eq(bots.id, botId)).get()
-  if (!bot || bot.tokenHash !== hashToken(token)) return null
+  if (!bot || bot.stoppedAt !== null || bot.tokenHash !== hashToken(token)) return null
   return bot
 }

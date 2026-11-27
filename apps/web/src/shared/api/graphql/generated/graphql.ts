@@ -106,6 +106,11 @@ export type RevokeMySessionMutationVariables = Exact<{
 
 export type RevokeMySessionMutation = { revokeMySession: boolean };
 
+export type RevokeMyOtherSessionsMutationVariables = Exact<{ [key: string]: never; }>;
+
+
+export type RevokeMyOtherSessionsMutation = { revokeMyOtherSessions: boolean };
+
 export type DeleteMyAccountMutationVariables = Exact<{
   password: string;
   otp?: string | null | undefined;
@@ -138,7 +143,7 @@ export type CreateInviteMutation = { createInvite: { code: string, uses: number,
 export type AdminBotsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminBotsQuery = { adminBots: Array<{ id: string, username: string, name: string, description: string, online: boolean, listed: boolean, access: BotAccess, memberCount: number, avatar: string | null }> };
+export type AdminBotsQuery = { adminBots: Array<{ id: string, username: string, name: string, description: string, online: boolean, stopped: boolean, listed: boolean, access: BotAccess, memberCount: number, avatar: string | null }> };
 
 export type CreateBotMutationVariables = Exact<{
   username: string;
@@ -147,14 +152,29 @@ export type CreateBotMutationVariables = Exact<{
 }>;
 
 
-export type CreateBotMutation = { createBot: { token: string, bot: { id: string, username: string, name: string, description: string, online: boolean, listed: boolean, access: BotAccess } } };
+export type CreateBotMutation = { createBot: { token: string, bot: { id: string, username: string, name: string, description: string, online: boolean, stopped: boolean, listed: boolean, access: BotAccess } } };
 
 export type ResetBotTokenMutationVariables = Exact<{
   botId: string | number;
 }>;
 
 
-export type ResetBotTokenMutation = { resetBotToken: { token: string, bot: { id: string, username: string, name: string, description: string, online: boolean, listed: boolean, access: BotAccess } } };
+export type ResetBotTokenMutation = { resetBotToken: { token: string, bot: { id: string, username: string, name: string, description: string, online: boolean, stopped: boolean, listed: boolean, access: BotAccess } } };
+
+export type SetBotStoppedMutationVariables = Exact<{
+  botId: string | number;
+  stopped: boolean;
+}>;
+
+
+export type SetBotStoppedMutation = { setBotStopped: { id: string, username: string, name: string, description: string, online: boolean, stopped: boolean, listed: boolean, access: BotAccess, memberCount: number, avatar: string | null, welcome: string, guestAccess: boolean, tags: Array<string> } };
+
+export type DeleteBotMutationVariables = Exact<{
+  botId: string | number;
+}>;
+
+
+export type DeleteBotMutation = { deleteBot: boolean };
 
 export type SetBotOwnerMutationVariables = Exact<{
   botId: string | number;
@@ -178,7 +198,7 @@ export type SetBotAccessMutationVariables = Exact<{
 }>;
 
 
-export type SetBotAccessMutation = { setBotAccess: { id: string, username: string, name: string, description: string, online: boolean, listed: boolean, access: BotAccess, guestAccess: boolean } };
+export type SetBotAccessMutation = { setBotAccess: { id: string, username: string, name: string, description: string, online: boolean, stopped: boolean, listed: boolean, access: BotAccess, guestAccess: boolean } };
 
 export type IssueBotInviteMutationVariables = Exact<{
   botId: string | number;
@@ -202,7 +222,7 @@ export type AdminBotQueryVariables = Exact<{
 }>;
 
 
-export type AdminBotQuery = { adminBot: { id: string, username: string, name: string, description: string, online: boolean, listed: boolean, access: BotAccess, memberCount: number, avatar: string | null, welcome: string, guestAccess: boolean, tags: Array<string> } };
+export type AdminBotQuery = { adminBot: { id: string, username: string, name: string, description: string, online: boolean, stopped: boolean, listed: boolean, access: BotAccess, memberCount: number, avatar: string | null, welcome: string, guestAccess: boolean, tags: Array<string> } };
 
 export type InviteBotMemberMutationVariables = Exact<{
   botId: string | number;
@@ -602,6 +622,11 @@ export const RevokeMySessionDocument = new TypedDocumentString(`
   revokeMySession(id: $id)
 }
     `) as unknown as TypedDocumentString<RevokeMySessionMutation, RevokeMySessionMutationVariables>;
+export const RevokeMyOtherSessionsDocument = new TypedDocumentString(`
+    mutation RevokeMyOtherSessions {
+  revokeMyOtherSessions
+}
+    `) as unknown as TypedDocumentString<RevokeMyOtherSessionsMutation, RevokeMyOtherSessionsMutationVariables>;
 export const DeleteMyAccountDocument = new TypedDocumentString(`
     mutation DeleteMyAccount($password: String!, $otp: String) {
   deleteMyAccount(password: $password, otp: $otp)
@@ -651,6 +676,7 @@ export const AdminBotsDocument = new TypedDocumentString(`
     name
     description
     online
+    stopped
     listed
     access
     memberCount
@@ -667,6 +693,7 @@ export const CreateBotDocument = new TypedDocumentString(`
       name
       description
       online
+      stopped
       listed
       access
     }
@@ -683,6 +710,7 @@ export const ResetBotTokenDocument = new TypedDocumentString(`
       name
       description
       online
+      stopped
       listed
       access
     }
@@ -690,6 +718,30 @@ export const ResetBotTokenDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<ResetBotTokenMutation, ResetBotTokenMutationVariables>;
+export const SetBotStoppedDocument = new TypedDocumentString(`
+    mutation SetBotStopped($botId: ID!, $stopped: Boolean!) {
+  setBotStopped(botId: $botId, stopped: $stopped) {
+    id
+    username
+    name
+    description
+    online
+    stopped
+    listed
+    access
+    memberCount
+    avatar
+    welcome
+    guestAccess
+    tags
+  }
+}
+    `) as unknown as TypedDocumentString<SetBotStoppedMutation, SetBotStoppedMutationVariables>;
+export const DeleteBotDocument = new TypedDocumentString(`
+    mutation DeleteBot($botId: ID!) {
+  deleteBot(botId: $botId)
+}
+    `) as unknown as TypedDocumentString<DeleteBotMutation, DeleteBotMutationVariables>;
 export const SetBotOwnerDocument = new TypedDocumentString(`
     mutation SetBotOwner($botId: ID!, $username: String) {
   setBotOwner(botId: $botId, username: $username)
@@ -713,6 +765,7 @@ export const SetBotAccessDocument = new TypedDocumentString(`
     name
     description
     online
+    stopped
     listed
     access
     guestAccess
@@ -758,6 +811,7 @@ export const AdminBotDocument = new TypedDocumentString(`
     name
     description
     online
+    stopped
     listed
     access
     memberCount

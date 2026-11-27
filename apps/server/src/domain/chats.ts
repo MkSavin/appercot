@@ -114,7 +114,7 @@ export const toClientChatDto = (...args: Parameters<typeof toConnectionDto>) => 
     notificationsMutedUntil,
     preview,
   } = toConnectionDto(...args)
-  const { access: _access, guestAccess: _guestAccess, ...clientBot } = bot
+  const { access: _access, guestAccess: _guestAccess, stopped: _stopped, ...clientBot } = bot
   return {
     id,
     bot: clientBot,

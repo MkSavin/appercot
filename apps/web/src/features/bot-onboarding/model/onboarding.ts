@@ -4,11 +4,12 @@ export type OnboardingStepState = 'done' | 'current' | 'upcoming'
 
 export const getOnboardingSteps = (
   created: boolean,
-  online: boolean,
+  connected: boolean,
+  chatted: boolean,
 ): [OnboardingStepState, OnboardingStepState, OnboardingStepState] => [
   created ? 'done' : 'current',
-  created ? (online ? 'done' : 'current') : 'upcoming',
-  created && online ? 'current' : 'upcoming',
+  created ? (connected ? 'done' : 'current') : 'upcoming',
+  created && connected ? (chatted ? 'done' : 'current') : 'upcoming',
 ]
 
 export const canManageBots = (role: PlatformRole) => role === 'admin' || role === 'owner'
@@ -37,8 +38,3 @@ export const writeOnboardingDismissed = (
   }
   return true
 }
-
-const quoteShell = (value: string) => `'${value.replaceAll("'", "'\\''")}'`
-
-export const createBotLaunchCommand = (token: string, webSocketUrl: string) =>
-  `BOT_TOKEN=${quoteShell(token)} BOT_URL=${quoteShell(webSocketUrl)} bun examples/echo-bot/index.ts`

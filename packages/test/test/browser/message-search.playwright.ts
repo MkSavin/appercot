@@ -95,6 +95,58 @@ test('finds old RU and EN messages in a large history and preserves context and 
   if (!isMobile) await expect(page.locator(selector(testIds.chat.search.trigger))).toBeFocused()
 })
 
+test('opens over the bot header with a layout-independent dedicated shortcut', async ({
+  page,
+  isMobile,
+}) => {
+  const { user, chat } = await fixture()
+  await login(page, user.username, user.password, chat.id)
+  const trigger = page.locator(selector(testIds.chat.search.trigger))
+  const triggerBox = await trigger.boundingBox()
+  const apple = await page.evaluate(() => /Mac|iPhone|iPad/.test(navigator.platform))
+  await page.locator(selector(testIds.chat.composer.input)).dispatchEvent('keydown', {
+    key: 'а',
+    code: 'KeyF',
+    ctrlKey: !apple,
+    metaKey: apple,
+    shiftKey: true,
+    bubbles: true,
+    cancelable: true,
+  })
+  const input = page.locator(selector(testIds.chat.search.input))
+  await expect(input).toBeFocused()
+  await expect(input).toHaveValue('')
+  await expect(page.locator(selector(testIds.chat.search.results))).toHaveCount(0)
+  await expect(page.locator('#chat-title')).toHaveCount(0)
+  await expect(trigger).toHaveCount(0)
+  const close = page.locator(selector(testIds.chat.search.close))
+  const closeBox = await close.boundingBox()
+  expect(closeBox?.width).toBeCloseTo(triggerBox?.width ?? 0, 1)
+  expect(closeBox?.height).toBeCloseTo(triggerBox?.height ?? 0, 1)
+  expect(closeBox?.x).toBeCloseTo(triggerBox?.x ?? 0, 1)
+  await page.locator(selector(testIds.chat.composer.input)).dispatchEvent('keydown', {
+    key: 'а',
+    code: 'KeyF',
+    ctrlKey: !apple,
+    metaKey: apple,
+    shiftKey: true,
+    bubbles: true,
+    cancelable: true,
+  })
+  await expect(page.locator('#chat-title')).toBeVisible()
+  if (!isMobile) await expect(trigger).toBeFocused()
+  await trigger.click()
+  await expect(input).toBeFocused()
+  await page.keyboard.press('Escape')
+  await expect(page.locator('#chat-title')).toBeVisible()
+  if (!isMobile) await expect(trigger).toBeFocused()
+  await trigger.click()
+  await expect(input).toBeFocused()
+  await close.click()
+  await expect(page.locator('#chat-title')).toBeVisible()
+  if (!isMobile) await expect(trigger).toBeFocused()
+})
+
 test('supports mobile search, refresh and failure retry without losing focus', async ({
   page,
   isMobile,

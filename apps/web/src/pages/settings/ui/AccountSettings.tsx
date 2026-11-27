@@ -5,6 +5,7 @@ import { useChatStore } from '@/entities/chat'
 import { logoutRequest } from '@/entities/session'
 import { changePassword, deleteAccount } from '@/entities/user'
 import { showRequestError } from '@/shared/api'
+import { testId, testIds } from '@/shared/lib/test-ids'
 import type { SessionUser } from '@/shared/model'
 import { Button } from '@/shared/ui/button'
 import { FieldSeparator } from '@/shared/ui/field'
@@ -15,8 +16,8 @@ import { formText } from '../model/form'
 import { AccountDialog } from './account/AccountDialog'
 import { PasswordFields } from './account/PasswordFields'
 import { ProfileEditor } from './account/ProfileEditor'
-import { SecuritySetting } from './account/SecuritySetting'
 import { SessionList } from './account/SessionList'
+import { SettingsRow } from './account/SettingsRow'
 import { TotpSettings } from './account/TotpSettings'
 
 export const AccountSettings = ({ user }: { user: SessionUser }) => {
@@ -32,7 +33,7 @@ export const AccountSettings = ({ user }: { user: SessionUser }) => {
     <>
       <ProfileEditor user={user} onSave={changed} />
       <SettingsSection title={t('account:security')}>
-        <SecuritySetting title={t('account:password')} description={t('account:passwordHint')}>
+        <SettingsRow title={t('account:password')} description={t('account:passwordHint')}>
           <AccountDialog
             title={t('account:changePassword')}
             description={t('account:changePasswordDescription')}
@@ -57,7 +58,7 @@ export const AccountSettings = ({ user }: { user: SessionUser }) => {
               />
             </SettingsField>
           </AccountDialog>
-        </SecuritySetting>
+        </SettingsRow>
         <FieldSeparator />
         <TotpSettings
           username={user.username}
@@ -66,11 +67,12 @@ export const AccountSettings = ({ user }: { user: SessionUser }) => {
         />
       </SettingsSection>
       <SettingsSection title={t('account:sessions')}>
-        <SessionList key={sessionRevision} onSignOut={signOut} />
+        <SessionList key={sessionRevision} />
       </SettingsSection>
       <SettingsSection title={t('account:management')}>
-        <div className="flex flex-wrap items-start gap-3">
+        <div>
           <Button
+            {...testId(testIds.settings.account.logout)}
             variant="outline"
             onClick={async () => {
               try {
@@ -89,24 +91,34 @@ export const AccountSettings = ({ user }: { user: SessionUser }) => {
           >
             {t('chat:logout')}
           </Button>
-          {user.role !== 'owner' ? (
-            <AccountDialog
-              title={t('account:delete')}
-              description={t('account:deleteDescription')}
-              destructive
-              submit={async (form) => {
-                await deleteAccount({
-                  password: formText(form, 'password'),
-                  otp: formText(form, 'otp') || undefined,
-                })
-                signOut()
-              }}
-            >
-              <PasswordFields twoFactor={Boolean(user.twoFactorEnabled)} />
-            </AccountDialog>
-          ) : null}
         </div>
       </SettingsSection>
+      {user.role !== 'owner' ? (
+        <section aria-labelledby="account-danger-title" className="grid gap-3">
+          <h2 id="account-danger-title" className="text-base font-semibold text-destructive">
+            {t('account:dangerZone')}
+          </h2>
+          <div className="settings-card border-destructive/50">
+            <SettingsRow title={t('account:delete')} description={t('account:deleteDescription')}>
+              <AccountDialog
+                title={t('account:delete')}
+                description={t('account:deleteDescription')}
+                destructive
+                triggerTestId={testIds.settings.account.delete}
+                submit={async (form) => {
+                  await deleteAccount({
+                    password: formText(form, 'password'),
+                    otp: formText(form, 'otp') || undefined,
+                  })
+                  signOut()
+                }}
+              >
+                <PasswordFields twoFactor={Boolean(user.twoFactorEnabled)} />
+              </AccountDialog>
+            </SettingsRow>
+          </div>
+        </section>
+      ) : null}
     </>
   )
 }

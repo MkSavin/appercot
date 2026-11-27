@@ -19,7 +19,7 @@ import { SettingsField } from '@/shared/ui/settings-field'
 import { formText } from '../../model/form'
 import { AccountDialog } from './AccountDialog'
 import { PasswordFields } from './PasswordFields'
-import { SecuritySetting } from './SecuritySetting'
+import { SettingsRow } from './SettingsRow'
 
 const TotpQr = ({ username, secret }: { username: string; secret: string }) => {
   const { t } = useTranslation()
@@ -52,7 +52,7 @@ export const TotpSettings = ({
   const [password, setPassword] = useState('')
   const [pending, setPending] = useState(false)
   return (
-    <SecuritySetting
+    <SettingsRow
       title={
         <>
           {t('account:totp')}
@@ -179,6 +179,6 @@ export const TotpSettings = ({
           </DialogContent>
         </Dialog>
       )}
-    </SecuritySetting>
+    </SettingsRow>
   )
 }

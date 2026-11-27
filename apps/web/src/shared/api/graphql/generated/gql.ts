@@ -25,19 +25,22 @@ type Documents = {
     "\n  mutation DisableTotp($password: String!, $otp: String!) { disableTotp(password: $password, otp: $otp) }\n": typeof types.DisableTotpDocument,
     "\n  query MySessions { mySessions { id current userAgent createdAt expiresAt } }\n": typeof types.MySessionsDocument,
     "\n  mutation RevokeMySession($id: ID!) { revokeMySession(id: $id) }\n": typeof types.RevokeMySessionDocument,
+    "\n  mutation RevokeMyOtherSessions { revokeMyOtherSessions }\n": typeof types.RevokeMyOtherSessionsDocument,
     "\n  mutation DeleteMyAccount($password: String!, $otp: String) { deleteMyAccount(password: $password, otp: $otp) }\n": typeof types.DeleteMyAccountDocument,
     "\n  query AdminUsers($query: String) {\n    adminUsers(query: $query) {\n      id\n      username\n      displayName\n      role\n    }\n  }\n": typeof types.AdminUsersDocument,
     "\n  query AdminInvites {\n    adminInvites {\n      code\n      uses\n      maxUses\n      url\n      role\n      expiresAt\n      revokedAt\n    }\n  }\n": typeof types.AdminInvitesDocument,
     "\n  mutation CreateInvite($maxUses: Int, $expiresInDays: Int, $role: InviteRole) {\n    createInvite(maxUses: $maxUses, expiresInDays: $expiresInDays, role: $role) {\n      code\n      uses\n      maxUses\n      url\n      role\n      expiresAt\n      revokedAt\n    }\n  }\n": typeof types.CreateInviteDocument,
-    "\n  query AdminBots {\n    adminBots {\n      id\n      username\n      name\n      description\n      online\n      listed\n      access\n      memberCount\n      avatar\n    }\n  }\n": typeof types.AdminBotsDocument,
-    "\n  mutation CreateBot($username: String!, $name: String!, $description: String!) {\n    createBot(username: $username, name: $name, description: $description) {\n      bot {\n        id\n        username\n        name\n        description\n        online\n        listed\n        access\n      }\n      token\n    }\n  }\n": typeof types.CreateBotDocument,
-    "\n  mutation ResetBotToken($botId: ID!) {\n    resetBotToken(botId: $botId) {\n      bot {\n        id\n        username\n        name\n        description\n        online\n        listed\n        access\n      }\n      token\n    }\n  }\n": typeof types.ResetBotTokenDocument,
+    "\n  query AdminBots {\n    adminBots {\n      id\n      username\n      name\n      description\n      online\n      stopped\n      listed\n      access\n      memberCount\n      avatar\n    }\n  }\n": typeof types.AdminBotsDocument,
+    "\n  mutation CreateBot($username: String!, $name: String!, $description: String!) {\n    createBot(username: $username, name: $name, description: $description) {\n      bot {\n        id\n        username\n        name\n        description\n        online\n        stopped\n        listed\n        access\n      }\n      token\n    }\n  }\n": typeof types.CreateBotDocument,
+    "\n  mutation ResetBotToken($botId: ID!) {\n    resetBotToken(botId: $botId) {\n      bot {\n        id\n        username\n        name\n        description\n        online\n        stopped\n        listed\n        access\n      }\n      token\n    }\n  }\n": typeof types.ResetBotTokenDocument,
+    "\n  mutation SetBotStopped($botId: ID!, $stopped: Boolean!) {\n    setBotStopped(botId: $botId, stopped: $stopped) {\n      id username name description online stopped listed access memberCount avatar welcome guestAccess tags\n    }\n  }\n": typeof types.SetBotStoppedDocument,
+    "\n  mutation DeleteBot($botId: ID!) {\n    deleteBot(botId: $botId)\n  }\n": typeof types.DeleteBotDocument,
     "\n  mutation SetBotOwner($botId: ID!, $username: String) {\n    setBotOwner(botId: $botId, username: $username)\n  }\n": typeof types.SetBotOwnerDocument,
     "\n  mutation SetUserRole($userId: ID!, $role: PlatformRole!) {\n    setUserRole(userId: $userId, role: $role) { id username displayName role }\n  }\n": typeof types.SetUserRoleDocument,
-    "\n  mutation SetBotAccess($botId: ID!, $access: BotAccess!) {\n    setBotAccess(botId: $botId, access: $access) {\n      id username name description online listed access guestAccess\n    }\n  }\n": typeof types.SetBotAccessDocument,
+    "\n  mutation SetBotAccess($botId: ID!, $access: BotAccess!) {\n    setBotAccess(botId: $botId, access: $access) {\n      id username name description online stopped listed access guestAccess\n    }\n  }\n": typeof types.SetBotAccessDocument,
     "\n  mutation IssueBotInvite($botId: ID!, $roles: [String!], $maxUses: Int, $expiresInDays: Int) {\n    issueBotInvite(botId: $botId, roles: $roles, maxUses: $maxUses, expiresInDays: $expiresInDays) {\n      id url expiresAt revokedAt uses maxUses roles\n    }\n  }\n": typeof types.IssueBotInviteDocument,
     "\n  query AdminBotDiagnostics($botId: ID!) {\n    adminBotDiagnostics(botId: $botId) {\n      online\n      connectedAt\n      disconnectedAt\n      lastActivityAt\n      lastErrorCode\n      lastErrorAt\n      pendingEvents\n    }\n  }\n": typeof types.AdminBotDiagnosticsDocument,
-    "\n  query AdminBot($botId: ID!) {\n    adminBot(botId: $botId) { id username name description online listed access memberCount avatar welcome guestAccess tags }\n  }\n": typeof types.AdminBotDocument,
+    "\n  query AdminBot($botId: ID!) {\n    adminBot(botId: $botId) { id username name description online stopped listed access memberCount avatar welcome guestAccess tags }\n  }\n": typeof types.AdminBotDocument,
     "\n  mutation InviteBotMember($botId: ID!, $username: String!, $roles: [String!]!) {\n    inviteBotMember(botId: $botId, username: $username, roles: $roles)\n  }\n": typeof types.InviteBotMemberDocument,
     "\n  mutation RevokeBotInvite($botId: ID!, $id: ID!) {\n    revokeBotInvite(botId: $botId, id: $id)\n  }\n": typeof types.RevokeBotInviteDocument,
     "\n  query BotInvitations($botId: ID!) {\n    botInvitations(botId: $botId) { id url expiresAt revokedAt uses maxUses roles }\n  }\n": typeof types.BotInvitationsDocument,
@@ -87,19 +90,22 @@ const documents: Documents = {
     "\n  mutation DisableTotp($password: String!, $otp: String!) { disableTotp(password: $password, otp: $otp) }\n": types.DisableTotpDocument,
     "\n  query MySessions { mySessions { id current userAgent createdAt expiresAt } }\n": types.MySessionsDocument,
     "\n  mutation RevokeMySession($id: ID!) { revokeMySession(id: $id) }\n": types.RevokeMySessionDocument,
+    "\n  mutation RevokeMyOtherSessions { revokeMyOtherSessions }\n": types.RevokeMyOtherSessionsDocument,
     "\n  mutation DeleteMyAccount($password: String!, $otp: String) { deleteMyAccount(password: $password, otp: $otp) }\n": types.DeleteMyAccountDocument,
     "\n  query AdminUsers($query: String) {\n    adminUsers(query: $query) {\n      id\n      username\n      displayName\n      role\n    }\n  }\n": types.AdminUsersDocument,
     "\n  query AdminInvites {\n    adminInvites {\n      code\n      uses\n      maxUses\n      url\n      role\n      expiresAt\n      revokedAt\n    }\n  }\n": types.AdminInvitesDocument,
     "\n  mutation CreateInvite($maxUses: Int, $expiresInDays: Int, $role: InviteRole) {\n    createInvite(maxUses: $maxUses, expiresInDays: $expiresInDays, role: $role) {\n      code\n      uses\n      maxUses\n      url\n      role\n      expiresAt\n      revokedAt\n    }\n  }\n": types.CreateInviteDocument,
-    "\n  query AdminBots {\n    adminBots {\n      id\n      username\n      name\n      description\n      online\n      listed\n      access\n      memberCount\n      avatar\n    }\n  }\n": types.AdminBotsDocument,
-    "\n  mutation CreateBot($username: String!, $name: String!, $description: String!) {\n    createBot(username: $username, name: $name, description: $description) {\n      bot {\n        id\n        username\n        name\n        description\n        online\n        listed\n        access\n      }\n      token\n    }\n  }\n": types.CreateBotDocument,
-    "\n  mutation ResetBotToken($botId: ID!) {\n    resetBotToken(botId: $botId) {\n      bot {\n        id\n        username\n        name\n        description\n        online\n        listed\n        access\n      }\n      token\n    }\n  }\n": types.ResetBotTokenDocument,
+    "\n  query AdminBots {\n    adminBots {\n      id\n      username\n      name\n      description\n      online\n      stopped\n      listed\n      access\n      memberCount\n      avatar\n    }\n  }\n": types.AdminBotsDocument,
+    "\n  mutation CreateBot($username: String!, $name: String!, $description: String!) {\n    createBot(username: $username, name: $name, description: $description) {\n      bot {\n        id\n        username\n        name\n        description\n        online\n        stopped\n        listed\n        access\n      }\n      token\n    }\n  }\n": types.CreateBotDocument,
+    "\n  mutation ResetBotToken($botId: ID!) {\n    resetBotToken(botId: $botId) {\n      bot {\n        id\n        username\n        name\n        description\n        online\n        stopped\n        listed\n        access\n      }\n      token\n    }\n  }\n": types.ResetBotTokenDocument,
+    "\n  mutation SetBotStopped($botId: ID!, $stopped: Boolean!) {\n    setBotStopped(botId: $botId, stopped: $stopped) {\n      id username name description online stopped listed access memberCount avatar welcome guestAccess tags\n    }\n  }\n": types.SetBotStoppedDocument,
+    "\n  mutation DeleteBot($botId: ID!) {\n    deleteBot(botId: $botId)\n  }\n": types.DeleteBotDocument,
     "\n  mutation SetBotOwner($botId: ID!, $username: String) {\n    setBotOwner(botId: $botId, username: $username)\n  }\n": types.SetBotOwnerDocument,
     "\n  mutation SetUserRole($userId: ID!, $role: PlatformRole!) {\n    setUserRole(userId: $userId, role: $role) { id username displayName role }\n  }\n": types.SetUserRoleDocument,
-    "\n  mutation SetBotAccess($botId: ID!, $access: BotAccess!) {\n    setBotAccess(botId: $botId, access: $access) {\n      id username name description online listed access guestAccess\n    }\n  }\n": types.SetBotAccessDocument,
+    "\n  mutation SetBotAccess($botId: ID!, $access: BotAccess!) {\n    setBotAccess(botId: $botId, access: $access) {\n      id username name description online stopped listed access guestAccess\n    }\n  }\n": types.SetBotAccessDocument,
     "\n  mutation IssueBotInvite($botId: ID!, $roles: [String!], $maxUses: Int, $expiresInDays: Int) {\n    issueBotInvite(botId: $botId, roles: $roles, maxUses: $maxUses, expiresInDays: $expiresInDays) {\n      id url expiresAt revokedAt uses maxUses roles\n    }\n  }\n": types.IssueBotInviteDocument,
     "\n  query AdminBotDiagnostics($botId: ID!) {\n    adminBotDiagnostics(botId: $botId) {\n      online\n      connectedAt\n      disconnectedAt\n      lastActivityAt\n      lastErrorCode\n      lastErrorAt\n      pendingEvents\n    }\n  }\n": types.AdminBotDiagnosticsDocument,
-    "\n  query AdminBot($botId: ID!) {\n    adminBot(botId: $botId) { id username name description online listed access memberCount avatar welcome guestAccess tags }\n  }\n": types.AdminBotDocument,
+    "\n  query AdminBot($botId: ID!) {\n    adminBot(botId: $botId) { id username name description online stopped listed access memberCount avatar welcome guestAccess tags }\n  }\n": types.AdminBotDocument,
     "\n  mutation InviteBotMember($botId: ID!, $username: String!, $roles: [String!]!) {\n    inviteBotMember(botId: $botId, username: $username, roles: $roles)\n  }\n": types.InviteBotMemberDocument,
     "\n  mutation RevokeBotInvite($botId: ID!, $id: ID!) {\n    revokeBotInvite(botId: $botId, id: $id)\n  }\n": types.RevokeBotInviteDocument,
     "\n  query BotInvitations($botId: ID!) {\n    botInvitations(botId: $botId) { id url expiresAt revokedAt uses maxUses roles }\n  }\n": types.BotInvitationsDocument,
@@ -182,6 +188,10 @@ export function graphql(source: "\n  mutation RevokeMySession($id: ID!) { revoke
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
+export function graphql(source: "\n  mutation RevokeMyOtherSessions { revokeMyOtherSessions }\n"): typeof import('./graphql').RevokeMyOtherSessionsDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
 export function graphql(source: "\n  mutation DeleteMyAccount($password: String!, $otp: String) { deleteMyAccount(password: $password, otp: $otp) }\n"): typeof import('./graphql').DeleteMyAccountDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
@@ -198,15 +208,23 @@ export function graphql(source: "\n  mutation CreateInvite($maxUses: Int, $expir
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query AdminBots {\n    adminBots {\n      id\n      username\n      name\n      description\n      online\n      listed\n      access\n      memberCount\n      avatar\n    }\n  }\n"): typeof import('./graphql').AdminBotsDocument;
+export function graphql(source: "\n  query AdminBots {\n    adminBots {\n      id\n      username\n      name\n      description\n      online\n      stopped\n      listed\n      access\n      memberCount\n      avatar\n    }\n  }\n"): typeof import('./graphql').AdminBotsDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  mutation CreateBot($username: String!, $name: String!, $description: String!) {\n    createBot(username: $username, name: $name, description: $description) {\n      bot {\n        id\n        username\n        name\n        description\n        online\n        listed\n        access\n      }\n      token\n    }\n  }\n"): typeof import('./graphql').CreateBotDocument;
+export function graphql(source: "\n  mutation CreateBot($username: String!, $name: String!, $description: String!) {\n    createBot(username: $username, name: $name, description: $description) {\n      bot {\n        id\n        username\n        name\n        description\n        online\n        stopped\n        listed\n        access\n      }\n      token\n    }\n  }\n"): typeof import('./graphql').CreateBotDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  mutation ResetBotToken($botId: ID!) {\n    resetBotToken(botId: $botId) {\n      bot {\n        id\n        username\n        name\n        description\n        online\n        listed\n        access\n      }\n      token\n    }\n  }\n"): typeof import('./graphql').ResetBotTokenDocument;
+export function graphql(source: "\n  mutation ResetBotToken($botId: ID!) {\n    resetBotToken(botId: $botId) {\n      bot {\n        id\n        username\n        name\n        description\n        online\n        stopped\n        listed\n        access\n      }\n      token\n    }\n  }\n"): typeof import('./graphql').ResetBotTokenDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation SetBotStopped($botId: ID!, $stopped: Boolean!) {\n    setBotStopped(botId: $botId, stopped: $stopped) {\n      id username name description online stopped listed access memberCount avatar welcome guestAccess tags\n    }\n  }\n"): typeof import('./graphql').SetBotStoppedDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation DeleteBot($botId: ID!) {\n    deleteBot(botId: $botId)\n  }\n"): typeof import('./graphql').DeleteBotDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -218,7 +236,7 @@ export function graphql(source: "\n  mutation SetUserRole($userId: ID!, $role: P
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  mutation SetBotAccess($botId: ID!, $access: BotAccess!) {\n    setBotAccess(botId: $botId, access: $access) {\n      id username name description online listed access guestAccess\n    }\n  }\n"): typeof import('./graphql').SetBotAccessDocument;
+export function graphql(source: "\n  mutation SetBotAccess($botId: ID!, $access: BotAccess!) {\n    setBotAccess(botId: $botId, access: $access) {\n      id username name description online stopped listed access guestAccess\n    }\n  }\n"): typeof import('./graphql').SetBotAccessDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -230,7 +248,7 @@ export function graphql(source: "\n  query AdminBotDiagnostics($botId: ID!) {\n 
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query AdminBot($botId: ID!) {\n    adminBot(botId: $botId) { id username name description online listed access memberCount avatar welcome guestAccess tags }\n  }\n"): typeof import('./graphql').AdminBotDocument;
+export function graphql(source: "\n  query AdminBot($botId: ID!) {\n    adminBot(botId: $botId) { id username name description online stopped listed access memberCount avatar welcome guestAccess tags }\n  }\n"): typeof import('./graphql').AdminBotDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

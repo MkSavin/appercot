@@ -6,5 +6,6 @@
   "done": "Done",
   "close": "Close",
   "copied": "Copied",
+  "copyFailed": "Could not copy",
   "saved": "Changes saved"
 }

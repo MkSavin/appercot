@@ -5,6 +5,7 @@ import {
   changeBotMemberRoles,
   createAdminBot,
   createAdminInvite,
+  deleteAdminBot,
   getAdminBot,
   getBotMemberships,
   inviteBotMember,
@@ -20,6 +21,7 @@ import {
   setAdminBotAccess,
   setAdminBotListed,
   setAdminBotOwner,
+  setAdminBotStopped,
   setBotMemberRevoked,
   setPlatformRole,
   updateAdminInvite,
@@ -28,6 +30,7 @@ import {
 import { getAdminBotDiagnostics } from '../domain/bot-connection'
 import { toBotDto } from '../domain/bots'
 import { DomainError } from '../domain/errors'
+import { createMediaStorage } from '../domain/media-storage'
 import { builder } from './builder'
 import { toGraphQLError } from './errors'
 import { BotTokenType, InviteRoleType, InviteType } from './types/admin'
@@ -91,6 +94,14 @@ builder.objectType(BotDiagnosticsType, {
 const execute = <Result>(operation: () => Result) => {
   try {
     return operation()
+  } catch (error) {
+    throw toGraphQLError(error)
+  }
+}
+
+const executeAsync = async <Result>(operation: () => Promise<Result>) => {
+  try {
+    return await operation()
   } catch (error) {
     throw toGraphQLError(error)
   }
@@ -285,6 +296,36 @@ builder.mutationFields((field) => ({
           String(args.botId),
         )
       }),
+  }),
+  setBotStopped: field.field({
+    type: BotType,
+    args: {
+      botId: field.arg.id({ required: true }),
+      stopped: field.arg.boolean({ required: true }),
+    },
+    resolve: (_, args, context) =>
+      execute(() =>
+        setAdminBotStopped(
+          context.db,
+          context.hub,
+          requireAdmin(context),
+          String(args.botId),
+          args.stopped,
+        ),
+      ),
+  }),
+  deleteBot: field.boolean({
+    args: { botId: field.arg.id({ required: true }) },
+    resolve: (_, args, context) =>
+      executeAsync(() =>
+        deleteAdminBot(
+          context.db,
+          context.hub,
+          createMediaStorage(context.env),
+          requireAdmin(context),
+          String(args.botId),
+        ),
+      ),
   }),
   setBotOwner: field.boolean({
     args: {

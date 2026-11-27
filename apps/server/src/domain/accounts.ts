@@ -87,6 +87,17 @@ export const revokeSession = (db: AppDatabase, hub: Hub, userId: string, id: str
   return true
 }
 
+export const revokeOtherSessions = (
+  db: AppDatabase,
+  hub: Hub,
+  userId: string,
+  currentId: string,
+) => {
+  const removed = db.transaction((tx) => removeSessions(tx, userId, currentId))
+  hub.disconnectSessions(userId, removed)
+  return true
+}
+
 const removeSessions = (db: AppDatabase, userId: string, except?: string) => {
   db.delete(pushSubs)
     .where(and(eq(pushSubs.userId, userId), isNull(pushSubs.sessionId)))

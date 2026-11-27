@@ -32,8 +32,9 @@ export const login = async (page: Page, username: string, password: string, chat
 }
 
 export const selectLanguage = async (page: Page, trigger: string, locale: 'ru' | 'en') => {
-  await page.locator(selector(trigger)).click()
-  await page.locator(selector(testIds.language.option(locale))).click()
+  await page.bringToFront()
+  await page.locator(selector(trigger)).press('Enter')
+  await page.locator(selector(testIds.language.option(locale))).click({ force: true })
   await expect(page.locator('html')).toHaveAttribute('lang', locale)
 }
 

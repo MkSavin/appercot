@@ -1,5 +1,5 @@
 import { ChevronRight, Plus, Users } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'wouter'
 import { BotAvatar, type IssuedBotToken, type ManagedBot } from '@/entities/bot'
@@ -8,6 +8,7 @@ import {
   CreateBotDialog,
   FirstBotChecklist,
   readOnboardingDismissed,
+  useAdminBotsPresence,
   useBotDiagnostics,
   writeOnboardingDismissed,
 } from '@/features/bot-onboarding'
@@ -25,48 +26,39 @@ export const AdminBotsSection = ({
   const { t } = useTranslation()
   const userId = useChatStore((state) => state.user?.id)
   const webSocketUrl = useChatStore((state) => state.botWebSocketUrl)
+  const chatted = useChatStore((state) => {
+    const managed = new Set(bots.map((bot) => bot.id))
+    return state.chats.some((chat) => managed.has(chat.bot.id) && chat.lastMessageAt !== null)
+  })
   const [createOpen, setCreateOpen] = useState(false)
   const returnFocusTo = useRef<HTMLElement | null>(null)
   const [selectedBotId, setSelectedBotId] = useState<string>()
-  const [onlineByBotId, setOnlineByBotId] = useState<Record<string, boolean>>({})
-  const [checklistWaiting, setChecklistWaiting] = useState(false)
   const [dismissed, setDismissed] = useState(() =>
     userId ? readOnboardingDismissed(userId) : false,
   )
-  const selectedBot = bots.find((bot) => bot.id === selectedBotId) ?? bots[0]
-  const { diagnostics, failed, retry } = useBotDiagnostics(
+  const presence = useAdminBotsPresence(!createOpen && !dismissed)
+  const liveBots = bots.map((bot) => ({
+    ...bot,
+    online: presence[bot.id] ?? bot.online,
+  }))
+  const selectedBot = liveBots.find((bot) => bot.id === selectedBotId) ?? liveBots[0]
+  const { diagnostics, failed, loading, retry } = useBotDiagnostics(
     selectedBot?.id,
-    Boolean(selectedBot && (createOpen || checklistWaiting)) && !dismissed,
+    Boolean(selectedBot && createOpen),
+    false,
   )
-  const online = selectedBot
-    ? (diagnostics?.online ?? onlineByBotId[selectedBot.id] ?? selectedBot.online)
-    : false
-
-  useEffect(() => {
-    if (selectedBot && diagnostics)
-      setOnlineByBotId((current) =>
-        current[selectedBot.id] === diagnostics.online
-          ? current
-          : { ...current, [selectedBot.id]: diagnostics.online },
-      )
-    if (online) setChecklistWaiting(false)
-  }, [diagnostics, online, selectedBot])
+  const selectedOnline = selectedBot ? (diagnostics?.online ?? selectedBot.online) : false
+  const connected = liveBots.some((bot) => bot.online) || selectedOnline
 
   if (!userId) return null
   const changeDismissed = (value: boolean) => {
     writeOnboardingDismissed(userId, value)
     setDismissed(value)
-    if (value) setChecklistWaiting(false)
   }
   const changeDialogOpen = (open: boolean) => {
     if (open && document.activeElement instanceof HTMLElement)
       returnFocusTo.current = document.activeElement
     setCreateOpen(open)
-    if (!open) setChecklistWaiting(false)
-  }
-  const checkAgain = () => {
-    setChecklistWaiting(true)
-    retry()
   }
 
   return (
@@ -94,20 +86,16 @@ export const AdminBotsSection = ({
         </Button>
       ) : (
         <FirstBotChecklist
-          bot={selectedBot}
-          diagnostics={diagnostics}
-          diagnosticsFailed={failed}
-          online={online}
+          created={bots.length > 0}
+          connected={connected}
+          chatted={chatted}
           onCreate={() => changeDialogOpen(true)}
-          onRetry={checkAgain}
-          onDismiss={() => changeDismissed(true)}
-          onFinished={() => changeDismissed(true)}
         />
       )}
       {bots.length ? (
         <ul className="grid gap-2">
-          {bots.map((bot) => {
-            const botOnline = bot.id === selectedBot?.id ? online : bot.online
+          {liveBots.map((bot) => {
+            const botOnline = bot.id === selectedBot?.id ? selectedOnline : bot.online
             return (
               <li key={bot.id}>
                 <Link
@@ -122,8 +110,15 @@ export const AdminBotsSection = ({
                     </div>
                   </div>
                   <div className="grid justify-items-start gap-1 text-xs text-muted-foreground">
-                    <Badge variant={botOnline ? 'default' : 'outline'} className="rounded-full">
-                      {botOnline ? t('settings:botOnline') : t('settings:botOffline')}
+                    <Badge
+                      variant={bot.stopped ? 'destructive' : botOnline ? 'default' : 'outline'}
+                      className="rounded-full"
+                    >
+                      {bot.stopped
+                        ? t('settings:botStopped')
+                        : botOnline
+                          ? t('settings:botOnline')
+                          : t('settings:botOffline')}
                     </Badge>
                     <span className="inline-flex items-center gap-1">
                       <Users aria-hidden="true" className="size-3" />
@@ -151,14 +146,13 @@ export const AdminBotsSection = ({
         onOpenChange={changeDialogOpen}
         onCreated={(issued) => {
           setSelectedBotId(issued.bot.id)
-          setChecklistWaiting(false)
           onToken(issued)
         }}
         webSocketUrl={webSocketUrl ?? ''}
         diagnostics={diagnostics}
         diagnosticsFailed={failed}
+        diagnosticsLoading={loading}
         onRetry={retry}
-        onFinished={() => setChecklistWaiting(false)}
         returnFocusTo={returnFocusTo}
       />
     </section>

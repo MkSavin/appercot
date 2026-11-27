@@ -26,6 +26,7 @@ type Bot {
   memberCount: Int!
   name: String!
   online: Boolean!
+  stopped: Boolean!
   tags: [String!]!
   username: String!
   welcome: String!
@@ -177,6 +178,7 @@ type Mutation {
   changePassword(newPassword: String!, otp: String, password: String!): Boolean!
   createBot(description: String!, name: String!, username: String!): BotToken!
   createInvite(expiresInDays: Int, maxUses: Int, role: InviteRole): Invite!
+  deleteBot(botId: ID!): Boolean!
   deleteChat(chatId: ID!): Boolean!
   deleteMyAccount(otp: String, password: String!): Boolean!
   disableTotp(otp: String, password: String!): Boolean!
@@ -194,6 +196,7 @@ type Mutation {
   resetBotToken(botId: ID!): BotToken!
   resetUserPassword(newPassword: String!, userId: ID!): Boolean!
   revokeBotInvite(botId: ID!, id: ID): Boolean!
+  revokeMyOtherSessions: Boolean!
   revokeMySession(id: ID!): Boolean!
   revokePlatformInvite(code: String!): Boolean!
   sendGuestCommand(clientId: String!, command: String!, username: String!): Boolean!
@@ -204,6 +207,7 @@ type Mutation {
   setBotMemberRevoked(botId: ID!, chatId: ID!, revoked: Boolean!): Boolean!
   setBotMemberRoles(botId: ID!, chatId: ID!, roles: [String!]!): Boolean!
   setBotOwner(botId: ID!, username: String): Boolean!
+  setBotStopped(botId: ID!, stopped: Boolean!): Bot!
   setChatMute(chatId: ID!, mutedUntil: Float): Connection!
   setChatNotifications(chatId: ID!, mode: ChatNotifications!): Connection!
   setUserRole(role: PlatformRole!, userId: ID!): User!

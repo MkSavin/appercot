@@ -8,6 +8,7 @@ import {
   getAccount,
   listSessions,
   resetAccountPassword,
+  revokeOtherSessions,
   revokeSession,
   updateAccount,
   verifyAccountPassword,
@@ -140,6 +141,13 @@ builder.mutationFields((f) => {
           const removed = revokeSession(ctx.db, ctx.hub, user.id, String(args.id))
           if (removed && current) ctx.setCookie(createLogoutCookie(ctx.env))
           return removed
+        }),
+    }),
+    revokeMyOtherSessions: f.boolean({
+      resolve: (_, _args, ctx) =>
+        execute(() => {
+          const user = requireUser(ctx)
+          return revokeOtherSessions(ctx.db, ctx.hub, user.id, ctx.auth?.sessionId ?? '')
         }),
     }),
     deleteMyAccount: f.boolean({

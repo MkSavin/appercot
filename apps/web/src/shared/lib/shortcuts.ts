@@ -11,11 +11,12 @@ export type ShortcutKey = MetaKey | string
 export type ShortcutCombination = readonly ShortcutKey[]
 
 export const Shortcut = {
-  CommandPalette: [MetaKey.Control, '/'],
+  CommandPalette: [MetaKey.Mod, '/'],
   Search: [MetaKey.Mod, 'K'],
+  MessageSearch: [MetaKey.Mod, MetaKey.Shift, 'F'],
 } as const satisfies Record<string, ShortcutCombination>
 
-const applePlatform = () =>
+export const applePlatform = () =>
   typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform)
 
 export const parseShortcut = (shortcut: string): ShortcutKey[] => shortcut.split('+')

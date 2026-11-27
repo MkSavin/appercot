@@ -68,6 +68,7 @@ export const bots = sqliteTable('bots', {
     .default({}),
   defaultRoles: text('default_roles', { mode: 'json' }).$type<string[]>().notNull().default([]),
   commandsRev: integer('commands_rev').notNull().default(0),
+  stoppedAt: integer('stopped_at'),
   createdAt: integer('created_at').notNull(),
 })
 

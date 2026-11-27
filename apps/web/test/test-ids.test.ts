@@ -6,6 +6,7 @@ describe('stable test selector registry', () => {
     expect(testIds.auth.login.username).toBe('auth.login.username')
     expect(testIds.auth.login.password).toBe('auth.login.password')
     expect(testIds.auth.login.submit).toBe('auth.login.submit')
+    expect(testIds.workspace.content).toBe('workspace.content')
     expect(testIds.navigation.chats).toBe('navigation.chats')
     expect(testIds.navigation.catalog).toBe('navigation.catalog')
     expect(testIds.navigation.settings).toBe('navigation.settings')

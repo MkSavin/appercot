@@ -1,9 +1,11 @@
-import { useId, useState } from 'react'
+import { ImagePlus, LoaderCircle, Trash2 } from 'lucide-react'
+import { useId, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { BotAvatar, type fetchAdminBot, updateBotProfileRequest } from '@/entities/bot'
 import { showRequestError } from '@/shared/api'
 import { testId, testIds } from '@/shared/lib/test-ids'
 import { Button } from '@/shared/ui/button'
+import { Field, FieldContent, FieldDescription, FieldLabel } from '@/shared/ui/field'
 import { Input } from '@/shared/ui/input'
 import { Textarea } from '@/shared/ui/textarea'
 
@@ -16,10 +18,12 @@ export const BotProfileEditor = ({
 }) => {
   const { t } = useTranslation()
   const id = useId()
+  const avatarInputRef = useRef<HTMLInputElement>(null)
   const [avatar, setAvatar] = useState<string | null>()
   const [pending, setPending] = useState(false)
   const [reading, setReading] = useState(false)
   const [feedback, setFeedback] = useState('')
+  const hasAvatar = Boolean(avatar === undefined ? bot.avatar : avatar)
   return (
     <section className="grid gap-3">
       <h2 className="text-base font-semibold">{t('bot:about')}</h2>
@@ -51,21 +55,25 @@ export const BotProfileEditor = ({
           }
         }}
       >
-        <div className="flex flex-wrap items-center gap-3">
+        <Field
+          orientation="horizontal"
+          className="items-center gap-4 max-sm:flex-col max-sm:items-start"
+        >
           <BotAvatar
             bot={{ ...bot, avatar: avatar === undefined ? bot.avatar : avatar }}
             size="lg"
           />
-          <div className="grid min-w-0 flex-1 gap-2">
-            <label className="text-sm font-medium" htmlFor={`${id}-avatar`}>
-              {t('bot:avatar')}
-            </label>
-            <Input
+          <FieldContent className="max-sm:w-full">
+            <FieldLabel htmlFor={`${id}-avatar`}>{t('bot:avatar')}</FieldLabel>
+            <input
+              {...testId(testIds.settings.bot.avatarInput)}
+              ref={avatarInputRef}
               id={`${id}-avatar`}
               type="file"
               accept="image/png,image/jpeg,image/webp"
               disabled={reading || pending}
               aria-describedby={`${id}-avatar-hint`}
+              className="hidden"
               onChange={(event) => {
                 const file = event.currentTarget.files?.[0]
                 event.currentTarget.value = ''
@@ -86,21 +94,44 @@ export const BotProfileEditor = ({
                 reader.readAsDataURL(file)
               }}
             />
-            <p id={`${id}-avatar-hint`} className="text-xs text-muted-foreground">
-              {t('bot:avatarHint')}
-            </p>
-          </div>
-          {(avatar === undefined ? bot.avatar : avatar) ? (
-            <Button
-              type="button"
-              variant="outline"
-              disabled={reading || pending}
-              onClick={() => setAvatar(null)}
-            >
-              {t('bot:removeAvatar')}
-            </Button>
-          ) : null}
-        </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                {...testId(testIds.settings.bot.avatarUpload)}
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={reading || pending}
+                onClick={() => avatarInputRef.current?.click()}
+              >
+                {reading ? (
+                  <LoaderCircle aria-hidden="true" className="animate-spin" />
+                ) : (
+                  <ImagePlus aria-hidden="true" />
+                )}
+                {reading
+                  ? t('bot:avatarReading')
+                  : hasAvatar
+                    ? t('bot:changeAvatar')
+                    : t('bot:uploadAvatar')}
+              </Button>
+              {hasAvatar ? (
+                <Button
+                  {...testId(testIds.settings.bot.avatarRemove)}
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="text-muted-foreground hover:text-destructive"
+                  disabled={reading || pending}
+                  onClick={() => setAvatar(null)}
+                >
+                  <Trash2 aria-hidden="true" />
+                  {t('bot:removeAvatar')}
+                </Button>
+              ) : null}
+            </div>
+            <FieldDescription id={`${id}-avatar-hint`}>{t('bot:avatarHint')}</FieldDescription>
+          </FieldContent>
+        </Field>
         <div className="grid gap-2">
           <label className="text-sm font-medium" htmlFor={`${id}-description`}>
             {t('admin:botDescription')}
@@ -140,7 +171,11 @@ export const BotProfileEditor = ({
           <p className="text-xs text-muted-foreground">{t('bot:welcomeHint')}</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <Button {...testId(testIds.settings.save)} type="submit" disabled={pending || reading}>
+          <Button
+            {...testId(testIds.settings.bot.saveProfile)}
+            type="submit"
+            disabled={pending || reading}
+          >
             {t('bot:saveProfile')}
           </Button>
           {feedback ? (

@@ -1,21 +1,26 @@
-import { ExternalLink, MessageCircle, Settings } from 'lucide-react'
+import { CheckCircle2, Globe2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { Link } from 'wouter'
-import type { fetchAdminBotDiagnostics, IssuedBotToken } from '@/entities/bot'
-import { resourceUrls } from '@/shared/config'
+import {
+  BotConnectionCheck,
+  type BotConnectionState,
+  BotTokenField,
+  type fetchAdminBotDiagnostics,
+  type IssuedBotToken,
+} from '@/entities/bot'
 import { testId, testIds } from '@/shared/lib/test-ids'
 import { Button } from '@/shared/ui/button'
-import { useOpenBotChat } from '../model/use-open-bot-chat'
-import { BotConnectionSnippet } from './BotConnectionSnippet'
-import { BotConnectionStatus } from './BotConnectionStatus'
+import { CopyIconButton } from '@/shared/ui/copy-icon-button'
+import { DialogFooter } from '@/shared/ui/dialog'
+import { Field, FieldLabel } from '@/shared/ui/field'
+import { InputGroup, InputGroupAddon, InputGroupInput } from '@/shared/ui/input-group'
+import { OnboardingGuideLink } from './OnboardingGuideLink'
 
 export const BotSetupSteps = ({
   issued,
   webSocketUrl,
   diagnostics,
   failed,
-  tokenSaved,
-  onTokenSaved,
+  checking,
   onRetry,
   onFinished,
 }: {
@@ -23,80 +28,67 @@ export const BotSetupSteps = ({
   webSocketUrl: string
   diagnostics?: Awaited<ReturnType<typeof fetchAdminBotDiagnostics>>
   failed: boolean
-  tokenSaved: boolean
-  onTokenSaved: () => void
+  checking: boolean
   onRetry: () => void
-  onFinished?: () => void
+  onFinished: () => void
 }) => {
-  const { t } = useTranslation('onboarding')
-  const { pending, openChat } = useOpenBotChat()
+  const { t } = useTranslation()
   const online = diagnostics?.online ?? issued.bot.online
+  const connectionState: BotConnectionState = checking
+    ? 'checking'
+    : failed
+      ? 'failed'
+      : online
+        ? 'online'
+        : diagnostics
+          ? 'failed'
+          : 'idle'
 
   return (
-    <div className="grid min-w-0 gap-5">
-      <p className="rounded-lg bg-amber-500/10 p-3 text-sm text-amber-800 dark:text-amber-300">
-        {t('tokenWarning')}
-      </p>
-      <BotConnectionSnippet
-        token={issued.token}
-        webSocketUrl={webSocketUrl}
-        onTokenSaved={onTokenSaved}
-      />
-      <label className="flex min-h-11 items-center gap-3 text-sm">
-        <input
-          {...testId(testIds.onboarding.tokenSaved)}
-          type="checkbox"
-          checked={tokenSaved}
-          onChange={(event) => {
-            if (event.target.checked) onTokenSaved()
-          }}
-          className="size-4 accent-primary"
-        />
-        {t('tokenSavedConfirmation')}
-      </label>
-      <a
-        href={resourceUrls.firstBotGuide}
-        target="_blank"
-        rel="noreferrer"
-        className="inline-flex min-h-11 items-center gap-2 text-sm text-primary underline-offset-4 hover:underline"
-      >
-        {t('fullGuide')}
-        <ExternalLink aria-hidden="true" className="size-4" />
-      </a>
-      <BotConnectionStatus
-        diagnostics={diagnostics}
-        fallbackOnline={issued.bot.online}
-        failed={failed}
-        onRetry={onRetry}
-      />
-      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-        <Button variant="outline" asChild className="min-h-11">
-          <Link href={`/settings/bots/${issued.bot.id}`}>
-            <Settings aria-hidden="true" />
-            {t('openSettings')}
-          </Link>
-        </Button>
-        {online ? (
-          <Button
-            {...testId(testIds.onboarding.openChat)}
-            type="button"
-            className="min-h-11"
-            disabled={pending || !tokenSaved}
-            title={!tokenSaved ? t('saveTokenFirst') : undefined}
-            onClick={() =>
-              void openChat(issued.bot).then((opened) => {
-                if (opened) onFinished?.()
-              })
-            }
-          >
-            <MessageCircle aria-hidden="true" />
-            {t('openChat')}
-          </Button>
-        ) : null}
+    <>
+      <div className="grid min-h-0 min-w-0 flex-1 content-start gap-5 overflow-y-auto px-6 py-5">
+        <p className="flex items-center gap-3 rounded-lg bg-emerald-500/10 p-3 text-sm font-medium text-emerald-800 dark:text-emerald-300">
+          <CheckCircle2 aria-hidden="true" className="size-5 shrink-0" />
+          {t('onboarding:createdConfirmation')}
+        </p>
+        <Field>
+          <FieldLabel htmlFor="onboarding-bot-url">Endpoint</FieldLabel>
+          <InputGroup className="h-12 px-2">
+            <InputGroupAddon className="pl-1">
+              <Globe2 aria-hidden="true" className="size-4" />
+            </InputGroupAddon>
+            <InputGroupInput
+              {...testId(testIds.onboarding.url)}
+              id="onboarding-bot-url"
+              value={webSocketUrl}
+              readOnly
+              autoCapitalize="none"
+              spellCheck={false}
+              className="font-mono text-sm"
+            />
+            <CopyIconButton
+              text={webSocketUrl}
+              label={t('onboarding:copy.url')}
+              testID={testIds.onboarding.copyUrl}
+            />
+          </InputGroup>
+        </Field>
+        <BotTokenField token={issued.token} />
+        <hr />
+        <BotConnectionCheck state={connectionState} onCheck={onRetry} />
       </div>
-      {online && !tokenSaved ? (
-        <p className="text-sm text-muted-foreground">{t('saveTokenFirst')}</p>
-      ) : null}
-    </div>
+      <DialogFooter className="shrink-0 flex-row items-center justify-between gap-3 border-t bg-background p-4 sm:justify-between">
+        <OnboardingGuideLink />
+        <Button
+          {...testId(testIds.onboarding.close)}
+          type="button"
+          size="lg"
+          className="min-h-11"
+          onClick={onFinished}
+        >
+          {t('common:done')}
+        </Button>
+      </DialogFooter>
+    </>
   )
 }

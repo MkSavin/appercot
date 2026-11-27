@@ -1,9 +1,10 @@
 import { Database } from 'bun:sqlite'
 import { describe, expect, test } from 'bun:test'
 import { eq } from 'drizzle-orm'
+import { authenticateBotToken } from '../src/auth/bot-token'
 import { hashPassword } from '../src/auth/password'
-import { bots, users } from '../src/db/schema'
-import { connectBot, createServerFixture, graphqlRequest } from './helpers'
+import { bots, chats, messages, users, userUpdates } from '../src/db/schema'
+import { connectBot, createServerFixture, graphqlRequest, waitFor } from './helpers'
 
 const login = async (baseUrl: string, username: string, password: string) => {
   const result = await graphqlRequest(
@@ -123,6 +124,22 @@ describe('administration', () => {
       const access = 'mutation($bot: ID!) { setBotAccess(botId: $bot, access: by_link) { access } }'
       expect(
         (await call(managerCookie, access, { bot: foreign.bot.id })).errors?.[0]?.extensions?.code,
+      ).toBe('FORBIDDEN')
+      expect(
+        (
+          await call(
+            managerCookie,
+            'mutation($bot: ID!) { setBotStopped(botId: $bot, stopped: true) { id } }',
+            { bot: foreign.bot.id },
+          )
+        ).errors?.[0]?.extensions?.code,
+      ).toBe('FORBIDDEN')
+      expect(
+        (
+          await call(managerCookie, 'mutation($bot: ID!) { deleteBot(botId: $bot) }', {
+            bot: foreign.bot.id,
+          })
+        ).errors?.[0]?.extensions?.code,
       ).toBe('FORBIDDEN')
       expect((await call(managerCookie, access, { bot: botId })).data.setBotAccess).toEqual({
         access: 'by_link',
@@ -319,6 +336,88 @@ describe('administration', () => {
         bot.socket.close()
       }
     } finally {
+      fixture.stop()
+    }
+  })
+
+  // @anchor INV:admin/bot-lifecycle
+  test('stops, resumes and permanently deletes a managed bot', async () => {
+    const fixture = createServerFixture()
+    let bot: Awaited<ReturnType<typeof connectBot>> | undefined
+    try {
+      const cookie = await login(fixture.baseUrl, 'admin', 'password123')
+      const createdResult = await graphqlRequest(
+        fixture.baseUrl,
+        'mutation { createBot(username: "lifecyclebot", name: "Lifecycle", description: "") { token bot { id stopped online } } }',
+        {},
+        cookie,
+      )
+      const created = createdResult.body.data.createBot as {
+        token: string
+        bot: { id: string; stopped: boolean; online: boolean }
+      }
+      expect(created.bot).toMatchObject({ stopped: false, online: false })
+      bot = await connectBot(fixture.baseUrl, created.token)
+      expect((await bot.next()).t).toBe('hello')
+
+      const stopped = await graphqlRequest(
+        fixture.baseUrl,
+        'mutation($bot: ID!) { setBotStopped(botId: $bot, stopped: true) { stopped online } }',
+        { bot: created.bot.id },
+        cookie,
+      )
+      expect(stopped.body.data.setBotStopped).toEqual({ stopped: true, online: false })
+      await waitFor(() => !fixture.hub.isBotOnline(created.bot.id))
+      expect(authenticateBotToken(fixture.db, created.token)).toBeNull()
+
+      const resumed = await graphqlRequest(
+        fixture.baseUrl,
+        'mutation($bot: ID!) { setBotStopped(botId: $bot, stopped: false) { stopped online } }',
+        { bot: created.bot.id },
+        cookie,
+      )
+      expect(resumed.body.data.setBotStopped).toEqual({ stopped: false, online: false })
+      bot = await connectBot(fixture.baseUrl, created.token)
+      expect((await bot.next()).t).toBe('hello')
+
+      const added = await graphqlRequest(
+        fixture.baseUrl,
+        'mutation { addBot(username: "lifecyclebot") { id } }',
+        {},
+        cookie,
+      )
+      const chatId = (added.body.data.addBot as { id: string }).id
+      expect(
+        (
+          await bot.call('send', 'sendMessage', {
+            chatId,
+            content: { text: 'Delete this history' },
+          })
+        ).ok,
+      ).toBe(true)
+      expect(
+        fixture.db.select().from(messages).where(eq(messages.chatId, chatId)).all(),
+      ).toHaveLength(1)
+
+      const deleted = await graphqlRequest(
+        fixture.baseUrl,
+        'mutation($bot: ID!) { deleteBot(botId: $bot) }',
+        { bot: created.bot.id },
+        cookie,
+      )
+      expect(deleted.body.data.deleteBot).toBe(true)
+      expect(
+        fixture.db.select().from(bots).where(eq(bots.id, created.bot.id)).get(),
+      ).toBeUndefined()
+      expect(fixture.db.select().from(chats).where(eq(chats.id, chatId)).get()).toBeUndefined()
+      expect(fixture.db.select().from(messages).where(eq(messages.chatId, chatId)).all()).toEqual(
+        [],
+      )
+      const updates = fixture.db.select().from(userUpdates).all()
+      expect(updates.every((update) => update.payload.type === 'chat.removed')).toBe(true)
+      await waitFor(() => !fixture.hub.isBotOnline(created.bot.id))
+    } finally {
+      bot?.socket.close()
       fixture.stop()
     }
   })

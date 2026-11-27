@@ -144,8 +144,9 @@
 .workspace-destination {
   display: flex;
   min-height: 3.5rem;
-  min-width: 4.75rem;
-  padding: 0.55rem 0.7rem;
+  min-width: 0;
+  padding: 0.55rem 0.25rem;
+  flex: 1;
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -188,16 +189,32 @@
 
 @media (width >= 48rem) {
   .workspace-rail {
+    width: 6.25rem;
     justify-content: flex-start;
     border-top: 0;
     border-inline-end: 1px solid var(--border);
     padding-top: max(0.55rem, env(safe-area-inset-top));
+  }
+
+  .workspace-destination {
+    width: 100%;
+    min-width: 0;
+    padding: 0.55rem 0.35rem;
+    flex: none;
   }
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
+  }
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+  button:disabled,
+  [role="button"][aria-disabled="true"] {
+    cursor: default;
   }
   body {
     @apply bg-background text-foreground;
@@ -209,6 +226,13 @@
   body,
   #root {
     min-height: 100%;
+  }
+
+  html:has(.workspace-frame),
+  body:has(.workspace-frame) {
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
   }
 
   body {

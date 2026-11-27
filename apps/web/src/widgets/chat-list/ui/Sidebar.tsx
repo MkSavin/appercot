@@ -1,9 +1,8 @@
-import { ListFilter } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Link, useSearch } from 'wouter'
 import { useChatStore } from '@/entities/chat'
 import { testId, testIds } from '@/shared/lib/test-ids'
-import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { ContextPanel } from '@/shared/ui/context-panel'
 import { SearchInput } from '@/shared/ui/search-input'
@@ -18,31 +17,19 @@ const readPins = (key: string): string[] => {
   }
 }
 
-const readFlag = (key: string) => {
-  try {
-    return localStorage.getItem(key) === 'true'
-  } catch {
-    return false
-  }
-}
-
 export const Sidebar = ({ activeChatId }: { activeChatId?: string }) => {
   const { t } = useTranslation()
+  const search = useSearch()
   const userId = useChatStore((state) => state.user?.id)
   const chats = useChatStore((state) => state.chats)
   const pinKey = `appercot:pins:${userId ?? ''}`
-  const unreadKey = `appercot:unread-only:${userId ?? ''}`
   const [pinnedIds, setPinnedIds] = useState(() => readPins(pinKey))
-  const [unreadOnly, setUnreadOnly] = useState(() => readFlag(unreadKey))
   const [query, setQuery] = useState('')
   useEffect(() => {
     setPinnedIds(readPins(pinKey))
   }, [pinKey])
-  useEffect(() => {
-    setUnreadOnly(readFlag(unreadKey))
-  }, [unreadKey])
   const normalizedQuery = query.trim().toLowerCase()
-  const unreadCount = chats.filter((chat) => chat.unread > 0).length
+  const unreadOnly = new URLSearchParams(search).get('filter') === 'unread'
   const visibleChats = chats.filter(
     (chat) =>
       (!unreadOnly || chat.unread > 0) &&
@@ -60,15 +47,6 @@ export const Sidebar = ({ activeChatId }: { activeChatId?: string }) => {
     setPinnedIds(next)
     try {
       localStorage.setItem(pinKey, JSON.stringify(next))
-    } catch {
-      return
-    }
-  }
-  const toggleUnread = () => {
-    const next = !unreadOnly
-    setUnreadOnly(next)
-    try {
-      localStorage.setItem(unreadKey, String(next))
     } catch {
       return
     }
@@ -97,33 +75,13 @@ export const Sidebar = ({ activeChatId }: { activeChatId?: string }) => {
       className={activeChatId ? 'hidden' : 'flex'}
       contentClassName="px-2 pb-4"
       search={
-        <div className="flex items-center gap-2">
-          <div className="min-w-0 flex-1">
-            <SearchInput
-              {...testId(testIds.chats.search)}
-              value={query}
-              onChange={(event) => setQuery(event.currentTarget.value)}
-              aria-label={t('chat:search')}
-              placeholder={t('chat:search')}
-            />
-          </div>
-          <Button
-            {...testId(testIds.chats.unreadFilter)}
-            type="button"
-            variant={unreadOnly ? 'secondary' : 'ghost'}
-            size="icon"
-            className="size-11 shrink-0 md:size-9"
-            aria-label={t('chat:unreadFilter', { count: unreadCount })}
-            aria-pressed={unreadOnly}
-            title={t('chat:unreadFilter', { count: unreadCount })}
-            onClick={toggleUnread}
-          >
-            <ListFilter aria-hidden="true" />
-            <Badge variant={unreadOnly ? 'default' : 'secondary'} className="px-1 text-[10px]">
-              {unreadCount}
-            </Badge>
-          </Button>
-        </div>
+        <SearchInput
+          {...testId(testIds.chats.search)}
+          value={query}
+          onChange={(event) => setQuery(event.currentTarget.value)}
+          aria-label={t('chat:search')}
+          placeholder={t('chat:search')}
+        />
       }
     >
       <nav aria-label={t('chat:title')}>
@@ -146,22 +104,16 @@ export const Sidebar = ({ activeChatId }: { activeChatId?: string }) => {
               {emptyMessage}
             </p>
             {normalizedQuery && unreadOnly ? (
-              <Button
-                variant="link"
-                onClick={() => {
-                  setQuery('')
-                  if (unreadOnly) toggleUnread()
-                }}
-              >
-                {t('chat:clearFilters')}
+              <Button variant="link" asChild onClick={() => setQuery('')}>
+                <Link href="/">{t('chat:clearFilters')}</Link>
               </Button>
             ) : normalizedQuery ? (
               <Button variant="link" onClick={() => setQuery('')}>
                 {t('chat:clearSearch')}
               </Button>
             ) : unreadOnly ? (
-              <Button variant="link" onClick={toggleUnread}>
-                {t('chat:clearUnreadFilter')}
+              <Button variant="link" asChild>
+                <Link href="/">{t('chat:clearUnreadFilter')}</Link>
               </Button>
             ) : null}
           </div>
